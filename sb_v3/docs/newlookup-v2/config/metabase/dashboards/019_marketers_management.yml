@@ -1,0 +1,149 @@
+# Metabase Dashboard: Marketers Management (как в web_panel/api/marketers.py)
+# Dashboard ID: 019
+# Description: Управление маркетологами - рефералы, комиссии, выплаты
+
+dashboard:
+  name: "📢 Marketers Management"
+  description: "Управление маркетологами - рефералы, комиссии, статистика, выплаты"
+  position: 19
+
+  parameters:
+    - name: "Marketer ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "active", "inactive"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "📢 Total Marketers"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_marketers
+        FROM marketers
+        WHERE is_active = true
+
+    - name: "👥 Total Referrals"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_referrals
+        FROM referrals
+
+    - name: "💰 Total Marketer Balances"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_balances
+        FROM marketers
+
+    - name: "💸 Pending Withdrawals"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as pending_withdrawals
+        FROM marketer_withdrawals
+        WHERE status = 'pending'
+
+    # ========== ALL MARKETERS TABLE ==========
+    - name: "📢 All Marketers"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          m.id,
+          m.user_id,
+          u.username,
+          m.commission_rate,
+          m.balance,
+          m.total_earned,
+          m.total_withdrawn,
+          m.is_active,
+          (SELECT COUNT(*) FROM referrals WHERE marketer_id = m.id) as referrals_count,
+          (SELECT COUNT(*) FROM users WHERE marketer_id = m.id) as active_referrals,
+          'View / Edit / Deactivate' as actions
+        FROM marketers m
+        LEFT JOIN users u ON m.user_id = u.user_id
+        WHERE ({{marketer_id}} IS NULL OR m.id = {{marketer_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'active' AND m.is_active = true) OR
+            ({{status_filter}} = 'inactive' AND m.is_active = false)
+          )
+        ORDER BY m.created_at DESC
+        LIMIT 100
+
+    # ========== MARKETER PERFORMANCE ==========
+    - name: "📊 Marketer Performance (30 days)"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          m.id as marketer_id,
+          u.username,
+          COUNT(DISTINCT r.referred_id) as new_referrals,
+          COUNT(DISTINCT o.id) as referrals_orders,
+          SUM(o.price * m.commission_rate / 100) as commission_earned,
+          m.balance,
+          m.total_earned,
+          'View Details' as action
+        FROM marketers m
+        LEFT JOIN users u ON m.user_id = u.user_id
+        LEFT JOIN referrals r ON m.id = r.marketer_id
+        LEFT JOIN users ru ON r.referred_id = ru.user_id
+        LEFT JOIN orders o ON ru.user_id = o.user_id 
+          AND o.status = 'completed'
+          AND o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY m.id, u.username, m.balance, m.total_earned
+        HAVING COUNT(DISTINCT r.referred_id) > 0
+        ORDER BY commission_earned DESC
+        LIMIT 50
+
+    # ========== REFERRALS BY MARKETER ==========
+    - name: "👥 Referrals by Marketer"
+      type: "bar"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          m.id as marketer_id,
+          u.username,
+          COUNT(DISTINCT r.referred_id) as referrals_count,
+          COUNT(DISTINCT o.id) as orders_count,
+          SUM(o.price) as referral_revenue
+        FROM marketers m
+        LEFT JOIN users u ON m.user_id = u.user_id
+        LEFT JOIN referrals r ON m.id = r.marketer_id
+        LEFT JOIN users ru ON r.referred_id = ru.user_id
+        LEFT JOIN orders o ON ru.user_id = o.user_id
+        GROUP BY m.id, u.username
+        ORDER BY referrals_count DESC
+        LIMIT 20
+
+    # ========== MARKETER WITHDRAWALS ==========
+    - name: "💸 Marketer Withdrawals Pending"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          mw.id,
+          mw.marketer_id,
+          u.username,
+          mw.amount,
+          mw.payment_method,
+          mw.payment_network,
+          mw.requisites,
+          mw.status,
+          mw.created_at,
+          mw.processed_at,
+          'Approve/Reject' as action
+        FROM marketer_withdrawals mw
+        LEFT JOIN users u ON mw.marketer_id = u.user_id
+        WHERE mw.status = 'pending'
+        ORDER BY mw.created_at ASC
+        LIMIT 50

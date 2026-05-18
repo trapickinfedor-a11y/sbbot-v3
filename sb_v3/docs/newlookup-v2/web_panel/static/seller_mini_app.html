@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Seller Hub</title>
+    <link rel="stylesheet" href="/static/seller_mini_app.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+
+    <!-- ── HEADER ── -->
+    <header class="app-header">
+        <div class="header-left">
+            <div class="avatar" id="seller-avatar">S</div>
+            <div class="header-info">
+                <div class="header-name" id="seller-name">Loading…</div>
+                <div class="header-role" id="seller-role">Seller</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-dot" id="status-dot"></div>
+            <div class="notif-badge hidden" id="notif-badge">0</div>
+        </div>
+    </header>
+
+    <!-- ── MAIN ── -->
+    <main class="app-main">
+
+        <!-- ===== CHATS ===== -->
+        <section class="tab-section" id="tab-chats">
+            <div class="chat-layout">
+                <div class="chat-sidebar" id="chat-sidebar">
+                    <div class="search-bar">
+                        <input type="search" id="chat-search" placeholder="Search chats…" autocomplete="off">
+                    </div>
+                    <div class="conversation-list" id="conversation-list">
+                        <div class="empty-state">Loading chats…</div>
+                    </div>
+                </div>
+                <div class="chat-main" id="chat-main">
+                    <div class="chat-placeholder" id="chat-placeholder">
+                        <div class="placeholder-icon">💬</div>
+                        <div class="placeholder-text">Select a chat to start messaging</div>
+                    </div>
+                    <div class="chat-view hidden" id="chat-view">
+                        <div class="chat-header-bar" id="chat-header-bar">
+                            <button class="back-btn" id="chat-back-btn" type="button">‹</button>
+                            <div class="chat-title">
+                                <div class="chat-name" id="chat-name">Buyer</div>
+                                <div class="chat-order-status" id="chat-order-status"></div>
+                            </div>
+                            <span class="status-chip" id="chat-status-chip"></span>
+                        </div>
+                        <div class="message-list" id="message-list"></div>
+                        <form class="send-form" id="send-form">
+                            <div class="send-area">
+                                <label class="attach-btn" for="file-input" title="Attach file">📎</label>
+                                <input type="file" id="file-input" accept=".txt,.pdf,.zip,.csv,.json" hidden>
+                                <textarea id="message-input" placeholder="Message…" rows="1"></textarea>
+                                <button type="submit" class="send-btn" title="Send">➤</button>
+                            </div>
+                            <div class="file-preview hidden" id="file-preview">
+                                <span id="file-preview-name"></span>
+                                <button type="button" id="file-clear-btn">✕</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ORDERS ===== -->
+        <section class="tab-section hidden" id="tab-orders">
+            <div class="section-header">
+                <h2>My Orders</h2>
+                <div class="order-stats-chips" id="order-stats-chips"></div>
+            </div>
+            <div class="filter-bar">
+                <button class="filter-chip active" data-filter="active">Active</button>
+                <button class="filter-chip" data-filter="all">All</button>
+                <button class="filter-chip" data-filter="completed">Done</button>
+                <button class="filter-chip" data-filter="disputed">Disputed</button>
+            </div>
+            <div class="order-list" id="order-list">
+                <div class="empty-state">Loading orders…</div>
+            </div>
+        </section>
+
+        <!-- ===== UPLOADS ===== -->
+        <section class="tab-section hidden" id="tab-uploads">
+            <div class="upload-header">
+                <div class="upload-tabs-scroll">
+                    <div class="upload-tabs" id="upload-tabs">
+                        <button class="upload-tab active" data-upload="bank">🏦 Bank</button>
+                        <button class="upload-tab" data-upload="brute">⚡ Brute</button>
+                        <button class="upload-tab" data-upload="cc">💳 CC</button>
+                        <button class="upload-tab" data-upload="nfc">📱 NFC</button>
+                        <button class="upload-tab" data-upload="otp">📲 OTP</button>
+                        <button class="upload-tab" data-upload="enroll">🏦 Enroll</button>
+                        <button class="upload-tab" data-upload="selfreg_cc">💳 Selfreg CC</button>
+                        <button class="upload-tab" data-upload="checks">📄 Checks</button>
+                        <button class="upload-tab" data-upload="batches">📋 Batches</button>
+                        <button class="upload-tab" data-upload="listings">📃 Listings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bank Upload -->
+            <div class="upload-pane" id="upload-bank">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>🏦 Bank Upload Form</h3>
+                        </div>
+                        <form id="bank-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <select name="product_type" id="bank-product-type" class="form-input">
+                                        <option value="bank">Bank</option>
+                                        <option value="enrol">Enrol</option>
+                                    </select>
+                                    <select name="product_subtype" id="bank-product-subtype" class="form-input">
+                                        <option value="log">Log</option>
+                                        <option value="selfreg">Selfreg</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <input name="bank_name" placeholder="Bank name *" class="form-input" required>
+                                <input name="bank_code" placeholder="Bank code (optional)" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <select name="category" class="form-input" required>
+                                        <option value="vcc">VCC</option>
+                                        <option value="personal">Personal</option>
+                                        <option value="business">Business</option>
+                                        <option value="crypto">Crypto</option>
+                                    </select>
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                </div>
+                                <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                            </div>
+
+                            <div class="form-section">
+                                <textarea name="instruction" placeholder="Buyer instruction (optional)" class="form-textarea"></textarea>
+                            </div>
+
+                            <div class="form-section">
+                                <div class="options-group">
+                                    <label class="option-item">
+                                        <span class="option-label">Buyer chat enabled</span>
+                                        <input type="checkbox" name="has_chat" id="bank-has-chat" class="option-checkbox" checked>
+                                        <div class="option-toggle"></div>
+                                    </label>
+
+                                    <label class="option-item">
+                                        <span class="option-label">Number access available</span>
+                                        <input type="checkbox" name="number_access_available" id="bank-number-access" class="option-checkbox">
+                                        <div class="option-toggle"></div>
+                                    </label>
+
+                                    <div id="bank-number-access-fields" class="nested-fields hidden">
+                                        <input name="rental_days" type="number" min="1" placeholder="Rental days" class="form-input">
+                                        <label class="option-item">
+                                            <span class="option-label">Adaptive report</span>
+                                            <input type="checkbox" name="adaptive_report_enabled" class="option-checkbox">
+                                            <div class="option-toggle"></div>
+                                        </label>
+                                    </div>
+
+                                    <label class="option-item">
+                                        <span class="option-label">Number change allowed</span>
+                                        <input type="checkbox" name="number_change_allowed" class="option-checkbox">
+                                        <div class="option-toggle"></div>
+                                    </label>
+
+                                    <label class="option-item">
+                                        <span class="option-label">Auto-unpublish after N days</span>
+                                        <input type="checkbox" name="auto_unpublish_enabled" id="bank-auto-unpublish" class="option-checkbox">
+                                        <div class="option-toggle"></div>
+                                    </label>
+
+                                    <div id="bank-auto-unpublish-fields" class="nested-fields hidden">
+                                        <input name="listing_duration_days" type="number" min="1" placeholder="Duration (days)" class="form-input">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <textarea name="description" placeholder="Description / notes" class="form-textarea"></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="bank-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="bank-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="upload-preview">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Brute Upload -->
+            <div class="upload-pane hidden" id="upload-brute">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>⚡ Brute Upload Form</h3>
+                        </div>
+                        <form id="brute-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="bank_name" placeholder="Bank name *" class="form-input" required>
+                                    <input name="bank_code" placeholder="Bank code *" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <div class="mode-selector" id="brute-mode-ctrl">
+                                    <button type="button" class="mode-btn active" data-mode="single">Single Entry</button>
+                                    <button type="button" class="mode-btn" data-mode="bulk">Bulk Upload</button>
+                                </div>
+                                <input type="hidden" name="upload_mode" id="brute-upload-mode" value="single">
+                            </div>
+
+                            <div id="brute-single-fields" class="form-mode-content">
+                                <div class="form-section">
+                                    <div class="form-grid">
+                                        <input name="balance_range" placeholder="Balance range" class="form-input">
+                                        <select name="account_type" class="form-input">
+                                            <option value="">Account type</option>
+                                            <option value="CHECKING">CHECKING</option>
+                                            <option value="SAVINGS">SAVINGS</option>
+                                            <option value="BUSINESS">BUSINESS</option>
+                                            <option value="MONEY MARKET">MONEY MARKET</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <input name="balance_info" placeholder="Balance info" class="form-input">
+                                    <div class="form-grid">
+                                        <input name="price" placeholder="Price ($)" type="number" step="0.01" class="form-input">
+                                        <input name="login" placeholder="Login" class="form-input">
+                                    </div>
+                                    <input name="password" placeholder="Password" class="form-input">
+                                    <input name="extra" placeholder="Extra info" class="form-input">
+                                </div>
+                            </div>
+
+                            <div id="brute-bulk-fields" class="form-mode-content hidden">
+                                <div class="form-section">
+                                    <textarea name="bulk_text" id="brute-bulk-text" placeholder="login|password|balance|price|balance_range|account_type|extra" class="form-textarea bulk-textarea"></textarea>
+                                    <label class="file-upload-zone" for="brute-bulk-file">
+                                        <div class="upload-icon">📄</div>
+                                        <div class="upload-text">Drop .txt / .csv or click to browse</div>
+                                        <input type="file" id="brute-bulk-file" accept=".txt,.csv,text/plain,text/csv" hidden>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="brute-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="brute-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="brute-preview-box">
+                            <div class="preview-placeholder">Click Preview to see parsed items.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CC Upload -->
+            <div class="upload-pane hidden" id="upload-cc">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>💳 CC Upload Form</h3>
+                        </div>
+                        <form id="cc-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <select name="product_type" id="cc-product-type" class="form-input" required>
+                                        <option value="usa">USA CC</option>
+                                        <option value="world">World CC</option>
+                                    </select>
+                                    <input name="category_code" placeholder="Category (usa/world)" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>📋 Card Details</h4>
+                                <input name="number" placeholder="Card Number *" class="form-input" required>
+                                <input name="exp" placeholder="Expiration (MM/YY) *" class="form-input" required>
+                                <input name="cvv" placeholder="CVV *" class="form-input" required>
+                                <div class="form-grid">
+                                    <input name="card_bin" placeholder="BIN (first 6 digits)" class="form-input">
+                                    <input name="card_brand" placeholder="Brand (Visa/MC/Amex)" class="form-input">
+                                </div>
+                                <div class="form-grid">
+                                    <input name="card_type" placeholder="Type (CREDIT/DEBIT)" class="form-input">
+                                    <input name="card_level" placeholder="Level (Classic/Gold/Platinum)" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🌍 Location</h4>
+                                <div class="form-grid">
+                                    <input name="country" placeholder="Country (US/GB/CA)" class="form-input">
+                                    <input name="state" placeholder="State" class="form-input">
+                                </div>
+                                <div class="form-grid">
+                                    <input name="city" placeholder="City" class="form-input">
+                                    <input name="zip" placeholder="ZIP" class="form-input">
+                                </div>
+                                <input name="address" placeholder="Address" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <h4>👤 Holder Info</h4>
+                                <div class="form-grid">
+                                    <input name="fname" placeholder="First Name" class="form-input">
+                                    <input name="lname" placeholder="Last Name" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🔑 Extra Data (11 fields)</h4>
+                                <input name="extra_phone" placeholder="📱 Phone" class="form-input">
+                                <input name="extra_email" placeholder="📧 Email" class="form-input">
+                                <input name="extra_ssn" placeholder="🆔 SSN" class="form-input">
+                                <input name="extra_dob" placeholder="📅 Date of Birth" class="form-input">
+                                <input name="extra_dl" placeholder="🪪 Driver License" class="form-input">
+                                <textarea name="extra_info" placeholder="ℹ️ Additional Info" class="form-textarea"></textarea>
+                                <input name="extra_ref" placeholder="📎 Reference" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                    <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                                </div>
+                                <label class="option-item">
+                                    <span class="option-label">NON-VBV Card</span>
+                                    <input type="checkbox" name="is_non_vbv" id="cc-non-vbv" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <div id="cc-non-vbv-fields" class="nested-fields hidden">
+                                    <input name="seller_price_non_vbv" placeholder="NON-VBV Price ($)" type="number" step="0.01" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="cc-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="cc-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="cc-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NFC Upload -->
+            <div class="upload-pane hidden" id="upload-nfc">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>📱 NFC Upload Form</h3>
+                        </div>
+                        <form id="nfc-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <h4>📱 NFC Type</h4>
+                                <select name="nfc_type" id="nfc-type" class="form-input" required>
+                                    <option value="ap">🍎 Apple Pay</option>
+                                    <option value="gp">🤖 Google Pay</option>
+                                    <option value="other">📎 Other</option>
+                                </select>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🏦 Bank Info</h4>
+                                <input name="bank_name" placeholder="Bank Name *" class="form-input" required>
+                                <input name="country" placeholder="Country (US)" class="form-input">
+                                <input name="product_subtype" placeholder="Product Subtype" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <h4>💰 Pricing</h4>
+                                <div class="form-grid">
+                                    <input name="balance" placeholder="Balance ($)" type="number" step="0.01" class="form-input">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                </div>
+                                <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="nfc-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="nfc-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="nfc-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OTP Upload -->
+            <div class="upload-pane hidden" id="upload-otp">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>📲 OTP Upload Form</h3>
+                        </div>
+                        <form id="otp-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <h4>🏦 Bank Info</h4>
+                                <input name="bank_name" placeholder="Bank Name *" class="form-input" required>
+                                <input name="product_subtype" placeholder="Product Subtype" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <h4>💰 Balance & Access</h4>
+                                <div class="form-grid">
+                                    <input name="balance" placeholder="Balance ($)" type="number" step="0.01" class="form-input">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                </div>
+                                <select name="sms_access_type" class="form-input">
+                                    <option value="">SMS Access Type</option>
+                                    <option value="seller_mediated">📱 Seller Mediated</option>
+                                    <option value="account_access">🔐 Account Access</option>
+                                </select>
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="otp-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="otp-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="otp-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enroll Upload -->
+            <div class="upload-pane hidden" id="upload-enroll">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>🏦 Enroll Upload Form</h3>
+                        </div>
+                        <form id="enroll-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <h4>🏦 Enroll Category</h4>
+                                <select name="enroll_category_id" class="form-input" required>
+                                    <option value="">Select Category</option>
+                                    <option value="vcc">VCC</option>
+                                    <option value="personal">Personal</option>
+                                    <option value="business">Business</option>
+                                </select>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🔐 Portal Details</h4>
+                                <input name="portal" placeholder="Portal (FDECS, DIGITALCARDSERVICE) *" class="form-input" required>
+                                <div class="form-grid">
+                                    <input name="card_type" placeholder="Card Type (Visa/MC/Amex)" class="form-input">
+                                    <input name="balance" placeholder="Balance ($)" type="number" step="0.01" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🌍 Location</h4>
+                                <div class="form-grid">
+                                    <input name="state" placeholder="State (CA)" class="form-input">
+                                    <input name="zip" placeholder="ZIP" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>👤 Included Data</h4>
+                                <label class="option-item">
+                                    <span class="option-label">SSN Included</span>
+                                    <input type="checkbox" name="has_ssn" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">DOB Included</span>
+                                    <input type="checkbox" name="has_dob" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Name Included</span>
+                                    <input type="checkbox" name="has_name" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Address Included</span>
+                                    <input type="checkbox" name="has_address" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Email Included</span>
+                                    <input type="checkbox" name="has_email" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Security Q/A Included</span>
+                                    <input type="checkbox" name="has_security_qa" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Docs Included</span>
+                                    <input type="checkbox" name="has_docs" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <input name="doc_type" placeholder="Doc Type (Driver License/Passport)" class="form-input">
+                                <input name="phone_area_code" placeholder="Phone Area Code" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                    <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="enroll-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="enroll-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="enroll-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selfreg CC Upload -->
+            <div class="upload-pane hidden" id="upload-selfreg_cc">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>💳 Selfreg CC Upload Form</h3>
+                        </div>
+                        <form id="selfreg-cc-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <h4>💳 Selfreg CC Category</h4>
+                                <select name="selfreg_cc_category_id" class="form-input" required>
+                                    <option value="">Select Bank Category</option>
+                                    <option value="chime">Chime</option>
+                                    <option value="chase">Chase</option>
+                                    <option value="boa">Bank of America</option>
+                                    <option value="wells">Wells Fargo</option>
+                                    <option value="citi">Citi</option>
+                                    <option value="capital_one">Capital One</option>
+                                </select>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🏦 Bank Details</h4>
+                                <input name="bank_name" placeholder="Bank Name" class="form-input">
+                                <input name="item_name" placeholder="Item Name" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🌍 Location</h4>
+                                <div class="form-grid">
+                                    <input name="state" placeholder="State" class="form-input">
+                                    <input name="zip" placeholder="ZIP" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>📄 Included</h4>
+                                <label class="option-item">
+                                    <span class="option-label">SSN Included</span>
+                                    <input type="checkbox" name="has_ssn" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <label class="option-item">
+                                    <span class="option-label">Docs Included</span>
+                                    <input type="checkbox" name="has_docs" class="option-checkbox">
+                                    <div class="option-toggle"></div>
+                                </label>
+                                <input name="doc_type" placeholder="Doc Type (Driver License/Passport)" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                    <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="selfreg-cc-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="selfreg-cc-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="selfreg-cc-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checks Upload -->
+            <div class="upload-pane hidden" id="upload-checks">
+                <div class="upload-container">
+                    <div class="upload-form-card">
+                        <div class="card-header">
+                            <h3>📄 Checks Upload Form</h3>
+                        </div>
+                        <form id="checks-upload-form" class="upload-form">
+                            <div class="form-section">
+                                <h4>📄 Check Type</h4>
+                                <select name="check_type" class="form-input" required>
+                                    <option value="">Select Check Type</option>
+                                    <option value="personal">👤 Personal</option>
+                                    <option value="business">🏢 Business</option>
+                                    <option value="payroll">💰 Payroll</option>
+                                    <option value="cashier">🏦 Cashier</option>
+                                </select>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>💵 Check Details</h4>
+                                <div class="form-grid">
+                                    <input name="amount" placeholder="Amount ($)" type="number" step="0.01" class="form-input">
+                                    <input name="check_date" placeholder="Date (YYYY-MM-DD)" type="date" class="form-input">
+                                </div>
+                                <input name="bank_name" placeholder="Bank Name" class="form-input">
+                            </div>
+
+                            <div class="form-section">
+                                <h4>🌍 Location</h4>
+                                <div class="form-grid">
+                                    <input name="state" placeholder="State" class="form-input">
+                                    <input name="zip" placeholder="ZIP" class="form-input">
+                                </div>
+                            </div>
+
+                            <div class="form-section">
+                                <h4>📎 Files</h4>
+                                <label class="file-upload-zone" for="checks-scan-file">
+                                    <div class="upload-icon">📄</div>
+                                    <div class="upload-text">Scan File (Check Image)</div>
+                                    <input type="file" id="checks-scan-file" accept=".jpg,.jpeg,.png,.pdf" hidden>
+                                </label>
+                                <label class="file-upload-zone" for="checks-template-file">
+                                    <div class="upload-icon">📋</div>
+                                    <div class="upload-text">Template File (Optional)</div>
+                                    <input type="file" id="checks-template-file" accept=".txt,.pdf,.doc,.docx" hidden>
+                                </label>
+                            </div>
+
+                            <div class="form-section">
+                                <div class="form-grid">
+                                    <input name="seller_price" placeholder="Price ($) *" type="number" step="0.01" min="0" class="form-input" required>
+                                    <input name="stock_count" placeholder="Quantity *" value="1" type="number" min="1" class="form-input" required>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="checks-preview-btn" class="btn-outline">Preview</button>
+                                <button type="submit" id="checks-submit-btn" class="btn-primary">Submit Upload</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="upload-preview-card">
+                        <div class="card-header">
+                            <h3>👁️ Preview</h3>
+                        </div>
+                        <div class="preview-content" id="checks-preview-box">
+                            <div class="preview-placeholder">Click Preview to check details before submitting.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batches -->
+            <div class="upload-pane hidden" id="upload-batches">
+                <div class="batches-container">
+                    <div class="batches-sidebar">
+                        <div class="sidebar-header">
+                            <h3>📋 Your Batches</h3>
+                        </div>
+                        <div class="batches-list" id="batch-list">
+                            <div class="empty-state">No batches yet.</div>
+                        </div>
+                    </div>
+                    <div class="batches-detail">
+                        <div class="detail-header">
+                            <h3>Batch Details & Items</h3>
+                        </div>
+                        <div class="batch-info" id="batch-info">
+                            <div class="empty-state">Select a batch to see details</div>
+                        </div>
+                        <div class="batch-items-header">
+                            <h4>📦 Items in this Batch</h4>
+                            <span class="item-count" id="batch-item-count">0 items</span>
+                        </div>
+                        <div class="batch-items-list" id="batch-items-list">
+                            <div class="empty-state">No items</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Listings -->
+            <div class="upload-pane hidden" id="upload-listings">
+                <div class="listings-container">
+                    <div class="listings-card">
+                        <div class="card-header">
+                            <h3>💰 Bulk Reprice</h3>
+                        </div>
+                        <div class="reprice-controls">
+                            <select id="bulk-price-mode" class="form-input">
+                                <option value="percent">Percent +/-</option>
+                                <option value="delta">Fixed delta +/-</option>
+                                <option value="set">Set exact price</option>
+                            </select>
+                            <input id="bulk-price-value" placeholder="Value" type="number" step="0.01" class="form-input">
+                            <button type="button" id="apply-bulk-price-btn" class="btn-primary btn-compact">Apply</button>
+                        </div>
+                        <p class="info-text">Bulk repricing resets listings to pending moderation.</p>
+                    </div>
+
+                    <div class="listings-card">
+                        <div class="card-header">
+                            <h3>📃 Active Listings</h3>
+                        </div>
+                        <div class="listings-scroll" id="listing-list">
+                            <div class="empty-state">Loading listings…</div>
+                        </div>
+                    </div>
+
+                    <div class="listings-card">
+                        <div class="card-header">
+                            <h3>💾 Saved Templates</h3>
+                        </div>
+                        <div class="template-actions">
+                            <button type="button" id="save-bank-template-btn" class="btn-outline btn-compact">Save Bank Form</button>
+                            <button type="button" id="save-brute-template-btn" class="btn-outline btn-compact">Save Brute Form</button>
+                        </div>
+                        <div class="templates-list" id="template-list">
+                            <div class="empty-state">No templates saved.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== ANALYTICS ===== -->
+        <section class="tab-section hidden" id="tab-analytics">
+            <div class="section-header">
+                <h2>Analytics</h2>
+            </div>
+            <div class="stats-grid" id="analytics-summary"></div>
+            <div class="panel-card">
+                <h3>📊 Conversion Funnel</h3>
+                <div id="funnel-view" class="funnel-container">
+                    <div class="empty-state">Loading funnel…</div>
+                </div>
+            </div>
+            <div class="panel-card">
+                <h3>🏆 Top Products <span class="muted-text">· last 30 days</span></h3>
+                <div id="top-products-view" class="top-products-list">
+                    <div class="empty-state">Loading…</div>
+                </div>
+            </div>
+            <div class="panel-card">
+                <h3>🛒 Abandoned Carts</h3>
+                <div id="abandoned-carts-view" class="preview-box">Loading…</div>
+            </div>
+        </section>
+
+        <!-- ===== FINANCE ===== -->
+        <section class="tab-section hidden" id="tab-finance">
+            <div class="section-header">
+                <h2>Finance</h2>
+                <button type="button" id="finance-export-btn" class="btn-secondary btn-sm">Export CSV</button>
+            </div>
+            <div id="finance-summary" class="finance-section"></div>
+            <div class="panel-card">
+                <h3>💸 Request Withdrawal</h3>
+                <form class="stack-form" id="withdraw-form">
+                    <input type="number" id="withdraw-amount" placeholder="Amount ($)" step="0.01" min="0.01">
+                    <textarea id="withdraw-requisites" placeholder="Payment details — wallet address, bank account, etc."></textarea>
+                    <button type="submit" id="withdraw-submit-btn">Request Withdrawal</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ===== SETTINGS ===== -->
+        <section class="tab-section hidden" id="tab-settings">
+            <div class="section-header">
+                <h2>Settings</h2>
+            </div>
+            
+            <!-- Language Selector -->
+            <div class="panel-card">
+                <h3>🌐 Language / Язык / 语言 / Idioma</h3>
+                <select id="language-selector" class="form-input" onchange="setLanguage(this.value)">
+                    <option value="en">🇬🇧 English</option>
+                    <option value="ru">🇷🇺 Русский</option>
+                    <option value="zh">🇨🇳 中文</option>
+                    <option value="es">🇪🇸 Español</option>
+                </select>
+                <p class="info-text">Select your preferred interface language</p>
+            </div>
+            
+            <div class="panel-card">
+                <h3>🏖️ Vacation Mode</h3>
+                <div class="toggle-group">
+                    <label class="toggle-row">
+                        <span>Enable vacation mode</span>
+                        <input type="checkbox" id="vacation-toggle" class="toggle-input">
+                        <div class="toggle-switch"></div>
+                    </label>
+                </div>
+                <input type="datetime-local" id="vacation-ends-at" class="full-width-input">
+                <button type="button" id="save-settings-btn" class="full-width-btn">Save</button>
+                <div id="settings-summary" class="hint settings-summary"></div>
+            </div>
+            <div class="panel-card">
+                <h3>⚡ Auto-Payout</h3>
+                <label class="toggle-row">
+                    <span>Enable automatic payout</span>
+                    <input type="checkbox" id="auto-payout-toggle" class="toggle-input">
+                    <div class="toggle-switch"></div>
+                </label>
+                <button type="button" id="save-auto-payout-btn" class="full-width-btn">Save</button>
+            </div>
+            <div class="panel-card">
+                <h3>🌙 Quiet Hours</h3>
+                <div class="form-row">
+                    <div class="input-labeled">
+                        <label class="input-label">From</label>
+                        <input type="time" id="quiet-from">
+                    </div>
+                    <div class="input-labeled">
+                        <label class="input-label">To</label>
+                        <input type="time" id="quiet-to">
+                    </div>
+                </div>
+                <button type="button" id="save-quiet-hours-btn" class="full-width-btn">Save Quiet Hours</button>
+            </div>
+            <div class="panel-card" id="profile-card">
+                <h3>👤 Account Info</h3>
+                <div id="profile-info" class="profile-grid"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── BOTTOM NAV ── -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <button class="nav-btn active" data-tab="chats">
+            <span class="nav-icon">💬</span>
+            <span class="nav-label">Chats</span>
+            <span class="nav-badge hidden" id="nb-chats">0</span>
+        </button>
+        <button class="nav-btn" data-tab="orders">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Orders</span>
+            <span class="nav-badge hidden" id="nb-orders">0</span>
+        </button>
+        <button class="nav-btn" data-tab="uploads">
+            <span class="nav-icon">📤</span>
+            <span class="nav-label">Uploads</span>
+        </button>
+        <button class="nav-btn" data-tab="analytics">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Stats</span>
+        </button>
+        <button class="nav-btn" data-tab="finance">
+            <span class="nav-icon">💰</span>
+            <span class="nav-label">Finance</span>
+        </button>
+        <button class="nav-btn" data-tab="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">More</span>
+        </button>
+    </nav>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/static/seller_mini_app_i18n.js"></script>
+<script src="/static/seller_mini_app.js"></script>
+</body>
+</html>

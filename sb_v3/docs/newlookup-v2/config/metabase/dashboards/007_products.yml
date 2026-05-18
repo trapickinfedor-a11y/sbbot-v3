@@ -1,0 +1,324 @@
+# Metabase Dashboard: Products Catalog
+# Dashboard ID: 007
+# Description: Product inventory, pricing, and performance
+# Note: Uses UNION ALL across all seller_*_items tables
+
+dashboard:
+  name: "📦 Products Catalog"
+  description: "Product inventory, pricing analytics, and catalog performance"
+  position: 7
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Category"
+      type: "string"
+      required: false
+    - name: "Status"
+      type: "string"
+      required: false
+      values: ["pending", "approved", "rejected", "pending_moderation"]
+
+  cards:
+    - name: "Total Products"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_products
+        FROM (
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_banks
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_cc_items
+          UNION ALL
+          SELECT id, seller_id, price, is_in_stock, moderation_status, created_at FROM seller_logs_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_nfc_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_otp_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_check_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_document_items
+          UNION ALL
+          SELECT id, seller_id, seller_price as price, is_in_stock, moderation_status, created_at FROM seller_fullz_items
+          UNION ALL
+          SELECT id, seller_id, price, is_in_stock, moderation_status, created_at FROM seller_enroll_items
+        ) all_products
+        WHERE created_at <= {{date_range.end}}
+
+    - name: "Active Products"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_products
+        FROM (
+          SELECT id, is_in_stock, moderation_status FROM seller_banks WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_cc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_logs_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_nfc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_otp_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_selfreg_cc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_check_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_document_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_fullz_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock, moderation_status FROM seller_enroll_items WHERE is_active = true
+        ) all_products
+        WHERE is_in_stock = true
+
+    - name: "Out of Stock"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as out_of_stock
+        FROM (
+          SELECT id, is_in_stock FROM seller_banks WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_cc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_logs_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_nfc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_otp_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_selfreg_cc_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_check_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_document_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_fullz_items WHERE is_active = true
+          UNION ALL
+          SELECT id, is_in_stock FROM seller_enroll_items WHERE is_active = true
+        ) all_products
+        WHERE is_in_stock = false
+
+    - name: "Pending Moderation"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as pending_moderation
+        FROM (
+          SELECT id, moderation_status FROM seller_banks
+          UNION ALL
+          SELECT id, moderation_status FROM seller_cc_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_logs_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_nfc_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_otp_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_check_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_document_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_fullz_items
+          UNION ALL
+          SELECT id, moderation_status FROM seller_enroll_items
+        ) all_products
+        WHERE moderation_status = 'pending'
+
+    - name: "Products by Moderation Status"
+      type: "bar"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          moderation_status,
+          COUNT(*) as total_products
+        FROM (
+          SELECT moderation_status FROM seller_banks
+          UNION ALL
+          SELECT moderation_status FROM seller_cc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_logs_items
+          UNION ALL
+          SELECT moderation_status FROM seller_nfc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_otp_items
+          UNION ALL
+          SELECT moderation_status FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_check_items
+          UNION ALL
+          SELECT moderation_status FROM seller_document_items
+          UNION ALL
+          SELECT moderation_status FROM seller_fullz_items
+          UNION ALL
+          SELECT moderation_status FROM seller_enroll_items
+        ) all_products
+        GROUP BY moderation_status
+        ORDER BY total_products DESC
+
+    - name: "Price Distribution"
+      type: "histogram"
+      position: { row: 3, col: 1, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN price < 1 THEN '$0-1'
+            WHEN price < 5 THEN '$1-5'
+            WHEN price < 10 THEN '$5-10'
+            WHEN price < 25 THEN '$10-25'
+            WHEN price < 50 THEN '$25-50'
+            WHEN price < 100 THEN '$50-100'
+            ELSE '$100+'
+          END as price_range,
+          COUNT(*) as products_count,
+          AVG(price) as avg_price_in_range
+        FROM (
+          SELECT seller_price as price FROM seller_banks WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_cc_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT price FROM seller_logs_items WHERE is_active = true AND price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_nfc_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_otp_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_selfreg_cc_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_check_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_document_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT seller_price as price FROM seller_fullz_items WHERE is_active = true AND seller_price > 0
+          UNION ALL
+          SELECT price FROM seller_enroll_items WHERE is_active = true AND price > 0
+        ) all_products
+        GROUP BY price_range
+        ORDER BY price_range
+
+    - name: "Products by Type"
+      type: "pie"
+      position: { row: 3, col: 7, size: 6 }
+      query: |
+        SELECT 
+          product_type,
+          COUNT(*) as products_count
+        FROM (
+          SELECT product_type FROM seller_banks
+          UNION ALL
+          SELECT product_type FROM seller_cc_items
+          UNION ALL
+          SELECT product_type FROM seller_logs_items
+          UNION ALL
+          SELECT product_type FROM seller_nfc_items
+          UNION ALL
+          SELECT product_type FROM seller_otp_items
+          UNION ALL
+          SELECT product_type FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT product_type FROM seller_check_items
+          UNION ALL
+          SELECT product_type FROM seller_document_items
+          UNION ALL
+          SELECT product_type FROM seller_fullz_items
+          UNION ALL
+          SELECT product_type FROM seller_enroll_items
+        ) all_products
+        GROUP BY product_type
+        ORDER BY products_count DESC
+
+    - name: "Top Products by Orders"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          product_type,
+          item_id,
+          seller_id,
+          orders_count,
+          total_revenue
+        FROM (
+          SELECT 
+            'bank' as product_type,
+            sbo.item_id,
+            sbo.seller_id,
+            COUNT(*) as orders_count,
+            SUM(sbo.price) as total_revenue
+          FROM seller_bank_orders sbo
+          WHERE sbo.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY sbo.item_id, sbo.seller_id
+          
+          UNION ALL
+          
+          SELECT 
+            'logs' as product_type,
+            slo.item_id,
+            slo.seller_id,
+            COUNT(*) as orders_count,
+            SUM(slo.price) as total_revenue
+          FROM seller_logs_orders slo
+          WHERE slo.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY slo.item_id, slo.seller_id
+          
+          UNION ALL
+          
+          SELECT 
+            'cc' as product_type,
+            sco.item_id,
+            sco.seller_id,
+            COUNT(*) as orders_count,
+            SUM(sco.price) as total_revenue
+          FROM seller_cc_orders sco
+          WHERE sco.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY sco.item_id, sco.seller_id
+        ) combined_orders
+        ORDER BY total_revenue DESC
+        LIMIT 50
+
+    - name: "Product Sales Trend"
+      type: "line"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          purchase_date,
+          COUNT(*) as total_orders,
+          SUM(revenue) as total_revenue
+        FROM (
+          SELECT 
+            DATE(sbo.purchased_at) as purchase_date,
+            COUNT(*) as orders,
+            SUM(sbo.price) as revenue
+          FROM seller_bank_orders sbo
+          WHERE sbo.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY DATE(sbo.purchased_at)
+          
+          UNION ALL
+          
+          SELECT 
+            DATE(slo.purchased_at) as purchase_date,
+            COUNT(*) as orders,
+            SUM(slo.price) as revenue
+          FROM seller_logs_orders slo
+          WHERE slo.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY DATE(slo.purchased_at)
+          
+          UNION ALL
+          
+          SELECT 
+            DATE(sco.purchased_at) as purchase_date,
+            COUNT(*) as orders,
+            SUM(sco.price) as revenue
+          FROM seller_cc_orders sco
+          WHERE sco.purchased_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          GROUP BY DATE(sco.purchased_at)
+        ) all_sales
+        GROUP BY purchase_date
+        ORDER BY purchase_date

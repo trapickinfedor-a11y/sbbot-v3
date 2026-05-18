@@ -1,0 +1,33 @@
+# Metabase Database Connection: NewLookup Main Database
+# This file documents the connection settings for the main NewLookup PostgreSQL database
+
+database:
+  name: "NewLookup - Main Database"
+  engine: "postgres"
+  connection:
+    host: "postgres"
+    port: 5432
+    database: "newlookup"
+    user: "${POSTGRES_USER}"
+    ssl: false
+    tunnel: false
+  
+  # Advanced settings
+  advanced-options:
+    additional-jdbc-parameters:
+      sslmode: "disable"
+      connectTimeout: "10"
+      socketTimeout: "300"
+    max-connection-pool-size: 20
+    min-connection-pool-size: 5
+
+  # Scheduling
+  scheduling:
+    cache-field-values: true
+    cache-ttl: 14400  # 4 hours in seconds
+    auto-run-queries: true
+
+  # Metadata sync
+  metadata-sync:
+    schedule: "0 */5 * * * ?"  # Every 5 minutes
+    track-changes: true

@@ -1,0 +1,260 @@
+{% extends "_base.html" %}
+{% block title %}Bulk Discounts{% endblock %}
+{% block header_title %}🎁 Bulk Discount Tiers{% endblock %}
+{% block extra_css %}
+<style>
+.bd-wrap { max-width: 900px; }
+.bd-tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.bd-tab { padding:7px 16px; border-radius:8px; border:2px solid #e5e7eb; background:#fff; cursor:pointer; font-size:13px; font-weight:600; color:#374151; }
+.bd-tab.active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+.bd-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.07); border:1px solid #f0f0f0; overflow:hidden; margin-bottom:16px; }
+.bd-header { padding:16px 20px; background:#f9fafb; border-bottom:1px solid #f0f0f0; display:flex; align-items:center; justify-content:space-between; }
+.bd-header h3 { margin:0; font-size:15px; font-weight:700; color:#111827; text-transform:capitalize; }
+.bd-table { width:100%; border-collapse:collapse; }
+.bd-table th { background:#f3f4f6; padding:10px 16px; text-align:left; font-size:12px; text-transform:uppercase; color:#6b7280; letter-spacing:.05em; }
+.bd-table td { padding:12px 16px; border-bottom:1px solid #f3f4f6; font-size:14px; }
+.bd-table tr:last-child td { border-bottom:none; }
+.bd-table tr:hover td { background:#fafafa; }
+.badge-active { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.badge-inactive { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600; }
+.btn-sm { padding:5px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; font-weight:600; }
+.btn-edit { background:#eef2ff; color:#4f46e5; }
+.btn-edit:hover { background:#e0e7ff; }
+.btn-del { background:#fee2e2; color:#dc2626; }
+.btn-del:hover { background:#fecaca; }
+.btn-primary { background:#4f46e5; color:#fff; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; }
+.btn-primary:hover { background:#4338ca; }
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; align-items:center; justify-content:center; }
+.modal-overlay.open { display:flex; }
+.modal-box { background:#fff; border-radius:16px; padding:28px; width:440px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,.25); }
+.modal-box h3 { margin:0 0 20px; font-size:18px; font-weight:700; }
+.form-group { margin-bottom:16px; }
+.form-group label { display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px; }
+.form-group input, .form-group select { width:100%; padding:9px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; box-sizing:border-box; outline:none; }
+.form-group input:focus, .form-group select:focus { border-color:#4f46e5; box-shadow:0 0 0 3px rgba(79,70,229,.1); }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.btn-cancel { background:#f3f4f6; color:#374151; border:none; padding:9px 18px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; }
+
+/* Referral rates section */
+.ref-card { background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.07); border:1px solid #f0f0f0; padding:24px; margin-bottom:24px; }
+.ref-card h3 { margin:0 0 6px; font-size:16px; font-weight:700; }
+.ref-card .subtitle { color:#6b7280; font-size:13px; margin-bottom:20px; }
+.ref-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.ref-level { text-align:center; }
+.ref-level label { display:block; font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; margin-bottom:6px; }
+.ref-level input { width:100%; padding:10px; border:1.5px solid #d1d5db; border-radius:8px; font-size:16px; font-weight:700; text-align:center; outline:none; }
+.ref-level input:focus { border-color:#4f46e5; }
+.ref-level .note { font-size:11px; color:#9ca3af; margin-top:4px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="bd-wrap">
+
+  <!-- Referral Rates -->
+  <div class="ref-card">
+    <h3>🤝 4-Level Referral Rates</h3>
+    <p class="subtitle">% of purchase credited to each level of the referral chain. Level 1 = direct referrer.</p>
+    <div class="ref-grid">
+      <div class="ref-level">
+        <label>Level 1</label>
+        <input type="number" id="r1" step="0.1" min="0" max="100" value="5">
+        <div class="note">Direct referrer</div>
+      </div>
+      <div class="ref-level">
+        <label>Level 2</label>
+        <input type="number" id="r2" step="0.1" min="0" max="100" value="3">
+        <div class="note">Referrer's referrer</div>
+      </div>
+      <div class="ref-level">
+        <label>Level 3</label>
+        <input type="number" id="r3" step="0.1" min="0" max="100" value="2">
+        <div class="note">Level 3</div>
+      </div>
+      <div class="ref-level">
+        <label>Level 4</label>
+        <input type="number" id="r4" step="0.1" min="0" max="100" value="1">
+        <div class="note">Level 4</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+      <button class="btn-primary" onclick="saveReferralRates()">💾 Save Rates</button>
+      <span id="ref-status" style="font-size:13px;color:#10b981;display:none">✓ Saved!</span>
+    </div>
+  </div>
+
+  <!-- Bulk Discount Tiers -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <h2 style="margin:0;font-size:20px;font-weight:700">Bulk Discount Tiers</h2>
+    <button class="btn-primary" onclick="openAdd()">+ Add Tier</button>
+  </div>
+
+  <div class="bd-tabs" id="catTabs"></div>
+  <div id="tiersTable"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle">Add Tier</h3>
+    <input type="hidden" id="tierId">
+    <div class="form-group">
+      <label>Category</label>
+      <select id="fCat">
+        <option value="banks">Banks</option>
+        <option value="esim">eSIM</option>
+        <option value="fullz">FULLZ</option>
+        <option value="cc">CC</option>
+        <option value="accounts">Accounts</option>
+        <option value="docs">Documents</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Minimum Quantity</label>
+      <input type="number" id="fQty" min="1" placeholder="e.g. 3">
+    </div>
+    <div class="form-group">
+      <label>Discount %</label>
+      <input type="number" id="fPct" min="0" max="100" step="0.5" placeholder="e.g. 5">
+    </div>
+    <div class="form-group">
+      <label><input type="checkbox" id="fActive" checked> Active</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveTier()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let allTiers = [];
+let currentCat = 'banks';
+
+async function load() {
+  const [tiersRes, ratesRes] = await Promise.all([
+    fetch('/api/bulk-discounts/').then(r=>r.json()),
+    fetch('/api/settings/referral-rates').then(r=>r.json()),
+  ]);
+  allTiers = tiersRes;
+  document.getElementById('r1').value = ratesRes['1'] ?? 5;
+  document.getElementById('r2').value = ratesRes['2'] ?? 3;
+  document.getElementById('r3').value = ratesRes['3'] ?? 2;
+  document.getElementById('r4').value = ratesRes['4'] ?? 1;
+  renderTabs();
+  renderTable();
+}
+
+function renderTabs() {
+  const cats = [...new Set(allTiers.map(t=>t.category))];
+  const all = ['banks','esim','fullz','cc','accounts','docs'];
+  const ordered = all.filter(c=>cats.includes(c));
+  const extra = cats.filter(c=>!all.includes(c));
+  const tabs = document.getElementById('catTabs');
+  tabs.innerHTML = [...ordered,...extra].map(c=>`
+    <div class="bd-tab ${c===currentCat?'active':''}" onclick="setCat('${c}')">${c.toUpperCase()}</div>
+  `).join('');
+}
+
+function setCat(cat) {
+  currentCat = cat;
+  renderTabs();
+  renderTable();
+}
+
+function renderTable() {
+  const tiers = allTiers.filter(t=>t.category===currentCat).sort((a,b)=>a.min_qty-b.min_qty);
+  const container = document.getElementById('tiersTable');
+  if (!tiers.length) {
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:#9ca3af">No tiers for ${currentCat}. Click "+ Add Tier".</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div class="bd-card">
+      <div class="bd-header"><h3>${currentCat} discount tiers</h3></div>
+      <table class="bd-table">
+        <thead><tr><th>Min Qty</th><th>Discount</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${tiers.map(t=>`
+            <tr>
+              <td><strong>≥ ${t.min_qty} pcs</strong></td>
+              <td><strong style="color:#4f46e5">${t.discount_percent}%</strong></td>
+              <td><span class="${t.is_active?'badge-active':'badge-inactive'}">${t.is_active?'Active':'Inactive'}</span></td>
+              <td>
+                <button class="btn-sm btn-edit" onclick='openEdit(${JSON.stringify(t)})'>Edit</button>
+                <button class="btn-sm btn-del" onclick="deleteTier(${t.id})">Delete</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function openAdd() {
+  document.getElementById('modalTitle').textContent = 'Add Tier';
+  document.getElementById('tierId').value = '';
+  document.getElementById('fCat').value = currentCat;
+  document.getElementById('fQty').value = '';
+  document.getElementById('fPct').value = '';
+  document.getElementById('fActive').checked = true;
+  document.getElementById('modal').classList.add('open');
+}
+
+function openEdit(tier) {
+  document.getElementById('modalTitle').textContent = 'Edit Tier';
+  document.getElementById('tierId').value = tier.id;
+  document.getElementById('fCat').value = tier.category;
+  document.getElementById('fQty').value = tier.min_qty;
+  document.getElementById('fPct').value = tier.discount_percent;
+  document.getElementById('fActive').checked = tier.is_active;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+async function saveTier() {
+  const id = document.getElementById('tierId').value;
+  const body = {
+    category: document.getElementById('fCat').value,
+    min_qty: parseInt(document.getElementById('fQty').value),
+    discount_percent: parseFloat(document.getElementById('fPct').value),
+    is_active: document.getElementById('fActive').checked,
+  };
+  const url = id ? `/api/bulk-discounts/${id}` : '/api/bulk-discounts/';
+  const method = id ? 'PUT' : 'POST';
+  const res = await fetch(url, {method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (res.ok) { closeModal(); await load(); }
+  else { const e = await res.json(); alert(e.detail || 'Error saving'); }
+}
+
+async function deleteTier(id) {
+  if (!confirm('Delete this tier?')) return;
+  await fetch(`/api/bulk-discounts/${id}`, {method:'DELETE'});
+  await load();
+}
+
+async function saveReferralRates() {
+  const body = {
+    level_1: parseFloat(document.getElementById('r1').value),
+    level_2: parseFloat(document.getElementById('r2').value),
+    level_3: parseFloat(document.getElementById('r3').value),
+    level_4: parseFloat(document.getElementById('r4').value),
+  };
+  const res = await fetch('/api/settings/referral-rates', {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (res.ok) {
+    const s = document.getElementById('ref-status');
+    s.style.display = 'inline';
+    setTimeout(()=>s.style.display='none', 2500);
+  }
+}
+
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+load();
+</script>
+{% endblock %}

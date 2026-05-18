@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirror Bot — Текущее UX/UI оформление</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0e1621;
+  --chat-bg:#17212b;
+  --msg-bg:#182533;
+  --msg-out:#2b5278;
+  --header-bg:#1c2938;
+  --kb-bg:#1c2938;
+  --border:#1e2c3a;
+  --accent:#5eafea;
+  --text:#f5f5f5;
+  --text2:#8e9baa;
+  --inline-bg:transparent;
+  --inline-text:#5eafea;
+  --reply-bg:#2b3e50;
+  --reply-text:#f5f5f5;
+  --section-bg:#0d1520;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.5}
+.app{max-width:1400px;margin:0 auto;padding:20px}
+h1{font-size:1.8rem;font-weight:800;text-align:center;margin-bottom:6px;color:#fff}
+.subtitle{text-align:center;color:var(--text2);font-size:.95rem;margin-bottom:32px}
+
+.tab-nav{display:flex;justify-content:center;gap:6px;margin-bottom:28px;flex-wrap:wrap}
+.tab-btn{padding:8px 18px;border:1px solid var(--border);border-radius:24px;background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;font-size:.85rem;transition:all .25s}
+.tab-btn:hover{border-color:var(--accent);color:var(--text)}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+.section-header{text-align:center;font-size:1.2rem;font-weight:700;margin-bottom:20px;color:#fff}
+.section-desc{text-align:center;color:var(--text2);font-size:.85rem;margin-bottom:24px;max-width:700px;margin-left:auto;margin-right:auto}
+
+.phones{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+
+.phone{width:380px;border-radius:16px;overflow:hidden;background:var(--chat-bg);border:1px solid var(--border);box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.phone-header{background:var(--header-bg);padding:10px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.phone-header .avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#5eafea,#7b68ee);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0}
+.phone-header .info{flex:1}
+.phone-header .bot-name{font-size:.9rem;font-weight:600}
+.phone-header .bot-status{font-size:.72rem;color:var(--text2)}
+.phone-label{text-align:center;font-size:.8rem;color:var(--text2);padding:6px;background:var(--section-bg);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.phone-body{padding:10px;min-height:100px;display:flex;flex-direction:column;gap:6px;font-size:.82rem;overflow-y:auto;max-height:600px}
+.msg{padding:8px 12px;border-radius:12px 12px 12px 2px;background:var(--msg-bg);max-width:95%;word-wrap:break-word;white-space:pre-line;line-height:1.55;color:var(--text)}
+.msg b,.msg strong{color:#fff;font-weight:600}
+
+.inline-kb{display:flex;flex-direction:column;gap:3px;margin-top:4px}
+.inline-row{display:flex;gap:3px}
+.inline-btn{flex:1;padding:7px 4px;border-radius:6px;background:var(--inline-bg);border:none;color:var(--inline-text);font-size:.78rem;text-align:center;cursor:default;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.reply-kb{padding:8px;background:var(--kb-bg);border-top:1px solid var(--border);display:grid;gap:3px}
+.reply-btn{padding:9px 6px;border-radius:8px;background:var(--reply-bg);border:none;color:var(--reply-text);font-size:.8rem;text-align:center;cursor:default;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.code-block{margin-top:20px;background:#0d1520;border:1px solid var(--border);border-radius:12px;padding:16px;max-width:800px;margin-left:auto;margin-right:auto}
+.code-block h4{font-size:.9rem;margin-bottom:10px;color:var(--accent)}
+.code-block pre{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--text2);overflow-x:auto;white-space:pre-wrap;line-height:1.6}
+.code-block .file-path{font-size:.7rem;color:#5eafea;opacity:.7;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:0 auto}
+
+@media(max-width:820px){
+  .phones{flex-direction:column;align-items:center}
+  .phone{width:100%;max-width:400px}
+  .grid-2{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Mirror Bot — Текущее UX/UI</h1>
+<p class="subtitle">Все экраны бота с реальными текстами и кнопками из кода. Напишите что менять.</p>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="showTab(this,'welcome')">Welcome / Start</button>
+  <button class="tab-btn" onclick="showTab(this,'mainmenu')">Main Menu</button>
+  <button class="tab-btn" onclick="showTab(this,'profile')">Profile</button>
+  <button class="tab-btn" onclick="showTab(this,'lookup')">Lookup</button>
+  <button class="tab-btn" onclick="showTab(this,'payment')">Payment</button>
+  <button class="tab-btn" onclick="showTab(this,'banks')">Banks</button>
+  <button class="tab-btn" onclick="showTab(this,'products')">Products/CR</button>
+  <button class="tab-btn" onclick="showTab(this,'support')">Support</button>
+  <button class="tab-btn" onclick="showTab(this,'fullz')">Fullz</button>
+  <button class="tab-btn" onclick="showTab(this,'esim')">eSIM</button>
+  <button class="tab-btn" onclick="showTab(this,'texts')">Raw Texts</button>
+</div>
+
+<!-- ============ WELCOME ============ -->
+<div class="tab-content active" id="tab-welcome">
+  <p class="section-header">Welcome / Start Flow</p>
+  <p class="section-desc">Первый запуск бота: приветствие → выбор языка → правила → welcome bonus → главное меню</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Шаг 1: Приветствие</div>
+      <div class="phone-body">
+        <div class="msg">⚡ ONE PROJECT — not just a bot, but your gateway to the ONE Ecosystem.
+
+🚀 Capabilities:
+🔹 24/7 WORK — Always ON. Always Connected.
+🔹 Instant access to ONE HUB, ONE LOOKUP, ONE BANKS
+🔹 Manage everything in one secure dashboard
+
+🔐 Safe. Fast. Smart.
+🧩 ONE SYSTEM — ONE ACCESS — ONE CONTROL.
+
+💡 Built for creators, operators, and builders of the new digital world.
+
+🌍 Choose your language to continue 👇</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Шаг 2: Выбор языка</div>
+      <div class="phone-body">
+        <div class="msg">🌍 Choose your language / Выберите язык / 选择语言 / Elige idioma:</div>
+        <div class="inline-kb">
+          <div class="inline-row">
+            <div class="inline-btn">🇷🇺 Russian</div>
+            <div class="inline-btn">🇬🇧 English</div>
+          </div>
+          <div class="inline-row">
+            <div class="inline-btn">🇨🇳 Chinese</div>
+            <div class="inline-btn">🇪🇸 Spanish</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Шаг 3: Правила</div>
+      <div class="phone-body">
+        <div class="msg">📜 Please read and accept the rules before using the service:</div>
+        <div class="msg" style="font-size:.72rem;max-height:200px;overflow-y:auto">📜 **User Policy / Terms of Service**
+
+⚖️ **1. General Provisions**
+• The bot provides informational, analytical and technical services only  
+• The service is not a bank, financial institution...
+
+🔐 **2. Data & Privacy**
+• You only submit data that you are legally allowed to process...
+
+🚫 **3. Prohibited Use**
+...
+(полный текст правил ~30 параграфов)</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">✅ I accept the rules</div></div>
+          <div class="inline-row"><div class="inline-btn">❌ I decline</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Шаг 4: Welcome Bonus</div>
+      <div class="phone-body">
+        <div class="msg">✅ Rules accepted! Welcome to the service.</div>
+        <div class="msg">🎁 <b>Welcome Bonus!</b>
+
+✅ <b>+$0.50</b> added to your balance as a welcome gift!
+Use it toward your first purchase. 🛍️</div>
+        <div class="msg">🎟 <b>Your coupon code:</b> <code>WELCOME10</code>
+Use it for <b>10% off</b> your first purchase! (valid 30 days)</div>
+        <div class="msg">👋 <b>New here?</b> Take a quick 3-step tour to learn how everything works!</div>
+        <div class="inline-kb">
+          <div class="inline-row">
+            <div class="inline-btn">🚀 Start Tour</div>
+            <div class="inline-btn">⏭ Skip</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MAIN MENU ============ -->
+<div class="tab-content" id="tab-mainmenu">
+  <p class="section-header">Main Menu</p>
+  <p class="section-desc">Reply keyboard строится динамически из БД (menu_categories). Сообщение сверху — текст + фото.</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">EN: Main Menu</div>
+      <div class="phone-body">
+        <div class="msg" style="text-align:center;background:var(--msg-out)">📷 [Фото main.jpg]</div>
+        <div class="msg">🏠 Main Menu</div>
+      </div>
+      <div class="reply-kb" style="grid-template-columns:1fr 1fr">
+        <div class="reply-btn">🔎 Search</div>
+        <div class="reply-btn">📈 CREDIT REPORTS</div>
+        <div class="reply-btn">📄 DOCUMENTS</div>
+        <div class="reply-btn">🧰 PROS & FULLZ</div>
+        <div class="reply-btn">🏦 BANKS</div>
+        <div class="reply-btn">💳 CC</div>
+        <div class="reply-btn">📶 eSIM</div>
+        <div class="reply-btn">🧾 Subscriptions / Accounts</div>
+        <div class="reply-btn">✍️ Add info in CR</div>
+        <div class="reply-btn">📚 Education</div>
+        <div class="reply-btn">👤 My profile</div>
+        <div class="reply-btn">💳 Top-up balance</div>
+        <div class="reply-btn">📞 Support</div>
+        <div class="reply-btn">🤝 Referrals +4%</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">RU: Главное меню</div>
+      <div class="phone-body">
+        <div class="msg" style="text-align:center;background:var(--msg-out)">📷 [Фото main.jpg]</div>
+        <div class="msg">🏠 Главное меню</div>
+      </div>
+      <div class="reply-kb" style="grid-template-columns:1fr 1fr">
+        <div class="reply-btn">🔎 Поиск</div>
+        <div class="reply-btn">📈 КРЕДИТНЫЕ ОТЧЕТЫ</div>
+        <div class="reply-btn">📄 ДОКУМЕНТЫ</div>
+        <div class="reply-btn">🧰 ПРОФИ И ФУЛЛЗ</div>
+        <div class="reply-btn">🏦 БАНКИ</div>
+        <div class="reply-btn">💳 CC</div>
+        <div class="reply-btn">📶 eSIM</div>
+        <div class="reply-btn">🧾 Подписки / Аккаунты</div>
+        <div class="reply-btn">✍️ Добавить инфо в CR</div>
+        <div class="reply-btn">📚 Обучение</div>
+        <div class="reply-btn">👤 Мой профиль</div>
+        <div class="reply-btn">💳 Пополнить баланс</div>
+        <div class="reply-btn">📞 Поддержка</div>
+        <div class="reply-btn">🤝 Рефералы +4%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PROFILE ============ -->
+<div class="tab-content" id="tab-profile">
+  <p class="section-header">Profile</p>
+  <p class="section-desc">Фото профиля + текст + 12 inline-кнопок в одну колонку</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">EN: Profile</div>
+      <div class="phone-body">
+        <div class="msg" style="text-align:center;background:var(--msg-out)">📷 [Фото профиль.png]</div>
+        <div class="msg">👤 Profile
+
+🧩 Your ID: 123456789
+💰 Balance: 142.50 USD
+🕓 Registered: 2024-01-15
+
+🔗 Referral link: https://t.me/Bot?start=ref_abc123
+👥 Number of referrals: 5
+
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+🌐 ACTUAL LINK
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">📦 My Bank Orders</div></div>
+          <div class="inline-row"><div class="inline-btn">📦 My Purchases</div></div>
+          <div class="inline-row"><div class="inline-btn">💳 My CC Orders</div></div>
+          <div class="inline-row"><div class="inline-btn">🛍 Seller Specials</div></div>
+          <div class="inline-row"><div class="inline-btn">💸 Send money to another user</div></div>
+          <div class="inline-row"><div class="inline-btn">🎟 Apply Coupon</div></div>
+          <div class="inline-row"><div class="inline-btn">🤝 Referral system</div></div>
+          <div class="inline-row"><div class="inline-btn">📁 Setup Archive</div></div>
+          <div class="inline-row"><div class="inline-btn">🔔 Notification Settings</div></div>
+          <div class="inline-row"><div class="inline-btn">📜 Rules</div></div>
+          <div class="inline-row"><div class="inline-btn">🌍 Choose language</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">RU: Профиль</div>
+      <div class="phone-body">
+        <div class="msg" style="text-align:center;background:var(--msg-out)">📷 [Фото профиль.png]</div>
+        <div class="msg">👤 Профиль
+
+🧩 Ваш ID: 123456789
+💰 Баланс: 142.50 USD
+🕓 Регистрация: 2024-01-15
+
+🔗 Реферальная ссылка: https://t.me/Bot?start=ref_abc123
+👥 Количество рефералов: 5
+
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+🌐 АКТУАЛЬНАЯ ССЫЛКА
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">📦 Мои заказы банков</div></div>
+          <div class="inline-row"><div class="inline-btn">📦 Мои покупки</div></div>
+          <div class="inline-row"><div class="inline-btn">💳 Мои CC заказы</div></div>
+          <div class="inline-row"><div class="inline-btn">🛍 Seller Specials</div></div>
+          <div class="inline-row"><div class="inline-btn">💸 Отправить деньги другому пользователю</div></div>
+          <div class="inline-row"><div class="inline-btn">🎟 Apply Coupon</div></div>
+          <div class="inline-row"><div class="inline-btn">🤝 Реферальная система</div></div>
+          <div class="inline-row"><div class="inline-btn">📁 Настроить архив</div></div>
+          <div class="inline-row"><div class="inline-btn">🔔 Notification Settings</div></div>
+          <div class="inline-row"><div class="inline-btn">📜 Правила</div></div>
+          <div class="inline-row"><div class="inline-btn">🌍 Выбрать язык</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Назад</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ LOOKUP ============ -->
+<div class="tab-content" id="tab-lookup">
+  <p class="section-header">Lookup Services</p>
+  <p class="section-desc">Inline keyboard с 6 рядами: 2+3+1+3+1+1 кнопок</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">EN: Lookup</div>
+      <div class="phone-body">
+        <div class="msg">🔎 Lookup Services
+
+Choose a service to continue:</div>
+        <div class="inline-kb">
+          <div class="inline-row">
+            <div class="inline-btn">🧾 SSN & DOB — $2.8-$3</div>
+            <div class="inline-btn">📉 Credit Score — $1.6-$2</div>
+          </div>
+          <div class="inline-row">
+            <div class="inline-btn">🪪 DL — $6.50-$7</div>
+            <div class="inline-btn">🚗 MVR — $10-$11</div>
+            <div class="inline-btn">📋 Full MVR — $20-$22</div>
+          </div>
+          <div class="inline-row"><div class="inline-btn">📞 Phone Search</div></div>
+          <div class="inline-row">
+            <div class="inline-btn">👤 BG — $1.5-$2</div>
+            <div class="inline-btn">👩‍👦 MMN — $9</div>
+            <div class="inline-btn">🏢 EIN — $11</div>
+          </div>
+          <div class="inline-row"><div class="inline-btn">🏦 Bank Account Lookup</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">EN: Phone Search</div>
+      <div class="phone-body">
+        <div class="msg">📞 Phone Search
+
+Choose search type:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">📛 NAME LOOKUP — $1.5</div></div>
+          <div class="inline-row"><div class="inline-btn">🆔 NAME DOB SSN — $4</div></div>
+          <div class="inline-row"><div class="inline-btn">📊 FULL LOOKUP — $5</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">EN: Order Type</div>
+      <div class="phone-body">
+        <div class="msg">🧾 SSN & DOB Lookup — $2.80
+⏱ ETA: 4-10 minutes
+📖 Instructions: SSN
+
+📝 Enter data:
+NAME, ADRESS, DOB(if have)
+
+📝 Example formats:
+John Doe
+123 Main St, Los Angeles, CA, 90210
+01/15/1990(if have)
+
+💡 DOB optional | ✅ Any format works</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">1️⃣ Single Order</div></div>
+          <div class="inline-row"><div class="inline-btn">📦 Bulk Order (2-20)</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAYMENT ============ -->
+<div class="tab-content" id="tab-payment">
+  <p class="section-header">Payment / Top Up</p>
+  <p class="section-desc">3 шага: выбор метода → ввод суммы → ссылка для оплаты</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Step 1: Choose method</div>
+      <div class="phone-body">
+        <div class="msg" style="text-align:center;background:var(--msg-out)">📷 [Фото top up.jpg]</div>
+        <div class="msg">🪙 Step 1 — Choose Payment System</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">🪙 Pay via CryptoBot</div></div>
+          <div class="inline-row"><div class="inline-btn">💎 Pay via Cryptomus</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back to Menu</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Step 2: Enter amount</div>
+      <div class="phone-body">
+        <div class="msg">💵 Step 2 — Enter the Amount
+
+💰 Enter the amount you wish to top-up:
+10 — 5000 USD
+
+⚠️ Minimum: $10 · Maximum: $5000
+
+After you send the payment, the system will verify it automatically.</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Step 3: Payment link</div>
+      <div class="phone-body">
+        <div class="msg">🔗 Step 3 — Payment Link
+
+Your payment link has been generated.
+
+Tap below to complete your transaction:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">💳 Open Payment Link</div></div>
+          <div class="inline-row"><div class="inline-btn">♻️ Refresh Status</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back to Menu</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">CryptoPay Invoice</div>
+      <div class="phone-body">
+        <div class="msg">🪙 **Top-up Balance**
+**Payment via CryptoBot**
+
+**Amount to balance:** $50.00 USD
+**Platform fee (3%):** +$1.50 USD
+━━━━━━━━━━━━━━━━━━━━━━
+**Total to pay:** $51.50 USD
+
+ℹ️ *Payment processing fee: 3%*
+
+📌 **Accepted cryptocurrencies:**
+   • USDT (TRC20/ERC20)
+   • TON
+   • BTC
+   • ETH
+   • USDC
+
+⏱ Invoice expires in 1 hour
+🆔 Invoice ID: `abc123`</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">💳 Pay Invoice</div></div>
+          <div class="inline-row"><div class="inline-btn">♻️ Check Status</div></div>
+          <div class="inline-row"><div class="inline-btn">❌ Cancel</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <h4>Уведомления об оплате</h4>
+    <pre>✅ Payment successful! $50 has been added to your balance.
+
+✅ &lt;b&gt;Payment successfully received!&lt;/b&gt;
+💵 Credited: &lt;b&gt;$50&lt;/b&gt;
+💰 Your balance: &lt;b&gt;$192.50&lt;/b&gt;
+Thank you for your top-up! 🎉
+
+⏰ &lt;b&gt;Payment time expired&lt;/b&gt;
+Payment for &lt;b&gt;$50&lt;/b&gt; was cancelled.
+Create a new payment if you want to top up your balance.</pre>
+  </div>
+</div>
+
+<!-- ============ BANKS ============ -->
+<div class="tab-content" id="tab-banks">
+  <p class="section-header">Banks</p>
+  <p class="section-desc">Категории банков → каталог с пагинацией → выбор количества</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Banks Main</div>
+      <div class="phone-body">
+        <div class="msg">🏦 BANKS
+
+Choose a category:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">💳 PERSONAL VCC [12]</div></div>
+          <div class="inline-row"><div class="inline-btn">🏦 PERSONAL BANKS [8]</div></div>
+          <div class="inline-row"><div class="inline-btn">🏢 BUSINESS BANKS [5]</div></div>
+          <div class="inline-row"><div class="inline-btn">🪙 CRYPTO BANKS [3]</div></div>
+          <div class="inline-row"><div class="inline-btn">🔓 Brute BANK [0]</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Bank Item — Quantity</div>
+      <div class="phone-body">
+        <div class="msg">Chime VCC
+
+💵 Price: $15 per item
+💡 Bulk discount: 3+ (-2%), 5+ (-3%), 10+ (-5%)
+
+📝 Enter quantity (1-100):</div>
+        <div class="inline-kb">
+          <div class="inline-row">
+            <div class="inline-btn">2️⃣</div>
+            <div class="inline-btn">3️⃣ (-2%)</div>
+            <div class="inline-btn">5️⃣ (-3%)</div>
+            <div class="inline-btn">1️⃣0️⃣ (-5%)</div>
+          </div>
+          <div class="inline-row"><div class="inline-btn">📝 Custom Quantity</div></div>
+          <div class="inline-row"><div class="inline-btn">✅ Buy 1 item</div></div>
+          <div class="inline-row"><div class="inline-btn">📝 Order by Name</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back to List</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRODUCTS / CR ============ -->
+<div class="tab-content" id="tab-products">
+  <p class="section-header">Products / Credit Reports</p>
+  <p class="section-desc">Карточка товара, кредитные отчеты, подтверждение покупки</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Product Card</div>
+      <div class="phone-body">
+        <div class="msg">🏛️ Chime VCC
+📦 Category: VCC
+💵 Price: $15
+🕒 Delivery: 20-180 min
+📝 Description: Virtual card with cash functionality
+
+✅ Status: Available
+Once payment is confirmed, the goods will be delivered automatically.
+
+Select quantity or buy 1 piece:</div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Credit Reports</div>
+      <div class="phone-body">
+        <div class="msg">📈 Credit Reports
+
+Choose a provider:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">🟢 TransUnion — $4.99</div></div>
+          <div class="inline-row"><div class="inline-btn">🔵 Experian — $5.99</div></div>
+          <div class="inline-row"><div class="inline-btn">🟡 EQUIFAX — $5.99</div></div>
+          <div class="inline-row"><div class="inline-btn">🟣 LexisNexis — $9.99</div></div>
+          <div class="inline-row"><div class="inline-btn">⚪ WalletHub / Credit Karma — $7.99</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Purchase Success</div>
+      <div class="phone-body">
+        <div class="msg">✅ **Purchase Successful!**
+
+📦 **Product:** Chime VCC
+💰 **Paid:** $15.00
+💳 **New Balance:** $127.50
+
+📁 **File has been sent to you!**
+
+⚠️ *File will be deleted in 1 hour for security*</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SUPPORT ============ -->
+<div class="tab-content" id="tab-support">
+  <p class="section-header">Support</p>
+  <p class="section-desc">Категории обращений, тикеты, ответы</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Support Main</div>
+      <div class="phone-body">
+        <div class="msg">📞 Support
+
+Choose your inquiry category:
+
+💰 Payment - questions about payments and balance
+📦 Product - questions about orders and services
+💬 General - general questions
+🤝 Partnership - partnership proposals</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">💰 Payment</div></div>
+          <div class="inline-row"><div class="inline-btn">📦 Product</div></div>
+          <div class="inline-row"><div class="inline-btn">💬 General</div></div>
+          <div class="inline-row"><div class="inline-btn">🤝 Partnership</div></div>
+          <div class="inline-row"><div class="inline-btn">📋 My tickets</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Ticket Detail</div>
+      <div class="phone-body">
+        <div class="msg">🎫 Ticket #42
+
+Category: Payment
+Status: Open
+Created: 2024-03-15
+
+━━━━━━━━━━━━━━━━━
+
+👤 You: My payment didn't arrive
+
+👨‍💼 Support: We're looking into it. Please wait 30 min.</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">✍️ Reply</div></div>
+          <div class="inline-row"><div class="inline-btn">📎 Attach files</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back to my tickets</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ FULLZ ============ -->
+<div class="tab-content" id="tab-fullz">
+  <p class="section-header">Fullz</p>
+  <p class="section-desc">Personal / Business FULLZ с многошаговым выбором параметров</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Fullz Main</div>
+      <div class="phone-body">
+        <div class="msg">🧰 PROS & FULLZ
+
+Choose type:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">👤 PERSONAL</div></div>
+          <div class="inline-row"><div class="inline-btn">🏢 BUSINESS</div></div>
+          <div class="inline-row"><div class="inline-btn">🔥 CUSTOM WITH CS/CR</div></div>
+          <div class="inline-row"><div class="inline-btn">🎖️ MILITARY</div></div>
+          <div class="inline-row"><div class="inline-btn">✈️ WORK & TRAVEL</div></div>
+          <div class="inline-row"><div class="inline-btn">🧒 YOUNG</div></div>
+          <div class="inline-row"><div class="inline-btn">🎲 RANDOM</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">Order Confirmation</div>
+      <div class="phone-body">
+        <div class="msg">🧾 **BUSINESS FULLZ ORDER**
+
+📊 **Quantity:** 3
+📍 **State:** California
+🏢 **Company Type:** LLC
+💰 **Loan Size:** $50K-$100K
+💳 **Credit Score:** 700+
+
+💵 **Total Cost:** $45.00
+💳 **Current Balance:** $142.50
+📊 **New Balance:** $97.50
+🎁 Discount: -2% Save $0.92</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">✅ Confirm All</div></div>
+          <div class="inline-row"><div class="inline-btn">🎟 Apply Coupon</div></div>
+          <div class="inline-row"><div class="inline-btn">✏️ Edit</div></div>
+          <div class="inline-row"><div class="inline-btn">❌ Cancel</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ESIM ============ -->
+<div class="tab-content" id="tab-esim">
+  <p class="section-header">eSIM</p>
+  <p class="section-desc">SMS / Data → оператор → период/план → количество</p>
+  <div class="phones">
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">eSIM Main</div>
+      <div class="phone-body">
+        <div class="msg">📶 eSIM
+
+Choose type:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">🇺🇸 eSIM for SMS</div></div>
+          <div class="inline-row"><div class="inline-btn">📶 eSIM for Data</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">eSIM SMS Operators</div>
+      <div class="phone-body">
+        <div class="msg">🇺🇸 eSIM for SMS
+
+Select operator:</div>
+        <div class="inline-kb">
+          <div class="inline-row"><div class="inline-btn">📶 Verizon — $20/month</div></div>
+          <div class="inline-row"><div class="inline-btn">📶 AT&T — $35/month</div></div>
+          <div class="inline-row"><div class="inline-btn">📶 T-Mobile — $35/month</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone-header"><div class="avatar">O</div><div class="info"><div class="bot-name">ONE Project</div><div class="bot-status">online</div></div></div>
+      <div class="phone-label">eSIM Order</div>
+      <div class="phone-body">
+        <div class="msg">📶 eSIM Order
+
+🇺🇸 Type: SMS
+📶 Operator: Verizon
+⏳ Period: 1 month(s)
+💵 Price per item: $20
+🕒 Delivery: 5-10 minutes (auto)
+📖 Instructions: eSIM SMS
+
+Select quantity or buy 1 item:</div>
+        <div class="inline-kb">
+          <div class="inline-row">
+            <div class="inline-btn">2️⃣</div>
+            <div class="inline-btn">3️⃣ (-2%)</div>
+            <div class="inline-btn">5️⃣ (-3%)</div>
+          </div>
+          <div class="inline-row"><div class="inline-btn">🔟 (-5%)</div></div>
+          <div class="inline-row"><div class="inline-btn">✅ Buy 1 item</div></div>
+          <div class="inline-row"><div class="inline-btn">⬅️ Back</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RAW TEXTS ============ -->
+<div class="tab-content" id="tab-texts">
+  <p class="section-header">Raw Texts & Buttons</p>
+  <p class="section-desc">Все основные тексты и кнопки как они определены в коде</p>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → MAIN_MENU_TEXT</div>
+    <pre>🏠 Main Menu</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → PROFILE_TEXT</div>
+    <pre>👤 Profile
+
+🧩 Your ID: {user_id}
+💰 Balance: {balance} USD
+🕓 Registered: {created_at}
+
+🔗 Referral link: {referral_link}
+👥 Number of referrals: {referrals_count}
+
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+🌐 ACTUAL LINK
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → TOPUP_STEP1 / STEP2 / STEP3</div>
+    <pre>🪙 Step 1 — Choose Payment System
+
+💵 Step 2 — Enter the Amount
+💰 Enter the amount you wish to top-up:
+10 — 5000 USD
+⚠️ Minimum: $10 · Maximum: $5000
+
+🔗 Step 3 — Payment Link
+Your payment link has been generated.
+Tap below to complete your transaction:</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → REFERRAL_SYSTEM</div>
+    <pre>🤝 Referral System
+
+🔗 Your referral link:
+{referral_link}
+
+📊 Statistics:
+👥 Total referrals: {count}
+💵 Total earned: ${earned} USD
+
+🎁 The more referrals, the more you earn!</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → LOOKUP_MAIN</div>
+    <pre>🔎 Lookup Services
+
+Choose a service to continue:</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/texts_en.py → SUPPORT_MAIN</div>
+    <pre>📞 Support
+
+Choose your inquiry category:
+
+💰 Payment - questions about payments and balance
+📦 Product - questions about orders and services
+💬 General - general questions
+🤝 Partnership - partnership proposals</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Main Keyboard Buttons</div>
+    <pre>🔎 Search
+📈 CREDIT REPORTS
+📄 DOCUMENTS
+🧰 PROS & FULLZ
+🏦 BANKS
+💳 CC
+📶 eSIM
+🧾 Subscriptions / Accounts
+✍️ Add info in CR
+📚 Education
+👤 My profile
+💳 Top-up balance
+📞 Support
+🤝 Referrals +4%</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Profile Inline Buttons</div>
+    <pre>📦 My Bank Orders
+📦 My Purchases
+💳 My CC Orders
+🛍 Seller Specials
+💸 Send money to another user
+🎟 Apply Coupon
+🤝 Referral system
+📁 Setup Archive
+🔔 Notification Settings
+📜 Rules
+🌍 Choose language
+⬅️ Back</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Lookup Buttons</div>
+    <pre>🧾 SSN & DOB — $2.8-$3
+📉 Credit Score — $1.6-$2
+🪪 DL — $6.50-$7
+🚗 MVR — $10-$11
+📋 Full MVR — $20-$22
+📞 Phone Search
+👤 BG — $1.5-$2
+👩‍👦 MMN — $9
+🏢 EIN — $11
+🏦 Bank Account Lookup</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Payment Buttons</div>
+    <pre>🪙 Pay via CryptoBot
+💎 Pay via Cryptomus
+💳 Open Payment Link
+♻️ Refresh Status
+💳 Pay Invoice
+♻️ Check Status
+❌ Cancel
+⬅️ Back to Menu</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Banks Buttons</div>
+    <pre>💳 PERSONAL VCC
+🏦 PERSONAL BANKS
+🏢 BUSINESS BANKS
+🪙 CRYPTO BANKS
+🔓 Brute BANK
+⬅️ Prev / Next ➡️
+🏠 Back to Categories</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Fullz Buttons</div>
+    <pre>👤 PERSONAL
+🏢 BUSINESS
+🔥 CUSTOM WITH CS/CR
+🎖️ MILITARY
+✈️ WORK & TRAVEL
+🧒 YOUNG
+🎲 RANDOM</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/constants/buttons_en.py → Credit Reports</div>
+    <pre>🟢 TransUnion — $4.99
+🔵 Experian — $5.99
+🟡 EQUIFAX — $5.99
+🟣 LexisNexis — $9.99
+⚪ WalletHub / Credit Karma — $7.99</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/keyboards/inline.py → profile_keyboard layout</div>
+    <pre>[📦 My Bank Orders]
+[📦 My Purchases]
+[💳 My CC Orders]
+[🛍 Seller Specials]
+[💸 Send money to another user]
+[🎟 Apply Coupon]
+[🤝 Referral system]
+[📁 Setup Archive]
+[🔔 Notification Settings]
+[📜 Rules]
+[🌍 Choose language]
+[⬅️ Back]</pre>
+  </div>
+
+  <div class="code-block">
+    <div class="file-path">mirror_bot/keyboards/inline.py → lookup_keyboard layout</div>
+    <pre>[🧾 SSN & DOB — $2.8-$3] [📉 Credit Score — $1.6-$2]
+[🪪 DL — $6.50-$7] [🚗 MVR — $10-$11] [📋 Full MVR — $20-$22]
+[📞 Phone Search]
+[👤 BG — $1.5-$2] [👩‍👦 MMN — $9] [🏢 EIN — $11]
+[🏦 Bank Account Lookup]
+[⬅️ Back]</pre>
+  </div>
+
+</div>
+
+</div>
+
+<script>
+function showTab(btn, name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

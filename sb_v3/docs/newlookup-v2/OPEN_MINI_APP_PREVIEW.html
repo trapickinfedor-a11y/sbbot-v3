@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seller Mini App — Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #17212b;
+            color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #67d4ff;
+            text-align: center;
+        }
+        .info-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .upload-card {
+            background: rgba(30,40,54,0.9);
+            border: 1px solid rgba(103,212,255,0.2);
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+        }
+        .upload-card h3 {
+            margin: 10px 0;
+            font-size: 24px;
+        }
+        .upload-card .icon {
+            font-size: 48px;
+        }
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .feature-list li:before {
+            content: "✅ ";
+        }
+        .status-complete {
+            color: #69f0ae;
+            font-weight: bold;
+        }
+        .code-block {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+        }
+        .tabs-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 20px 0;
+        }
+        .tab-chip {
+            background: rgba(103,212,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Seller Mini App V3</h1>
+        
+        <div class="info-box">
+            <h2>🎯 Статус: <span class="status-complete">COMPLETE</span></h2>
+            <p><strong>Версия:</strong> 3.0 (Full Upload Support)</p>
+            <p><strong>Языки:</strong> 🇬🇧 English | 🇷🇺 Русский | 🇨🇳 中文 | 🇪🇸 Español</p>
+        </div>
+
+        <div class="info-box">
+            <h2>📤 Upload Tabs (10 вкладок)</h2>
+            <div class="tabs-preview">
+                <span class="tab-chip">🏦 Bank</span>
+                <span class="tab-chip">⚡ Brute</span>
+                <span class="tab-chip">💳 CC</span>
+                <span class="tab-chip">📱 NFC</span>
+                <span class="tab-chip">📲 OTP</span>
+                <span class="tab-chip">🏦 Enroll</span>
+                <span class="tab-chip">💳 Selfreg CC</span>
+                <span class="tab-chip">📄 Checks</span>
+                <span class="tab-chip">📋 Batches</span>
+                <span class="tab-chip">📃 Listings</span>
+            </div>
+        </div>
+
+        <div class="upload-grid">
+            <div class="upload-card">
+                <div class="icon">💳</div>
+                <h3>CC Upload</h3>
+                <p>Credit Cards с Extra Data</p>
+                <ul class="feature-list">
+                    <li>Phone, Email, SSN</li>
+                    <li>DOB, Driver License</li>
+                    <li>Info, Ref</li>
+                    <li>NON-VBV support</li>
+                </ul>
+            </div>
+
+            <div class="upload-card">
+                <div class="icon">🏦</div>
+                <h3>Enroll Upload</h3>
+                <p>Enroll Accounts</p>
+                <ul class="feature-list">
+                    <li>Portal, Card Type</li>
+                    <li>SSN, DOB, Name</li>
+                    <li>Address, Email</li>
+                    <li>Security Q/A, Docs</li>
+                </ul>
+            </div>
+
+            <div class="upload-card">
+                <div class="icon">📄</div>
+                <h3>Checks Upload</h3>
+                <p>Personal & Business</p>
+                <ul class="feature-list">
+                    <li>4 Check Types</li>
+                    <li>Amount, Date</li>
+                    <li>Scan Files</li>
+                    <li>Template Files</li>
+                </ul>
+            </div>
+
+            <div class="upload-card">
+                <div class="icon">📱</div>
+                <h3>NFC Upload</h3>
+                <p>Apple Pay / Google Pay</p>
+                <ul class="feature-list">
+                    <li>3 NFC Types</li>
+                    <li>Bank Name</li>
+                    <li>Balance</li>
+                    <li>Country</li>
+                </ul>
+            </div>
+
+            <div class="upload-card">
+                <div class="icon">📲</div>
+                <h3>OTP Upload</h3>
+                <p>OTP Cards</p>
+                <ul class="feature-list">
+                    <li>Bank Name</li>
+                    <li>Balance</li>
+                    <li>SMS Access</li>
+                    <li>Product Subtype</li>
+                </ul>
+            </div>
+
+            <div class="upload-card">
+                <div class="icon">💳</div>
+                <h3>Selfreg CC</h3>
+                <p>Selfreg Credit Cards</p>
+                <ul class="feature-list">
+                    <li>6 Banks</li>
+                    <li>State, ZIP</li>
+                    <li>SSN, Docs</li>
+                    <li>Doc Type</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>📋 Batches & Listings</h2>
+            <div class="upload-grid">
+                <div class="upload-card">
+                    <h3>📋 Batches</h3>
+                    <p>Пакеты загрузок</p>
+                    <ul class="feature-list">
+                        <li>Отображение товаров</li>
+                        <li>Status: Approved/Pending/Rejected</li>
+                        <li>Moderator notes</li>
+                        <li>Item counts</li>
+                    </ul>
+                </div>
+                <div class="upload-card">
+                    <h3>📃 Listings</h3>
+                    <p>Активные товары</p>
+                    <ul class="feature-list">
+                        <li>Bulk Reprice</li>
+                        <li>Saved Templates</li>
+                        <li>Toggle Stock</li>
+                        <li>Delete Items</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>🌐 i18n System</h2>
+            <div class="code-block">
+Languages: en, ru, zh, es<br>
+Translations: Navigation, Upload Forms, Status, Finance<br>
+Persistence: localStorage<br>
+Auto-apply: DOM translation on load
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>🔧 API Endpoints</h2>
+            <div class="code-block">
+Total: 30 endpoints<br>
+<br>
+Upload:<br>
+  POST /uploads/preview (universal)<br>
+  POST /uploads/submit (universal)<br>
+  GET /uploads/batches<br>
+  GET /uploads/batches/{id}<br>
+<br>
+Listings:<br>
+  GET /listings<br>
+  POST /listings/bulk-price<br>
+  GET/POST/DELETE /templates<br>
+<br>
+Finance:<br>
+  GET /finance/summary<br>
+  POST /finance/withdraw<br>
+  GET /finance/export.csv
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h2>📊 Statistics</h2>
+            <ul class="feature-list">
+                <li>HTML: 958 lines</li>
+                <li>JavaScript: 1300+ lines</li>
+                <li>CSS: 1600+ lines</li>
+                <li>i18n: 350+ lines</li>
+                <li>Python API: 1500+ lines</li>
+                <li><strong>Total: ~5700+ lines</strong></li>
+            </ul>
+        </div>
+
+        <div class="info-box" style="text-align: center;">
+            <h2>🚀 Ready to Use!</h2>
+            <p>All 8 upload types are fully integrated</p>
+            <p><strong>Next: Deposit System & Notifications</strong></p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh from localStorage
+        const savedLang = localStorage.getItem('seller_mini_app_lang') || 'en';
+        console.log('Saved language:', savedLang);
+    </script>
+</body>
+</html>

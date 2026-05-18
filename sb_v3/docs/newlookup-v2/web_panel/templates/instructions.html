@@ -1,0 +1,82 @@
+{% extends "_base.html" %}
+
+{% block title %}Инструкции{% endblock %}
+
+{% block header_title %}📖 Видео-инструкции{% endblock %}
+
+{% block extra_css %}
+<style>
+.instructions-section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.instructions-section h2{font-size:18px;font-weight:600;margin-bottom:16px;color:#111;border-bottom:1px solid #e5e7eb;padding-bottom:10px}
+.instruction-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.instruction-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:16px;transition:all .2s}
+.instruction-card:hover{border-color:#667eea;box-shadow:0 2px 8px rgba(102,126,234,.15)}
+.instruction-card h3{font-size:14px;font-weight:600;color:#111;margin-bottom:8px}
+.instruction-card p{font-size:13px;color:#6b7280;margin-bottom:12px;line-height:1.4}
+.instruction-card a{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#667eea;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:500;transition:all .2s}
+.instruction-card a:hover{background:#5a6fd6}
+.instructions-base-url{font-size:12px;color:#9ca3af;margin-top:20px;padding-top:16px;border-top:1px solid #e5e7eb}
+</style>
+{% endblock %}
+
+{% block container_modifier %} admin-container--w1200{% endblock %}
+
+{% block content %}
+<div class="instructions-section">
+    <h2>📚 Каталог инструкций</h2>
+    <p style="margin-bottom:20px;color:#6b7280">Ссылки на видео-инструкции и туториалы для работы с платформой. Настраиваются через переменную окружения INSTRUCTIONS_TUTORIAL_URL.</p>
+    <div class="instruction-grid">
+        <div class="instruction-card">
+            <h3>SSN & DOB Lookup</h3>
+            <p>Инструкция по заказу SSN и DOB Lookup</p>
+            <a href="{{ tutorial_url }}/85" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>SSN Bulk</h3>
+            <p>Оптовый заказ SSN Lookup</p>
+            <a href="{{ tutorial_url }}/86" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>DL Lookup</h3>
+            <p>Driver's License Lookup</p>
+            <a href="{{ tutorial_url }}/87" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>DL Bulk</h3>
+            <p>Оптовый заказ DL</p>
+            <a href="{{ tutorial_url }}/88" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>Credit Score</h3>
+            <p>Credit Score Lookup</p>
+            <a href="{{ tutorial_url }}/89" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>CS Bulk</h3>
+            <p>Оптовый заказ Credit Score</p>
+            <a href="{{ tutorial_url }}/90" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>MVR Lookup</h3>
+            <p>Motor Vehicle Record Lookup</p>
+            <a href="{{ tutorial_url }}/91" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>Background Check</h3>
+            <p>Background Check инструкция</p>
+            <a href="{{ tutorial_url }}/8" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>eSIM SMS</h3>
+            <p>Инструкция по eSIM SMS</p>
+            <a href="{{ tutorial_url }}/esim_sms" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+        <div class="instruction-card">
+            <h3>eSIM Data</h3>
+            <p>Инструкция по eSIM Data</p>
+            <a href="{{ tutorial_url }}/esim_data" target="_blank" rel="noopener">📺 Открыть</a>
+        </div>
+    </div>
+    <div class="instructions-base-url">Базовый URL: {{ tutorial_url }}</div>
+</div>
+{% endblock %}

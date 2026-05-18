@@ -1,0 +1,719 @@
+{% extends "_base.html" %}
+{% block title %}Аналитика{% endblock %}
+{% block header_title %}📈 Аналитика{% endblock %}
+{% block extra_head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>{% endblock %}
+{% block subnav %}
+<div class="admin-subnav">
+    <button class="tab-btn active" onclick="showTab('enhanced', this)">🚀 Enhanced</button>
+    <button class="tab-btn" onclick="showTab('summary', this)">📊 Summary</button>
+    <button class="tab-btn" onclick="showTab('orders', this)">📋 Заказы</button>
+    <button class="tab-btn" onclick="showTab('users', this)">👥 Пользователи</button>
+    <button class="tab-btn" onclick="showTab('revenue', this)">💰 Revenue</button>
+    <button class="tab-btn" onclick="showTab('reports', this)">📋 Отчёты</button>
+    <button class="tab-btn" onclick="showTab('cohorts', this)">📊 Когорты</button>
+    <button class="tab-btn" onclick="showTab('funnel', this)">🔄 Воронка</button>
+    <button class="tab-btn" onclick="showTab('marketplace', this)">🏪 Маркетплейс</button>
+    <button class="tab-btn" onclick="showTab('timeseries', this)">📈 Временные ряды</button>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:20px}
+.section h2{font-size:18px;font-weight:600;margin-bottom:16px;color:#111}
+.section-note{font-size:13px;color:#6b7280;margin:-6px 0 16px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px}
+.stat-card h4{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:8px}
+.stat-card .num{font-size:28px;font-weight:700;color:#111}
+.stat-card .sub{font-size:12px;color:#9ca3af;margin-top:4px}
+.period-btns{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.period-btn{padding:6px 14px;border:1px solid #d1d5db;border-radius:20px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#6b7280;transition:all .2s}
+.period-btn.active{background:#667eea;color:#fff;border-color:#667eea}
+.chart-wrap{position:relative;width:100%;height:320px;margin-top:16px}
+.cat-table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}
+.cat-table th{background:#f9fafb;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase}
+.cat-table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+.cat-table tr:last-child td{border-bottom:none}
+.bar-bg{background:#e5e7eb;border-radius:4px;height:6px;margin-top:4px}
+.bar-fill{background:#667eea;border-radius:4px;height:6px;transition:width .5s}
+.leaderboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-top:20px}
+.kpi-chip{background:#111827;color:#fff;border-radius:12px;padding:18px}
+.kpi-chip .label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#cbd5e1}
+.kpi-chip .value{font-size:30px;font-weight:700;margin-top:8px}
+.kpi-chip .sub{font-size:12px;color:#cbd5e1;margin-top:6px}
+.empty{padding:20px;text-align:center;color:#6b7280}
+@media(max-width:980px){.leaderboard-grid{grid-template-columns:1fr}}
+@media(max-width:768px){.stats-grid,.kpi-strip{grid-template-columns:1fr 1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="section" style="margin-top:0">
+    <h2>📅 Диапазон дат</h2>
+    <div class="period-btns" style="align-items:center">
+        <input type="date" id="analyticsDateFrom">
+        <input type="date" id="analyticsDateTo">
+        <button class="period-btn" onclick="applyAnalyticsDateRange()">Применить</button>
+        <button class="period-btn" onclick="setAnalyticsQuickRange(7)">7 дней</button>
+        <button class="period-btn" onclick="setAnalyticsQuickRange(30)">30 дней</button>
+    </div>
+</div>
+
+<div class="tab-content active" id="tab-enhanced">
+    <div class="section">
+        <h2>🚀 Enhanced Analytics</h2>
+        <p class="section-note">GMV, revenue by category, DAU/WAU/MAU, рейтинги продавцов по выручке и количеству продаж, плюс эффективность воркеров.</p>
+        <div class="period-btns" id="enhancedPeriodBtns">
+            <button class="period-btn active" onclick="loadEnhancedAnalytics(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadEnhancedAnalytics(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadEnhancedAnalytics(90, this)">90 дней</button>
+        </div>
+        <div id="enhancedContent"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-summary">
+    <div class="section">
+        <h2>📊 Сводная статистика</h2>
+        <div class="period-btns" id="summaryPeriodBtns">
+            <button class="period-btn active" onclick="loadSummary(1, this)">1 день</button>
+            <button class="period-btn" onclick="loadSummary(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadSummary(14, this)">14 дней</button>
+            <button class="period-btn" onclick="loadSummary(21, this)">21 день</button>
+            <button class="period-btn" onclick="loadSummary(30, this)">30 дней</button>
+        </div>
+        <div id="summaryGrid" class="stats-grid"><div class="empty" style="grid-column:1/-1">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-orders">
+    <div class="section">
+        <h2>📋 Заказы по категориям</h2>
+        <div class="period-btns" id="orderPeriodBtns">
+            <button class="period-btn active" onclick="loadOrderStats(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadOrderStats(14, this)">14 дней</button>
+            <button class="period-btn" onclick="loadOrderStats(30, this)">30 дней</button>
+        </div>
+        <div id="orderCatsTable"><div class="empty">Загрузка...</div></div>
+    </div>
+    <div class="section">
+        <h2>📈 Timeline заказов</h2>
+        <div class="period-btns" id="timelinePeriodBtns">
+            <button class="period-btn active" onclick="loadTimeline(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadTimeline(14, this)">14 дней</button>
+            <button class="period-btn" onclick="loadTimeline(30, this)">30 дней</button>
+        </div>
+        <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-users">
+    <div class="section">
+        <h2>👥 Рост пользователей</h2>
+        <div class="period-btns" id="usersPeriodBtns">
+            <button class="period-btn active" onclick="loadUserGrowth(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadUserGrowth(14, this)">14 дней</button>
+            <button class="period-btn" onclick="loadUserGrowth(7, this)">7 дней</button>
+        </div>
+        <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-revenue">
+    <div class="section">
+        <h2>💰 Revenue Breakdown</h2>
+        <div class="period-btns" id="revenuePeriodBtns">
+            <button class="period-btn active" onclick="loadRevenue(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadRevenue(14, this)">14 дней</button>
+            <button class="period-btn" onclick="loadRevenue(7, this)">7 дней</button>
+        </div>
+        <div id="revenueContent"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-reports">
+    <div class="section">
+        <h2>💰 Отчёт по доходам</h2>
+        <div class="period-btns" id="reportRevPeriodBtns">
+            <button class="period-btn" onclick="loadReportRevenue(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadReportRevenue(14, this)">14 дней</button>
+            <button class="period-btn active" onclick="loadReportRevenue(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadReportRevenue(90, this)">90 дней</button>
+        </div>
+        <div id="reportRevenueTable"><div class="empty">Загрузка...</div></div>
+    </div>
+    <div class="section">
+        <h2>🤖 Отчёт по ботам</h2>
+        <div class="period-btns" id="reportBotPeriodBtns">
+            <button class="period-btn" onclick="loadReportBots(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadReportBots(14, this)">14 дней</button>
+            <button class="period-btn active" onclick="loadReportBots(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadReportBots(90, this)">90 дней</button>
+        </div>
+        <div id="reportBotsTable"><div class="empty">Загрузка...</div></div>
+    </div>
+    <div class="section">
+        <h2>👥 Отчёт по пользователям</h2>
+        <div class="period-btns" id="reportUserPeriodBtns">
+            <button class="period-btn" onclick="loadReportUsers(7, this)">7 дней</button>
+            <button class="period-btn" onclick="loadReportUsers(14, this)">14 дней</button>
+            <button class="period-btn active" onclick="loadReportUsers(30, this)">30 дней</button>
+            <button class="period-btn" onclick="loadReportUsers(90, this)">90 дней</button>
+        </div>
+        <div id="reportUsersTable"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-cohorts">
+    <div class="section">
+        <h2>📊 Когортный анализ</h2>
+        <p class="section-note">Недельные когорты: процент пользователей, сделавших заказ на неделе 0, 1, 2...</p>
+        <div class="period-btns" id="cohortPeriodBtns">
+            <button class="period-btn active" onclick="loadCohorts(8, this)">8 недель</button>
+            <button class="period-btn" onclick="loadCohorts(12, this)">12 недель</button>
+            <button class="period-btn" onclick="loadCohorts(16, this)">16 недель</button>
+        </div>
+        <div id="cohortsTable"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-funnel">
+    <div class="section">
+        <h2>🔄 Воронка конверсии</h2>
+        <p class="section-note">Регистрация → первый заказ → повторный заказ</p>
+        <div class="chart-wrap" style="height:400px"><canvas id="funnelChart"></canvas></div>
+        <div id="funnelStats" style="margin-top:20px"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-marketplace">
+    <div class="section">
+        <h2>🏪 Аналитика маркетплейса</h2>
+        <p class="section-note">GMV, маржа, dispute rate, среднее время выдачи</p>
+        <div id="marketplaceContent"><div class="empty">Загрузка...</div></div>
+    </div>
+</div>
+
+<div class="tab-content" id="tab-timeseries">
+    <div class="section">
+        <h2>📈 Заказы по дням</h2>
+        <p class="section-note">Динамика заказов по дням</p>
+        <div class="chart-wrap"><canvas id="tsOrdersChart"></canvas></div>
+    </div>
+    <div class="section">
+        <h2>📈 Регистрации по дням</h2>
+        <p class="section-note">Динамика регистраций пользователей</p>
+        <div class="chart-wrap"><canvas id="tsUsersChart"></canvas></div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let timelineChart = null;
+let growthChart = null;
+let funnelChart = null;
+let tsOrdersChart = null;
+let tsUsersChart = null;
+let currentTab = 'enhanced';
+// Global date range state - unified across all tabs
+let globalDateFrom = null;
+let globalDateTo = null;
+let globalPeriodDays = 30; // default period
+
+let selectedDays = { enhanced: 30, summary: 1, orders: 30, timeline: 30, users: 30, revenue: 30, reports: 30, cohorts: 8, funnel: 30, marketplace: 30, timeseries: 30 };
+
+function formatMoney(value) {
+    return `$${Number(value || 0).toFixed(2)}`;
+}
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    currentTab = name;
+    if (name === 'enhanced') loadEnhancedAnalytics(selectedDays.enhanced);
+    if (name === 'summary') loadSummary(selectedDays.summary);
+    if (name === 'orders') { loadOrderStats(selectedDays.orders); loadTimeline(selectedDays.timeline); }
+    if (name === 'users') loadUserGrowth(selectedDays.users);
+    if (name === 'revenue') loadRevenue(selectedDays.revenue);
+    if (name === 'reports') { loadReportRevenue(selectedDays.reports); loadReportBots(selectedDays.reports); loadReportUsers(selectedDays.reports); }
+    if (name === 'cohorts') loadCohorts(selectedDays.cohorts);
+    if (name === 'funnel') loadFunnel(selectedDays.funnel);
+    if (name === 'marketplace') loadMarketplace(selectedDays.marketplace);
+    if (name === 'timeseries') { loadTimeseriesOrders(selectedDays.timeseries); loadTimeseriesUsers(selectedDays.timeseries); }
+}
+
+function buildAnalyticsQuery(days) {
+    const from = document.getElementById('analyticsDateFrom').value;
+    const to = document.getElementById('analyticsDateTo').value;
+    const params = new URLSearchParams();
+    if (from || to) {
+        if (from) params.set('date_from', from);
+        if (to) params.set('date_to', to);
+    } else {
+        params.set('period_days', String(days || 30));
+    }
+    return params.toString();
+}
+
+function setAnalyticsQuickRange(days) {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - days + 1);
+    document.getElementById('analyticsDateFrom').value = from.toISOString().slice(0, 10);
+    document.getElementById('analyticsDateTo').value = to.toISOString().slice(0, 10);
+    applyAnalyticsDateRange();
+}
+
+function applyAnalyticsDateRange() {
+    if (currentTab === 'enhanced') loadEnhancedAnalytics(selectedDays.enhanced);
+    if (currentTab === 'summary') loadSummary(selectedDays.summary);
+    if (currentTab === 'orders') { loadOrderStats(selectedDays.orders); loadTimeline(selectedDays.timeline); }
+    if (currentTab === 'users') loadUserGrowth(selectedDays.users);
+    if (currentTab === 'revenue') loadRevenue(selectedDays.revenue);
+}
+
+function setPeriodActive(containerId, btn) {
+    const container = document.getElementById(containerId);
+    if (container) container.querySelectorAll('.period-btn').forEach(node => node.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+}
+
+async function loadEnhancedAnalytics(days, btn) {
+    selectedDays.enhanced = days || selectedDays.enhanced;
+    if (btn) setPeriodActive('enhancedPeriodBtns', btn);
+    document.getElementById('enhancedContent').innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics/overview/detailed?${buildAnalyticsQuery(selectedDays.enhanced)}`);
+        if (!r) return;
+        const data = await r.json();
+        const s = data.summary || {};
+        const categories = data.revenue_by_category || [];
+        const sellerLeaderboards = data.seller_leaderboards || {};
+        const sellers = sellerLeaderboards.by_sales_volume || data.seller_leaderboard || [];
+        const workers = data.worker_efficiency || [];
+        const label = data.period ? `${data.period.date_from} .. ${data.period.date_to}` : `${selectedDays.enhanced} дн.`;
+
+        const categoryRows = categories.map(item => `
+            <tr>
+                <td>${item.category}</td>
+                <td style="text-align:right;font-weight:600;color:#4338ca">${formatMoney(item.revenue)}</td>
+            </tr>
+        `).join('');
+
+        const sellerRows = sellers.map((item, idx) => `
+            <tr>
+                <td>#${idx + 1}</td>
+                <td>${item.seller_name}</td>
+                <td style="text-align:center">${item.orders_total}</td>
+                <td style="text-align:center">${item.items_sold || item.completed_orders || 0}</td>
+                <td style="text-align:center;color:#059669">${item.completed_orders}</td>
+                <td style="text-align:center">${item.completion_rate}%</td>
+                <td style="text-align:center">${item.active_listings || 0}</td>
+                <td style="text-align:right">${formatMoney(item.gross_sales)}</td>
+                <td style="text-align:right">${formatMoney(item.seller_payout)}</td>
+            </tr>
+        `).join('');
+
+        const workerRows = workers.map((item, idx) => `
+            <tr>
+                <td>#${idx + 1}</td>
+                <td>${item.worker_name}</td>
+                <td style="text-align:center">${item.orders_total}</td>
+                <td style="text-align:center;color:#059669">${item.completed_orders}</td>
+                <td style="text-align:center">${item.success_rate}%</td>
+                <td style="text-align:center">${item.avg_completion_hours}h</td>
+                <td style="text-align:center">${item.throughput_per_day}</td>
+                <td style="text-align:right">${formatMoney(item.revenue_processed)}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('enhancedContent').innerHTML = `
+            <div class="kpi-strip">
+                <div class="kpi-chip"><div class="label">GMV</div><div class="value">${formatMoney(s.gmv_total)}</div><div class="sub">${label}</div></div>
+                <div class="kpi-chip"><div class="label">Core Orders</div><div class="value">${formatMoney(s.gmv_core_orders)}</div><div class="sub">Main order flow</div></div>
+                <div class="kpi-chip"><div class="label">Marketplace GMV</div><div class="value">${formatMoney(s.gmv_marketplace)}</div><div class="sub">Seller banks + CC + brute</div></div>
+                <div class="kpi-chip"><div class="label">Products GMV</div><div class="value">${formatMoney(s.gmv_products)}</div><div class="sub">Digital product sales</div></div>
+            </div>
+            <div class="stats-grid" style="margin-top:20px">
+                <div class="stat-card"><h4>DAU</h4><div class="num">${(s.active_users || {}).daily || 0}</div><div class="sub">Active users, 24h</div></div>
+                <div class="stat-card"><h4>WAU</h4><div class="num">${(s.active_users || {}).weekly || 0}</div><div class="sub">Active users, 7d</div></div>
+                <div class="stat-card"><h4>MAU</h4><div class="num">${(s.active_users || {}).monthly || 0}</div><div class="sub">Active users, 30d</div></div>
+                <div class="stat-card"><h4>Tracked Sellers</h4><div class="num">${s.tracked_sellers || 0}</div><div class="sub">Seller roster</div></div>
+                <div class="stat-card"><h4>Active Workers</h4><div class="num">${s.active_workers || 0}</div><div class="sub">Currently enabled</div></div>
+                <div class="stat-card"><h4>Open Marketplace Orders</h4><div class="num">${s.open_marketplace_orders || 0}</div><div class="sub">Pending seller flow</div></div>
+            </div>
+            <div class="section" style="padding:0;box-shadow:none;background:transparent;margin-top:0">
+                <h2>💸 Revenue by Category</h2>
+                <table class="cat-table">
+                    <thead><tr><th>Категория</th><th style="text-align:right">Revenue</th></tr></thead>
+                    <tbody>${categoryRows || '<tr><td colspan="2" class="empty">Нет данных</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div class="leaderboard-grid">
+                <div>
+                    <h2>🏆 Seller Performance</h2>
+                    <table class="cat-table">
+                        <thead><tr><th>#</th><th>Seller</th><th style="text-align:center">Orders</th><th style="text-align:center">Sold</th><th style="text-align:center">Completed</th><th style="text-align:center">Rate</th><th style="text-align:center">Listings</th><th style="text-align:right">GMV</th><th style="text-align:right">Payout</th></tr></thead>
+                        <tbody>${sellerRows || '<tr><td colspan="9" class="empty">Нет данных</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div>
+                    <h2>⚙️ Worker Efficiency</h2>
+                    <table class="cat-table">
+                        <thead><tr><th>#</th><th>Worker</th><th style="text-align:center">Orders</th><th style="text-align:center">Completed</th><th style="text-align:center">Success</th><th style="text-align:center">Avg hours</th><th style="text-align:center">/day</th><th style="text-align:right">Value</th></tr></thead>
+                        <tbody>${workerRows || '<tr><td colspan="8" class="empty">Нет данных</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        document.getElementById('enhancedContent').innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadSummary(days, btn) {
+    selectedDays.summary = days || selectedDays.summary;
+    if (btn) setPeriodActive('summaryPeriodBtns', btn);
+    document.getElementById('summaryGrid').innerHTML = '<div class="empty" style="grid-column:1/-1">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics/stats/summary?${buildAnalyticsQuery(selectedDays.summary)}`);
+        if (!r) return;
+        const all = await r.json();
+        const s = all.stats || {};
+        const label = all.period ? `${all.period.date_from} .. ${all.period.date_to}` : `${selectedDays.summary} дн.`;
+        document.getElementById('summaryGrid').innerHTML = `
+            <div class="stat-card"><h4>👥 Новые пользователи</h4><div class="num">${s.new_users || 0}</div><div class="sub">${label}</div></div>
+            <div class="stat-card"><h4>🤖 Новые боты</h4><div class="num">${s.new_bots || 0}</div><div class="sub">${label}</div></div>
+            <div class="stat-card"><h4>📋 Заказы</h4><div class="num">${s.total_orders || 0}</div><div class="sub">${label}</div></div>
+            <div class="stat-card"><h4>🛒 Товары</h4><div class="num">${s.product_purchases || 0}</div><div class="sub">${label}</div></div>
+            <div class="stat-card"><h4>💰 Revenue</h4><div class="num">${formatMoney(s.total_revenue || s.revenue || 0)}</div><div class="sub">${label}</div></div>
+            <div class="stat-card"><h4>💳 Баланс новых юзеров</h4><div class="num">${formatMoney(s.new_users_balance || 0)}</div><div class="sub">${label}</div></div>
+        `;
+    } catch (e) {
+        document.getElementById('summaryGrid').innerHTML = `<div class="empty" style="grid-column:1/-1;color:#dc2626">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadOrderStats(days, btn) {
+    selectedDays.orders = days || selectedDays.orders;
+    if (btn) setPeriodActive('orderPeriodBtns', btn);
+    document.getElementById('orderCatsTable').innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics/orders/by-category?${buildAnalyticsQuery(selectedDays.orders)}`);
+        if (!r) return;
+        const data = await r.json();
+        const cats = (data.categories || []).sort((a, b) => b.total_orders - a.total_orders);
+        const maxOrders = Math.max(...cats.map(c => c.total_orders), 1);
+        const rows = cats.map(c => {
+            const pct = Math.round((c.total_orders / maxOrders) * 100);
+            return `<tr>
+                <td><b>${c.category}</b><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div></td>
+                <td style="text-align:center">${c.total_orders}</td>
+                <td style="text-align:center;color:#059669">${c.completed}</td>
+                <td style="text-align:center;color:#92400e">${c.pending}</td>
+                <td style="text-align:center;color:#1e40af">${c.processing}</td>
+                <td style="text-align:center;color:#991b1b">${c.cancelled}</td>
+                <td style="text-align:right;font-weight:600;color:#667eea">${formatMoney(c.revenue || 0)}</td>
+                <td style="text-align:center;font-size:12px;color:#6b7280">${c.product_purchases || 0}</td>
+            </tr>`;
+        }).join('');
+        document.getElementById('orderCatsTable').innerHTML = `
+            <table class="cat-table">
+                <thead><tr><th>Категория</th><th style="text-align:center">Всего</th><th style="text-align:center">Выполн.</th><th style="text-align:center">Pending</th><th style="text-align:center">В работе</th><th style="text-align:center">Отмен.</th><th style="text-align:right">Revenue</th><th style="text-align:center">🛒 Товары</th></tr></thead>
+                <tbody>${rows || '<tr><td colspan="8" class="empty">Нет данных</td></tr>'}</tbody>
+            </table>
+        `;
+    } catch (e) {
+        document.getElementById('orderCatsTable').innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadTimeline(days, btn) {
+    selectedDays.timeline = days || selectedDays.timeline;
+    if (btn) setPeriodActive('timelinePeriodBtns', btn);
+    try {
+        const r = await authFetch(`/api/analytics/orders/timeline?${buildAnalyticsQuery(selectedDays.timeline)}`);
+        if (!r) return;
+        const data = await r.json();
+        const labels = (data.timeline || []).map(d => d.date);
+        const orders = (data.timeline || []).map(d => d.orders);
+        const revenue = (data.timeline || []).map(d => d.revenue);
+        if (timelineChart) timelineChart.destroy();
+        const ctx = document.getElementById('timelineChart').getContext('2d');
+        timelineChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Заказы', data: orders, backgroundColor: 'rgba(102,126,234,.7)', yAxisID: 'y' },
+                    { label: 'Revenue $', data: revenue, type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .3, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { type: 'linear', position: 'left', title: { display: true, text: 'Заказы' } },
+                    y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Revenue $' } }
+                }
+            }
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function loadUserGrowth(days, btn) {
+    selectedDays.users = days || selectedDays.users;
+    if (btn) setPeriodActive('usersPeriodBtns', btn);
+    try {
+        const r = await authFetch(`/api/analytics/users/growth?${buildAnalyticsQuery(selectedDays.users)}`);
+        if (!r) return;
+        const data = await r.json();
+        const labels = (data.growth || []).map(d => d.date);
+        const counts = (data.growth || []).map(d => d.new_users);
+        if (growthChart) growthChart.destroy();
+        const ctx = document.getElementById('growthChart').getContext('2d');
+        growthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{ label: 'Новые пользователи', data: counts, borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,.15)', fill: true, tension: .3, pointRadius: 4 }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'Пользователей' } } }
+            }
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function loadRevenue(days, btn) {
+    selectedDays.revenue = days || selectedDays.revenue;
+    if (btn) setPeriodActive('revenuePeriodBtns', btn);
+    document.getElementById('revenueContent').innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics/revenue/breakdown?${buildAnalyticsQuery(selectedDays.revenue)}`);
+        if (!r) return;
+        const data = await r.json();
+        const byStatusRows = (data.by_status || []).map(s =>
+            `<tr><td>${s.status}</td><td style="text-align:center">${s.orders}</td><td style="text-align:right;font-weight:600;color:#667eea">${formatMoney(s.revenue || 0)}</td></tr>`
+        ).join('');
+        const productRow = (data.product_purchases > 0 || data.product_revenue > 0)
+            ? `<tr><td>🛒 Товары</td><td style="text-align:center">${data.product_purchases || 0}</td><td style="text-align:right;font-weight:600;color:#059669">${formatMoney(data.product_revenue || 0)}</td></tr>`
+            : '';
+        const byBot = (data.by_bot || []).sort((a, b) => b.revenue - a.revenue).map(b =>
+            `<tr><td>${b.bot}</td><td style="text-align:center">${b.orders}</td><td style="text-align:right;font-weight:600;color:#059669">${formatMoney(b.revenue || 0)}</td></tr>`
+        ).join('');
+        document.getElementById('revenueContent').innerHTML = `
+            <div class="leaderboard-grid">
+                <div>
+                    <h2>По статусу</h2>
+                    <table class="cat-table">
+                        <thead><tr><th>Статус</th><th style="text-align:center">Заказов</th><th style="text-align:right">Revenue</th></tr></thead>
+                        <tbody>${byStatusRows + productRow || '<tr><td colspan="3" class="empty">Нет данных</td></tr>'}</tbody>
+                    </table>
+                </div>
+                <div>
+                    <h2>По боту</h2>
+                    <table class="cat-table">
+                        <thead><tr><th>Бот</th><th style="text-align:center">Заказов</th><th style="text-align:right">Revenue</th></tr></thead>
+                        <tbody>${byBot || '<tr><td colspan="3" class="empty">Нет данных</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        document.getElementById('revenueContent').innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadReportRevenue(days, btn) {
+    selectedDays.reports = days || selectedDays.reports;
+    if (btn) setPeriodActive('reportRevPeriodBtns', btn);
+    const el = document.getElementById('reportRevenueTable');
+    el.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/revenue?period_days=${selectedDays.reports}`);
+        if (!r) return;
+        const data = await r.json();
+        el.innerHTML = `<table class="cat-table"><tbody>
+            <tr><td><strong>Период</strong></td><td>${data.period.start_date} .. ${data.period.end_date}</td></tr>
+            <tr><td><strong>Доход</strong></td><td style="font-weight:600;color:#667eea">${formatMoney(data.total_revenue||0)}</td></tr>
+            <tr><td><strong>Заказов</strong></td><td>${data.total_orders||0}</td></tr>
+            <tr><td><strong>Средний чек</strong></td><td>${formatMoney(data.avg_order_value||0)}</td></tr>
+        </tbody></table>`;
+    } catch (e) { el.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadReportBots(days, btn) {
+    selectedDays.reports = days || selectedDays.reports;
+    if (btn) setPeriodActive('reportBotPeriodBtns', btn);
+    const el = document.getElementById('reportBotsTable');
+    el.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/bots?period_days=${selectedDays.reports}`);
+        if (!r) return;
+        const data = await r.json();
+        const items = data.bots || [];
+        if (!items.length) { el.innerHTML = '<div class="empty">Нет данных</div>'; return; }
+        const rows = items.map(i =>
+            `<tr><td>${i.name || '—'}</td>
+             <td style="text-align:center">${i.is_active ? 'Да' : 'Нет'}</td>
+             <td style="text-align:center">${i.orders_count || 0}</td>
+             <td style="text-align:right;font-weight:600;color:#059669">${formatMoney(i.revenue||0)}</td></tr>`
+        ).join('');
+        el.innerHTML = `<div style="margin-bottom:12px;color:#6b7280">${data.period.start_date} .. ${data.period.end_date}</div>
+            <table class="cat-table"><thead><tr><th>Бот</th><th style="text-align:center">Активен</th>
+            <th style="text-align:center">Заказов</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } catch (e) { el.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadReportUsers(days, btn) {
+    selectedDays.reports = days || selectedDays.reports;
+    if (btn) setPeriodActive('reportUserPeriodBtns', btn);
+    const el = document.getElementById('reportUsersTable');
+    el.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/users?period_days=${selectedDays.reports}`);
+        if (!r) return;
+        const data = await r.json();
+        el.innerHTML = `<table class="cat-table"><tbody>
+            <tr><td><strong>Период</strong></td><td>${data.period.start_date} .. ${data.period.end_date}</td></tr>
+            <tr><td><strong>Новых пользователей</strong></td><td>${data.new_users||0}</td></tr>
+            <tr><td><strong>Баланс новых пользователей</strong></td><td>${formatMoney(data.new_users_balance||0)}</td></tr>
+            <tr><td><strong>Всего пользователей</strong></td><td>${data.total_users||0}</td></tr>
+        </tbody></table>`;
+    } catch (e) { el.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadCohorts(weeks, btn) {
+    selectedDays.cohorts = weeks || selectedDays.cohorts;
+    if (btn) setPeriodActive('cohortPeriodBtns', btn);
+    const el = document.getElementById('cohortsTable');
+    el.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics-v2/cohorts?weeks=${selectedDays.cohorts}`);
+        if (!r) return;
+        const data = await r.json();
+        const cohorts = data.cohorts || [];
+        if (!cohorts.length) { el.innerHTML = '<div class="empty">Нет данных</div>'; return; }
+        const maxWeeks = Math.min(12, selectedDays.cohorts);
+        const headers = ['Когорта', 'Размер', ...Array.from({length: maxWeeks}, (_, i) => `W${i}`)];
+        const rows = cohorts.map(c => {
+            const cells = [c.cohort, c.size, ...Array.from({length: maxWeeks}, (_, i) => c[`week_${i}`] || 0)];
+            return `<tr>${cells.map((v, idx) => `<td style="${idx > 1 ? 'text-align:center;color:#6b7280' : ''}">${v}${idx > 1 ? '%' : ''}</td>`).join('')}</tr>`;
+        }).join('');
+        el.innerHTML = `<table class="cat-table"><thead><tr>${headers.map(h => `<th style="text-align:${h.startsWith('W') ? 'center' : 'left'}">${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`;
+    } catch (e) { el.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadFunnel(days, btn) {
+    selectedDays.funnel = days || selectedDays.funnel;
+    if (btn) setPeriodActive('funnelPeriodBtns', btn);
+    const statsEl = document.getElementById('funnelStats');
+    statsEl.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics-v2/funnel?days=${selectedDays.funnel}`);
+        if (!r) return;
+        const data = await r.json();
+        statsEl.innerHTML = `<div class="stats-grid">
+            <div class="stat-card"><h4>Зарегистрировано</h4><div class="num">${data.registered||0}</div></div>
+            <div class="stat-card"><h4>Первый заказ</h4><div class="num">${data.first_order||0}</div><div class="sub">${data.conversion_to_first||0}%</div></div>
+            <div class="stat-card"><h4>Повторный заказ</h4><div class="num">${data.repeat_order||0}</div><div class="sub">${data.conversion_to_repeat||0}%</div></div>
+        </div>`;
+        if (funnelChart) funnelChart.destroy();
+        const ctx = document.getElementById('funnelChart').getContext('2d');
+        funnelChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Регистрация', 'Первый заказ', 'Повторный заказ'],
+                datasets: [{
+                    label: 'Пользователей',
+                    data: [data.registered, data.first_order, data.repeat_order],
+                    backgroundColor: ['#667eea', '#10b981', '#f59e0b']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    } catch (e) { statsEl.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadMarketplace(days, btn) {
+    selectedDays.marketplace = days || selectedDays.marketplace;
+    if (btn) setPeriodActive('marketplacePeriodBtns', btn);
+    const el = document.getElementById('marketplaceContent');
+    el.innerHTML = '<div class="empty">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/analytics-v2/marketplace?days=${selectedDays.marketplace}`);
+        if (!r) return;
+        const data = await r.json();
+        el.innerHTML = `<div class="stats-grid">
+            <div class="stat-card green"><h4>GMV</h4><div class="num">${formatMoney(data.gmv)}</div><div class="sub">${data.total_orders} заказов</div></div>
+            <div class="stat-card blue"><h4>Маржа</h4><div class="num">${formatMoney(data.margin)}</div><div class="sub">${data.margin_percent}%</div></div>
+            <div class="stat-card"><h4>Completion Rate</h4><div class="num">${data.completion_rate}%</div><div class="sub">${data.completed} выполнено</div></div>
+            <div class="stat-card amber"><h4>Dispute Rate</h4><div class="num">${data.dispute_rate}%</div><div class="sub">${data.disputes} споров</div></div>
+            <div class="stat-card purple"><h4>Avg Delivery</h4><div class="num">${data.avg_delivery_hours}h</div><div class="sub">Среднее время</div></div>
+            <div class="stat-card red"><h4>Cancel Rate</h4><div class="num">${data.cancel_rate}%</div><div class="sub">${data.cancelled} отменено</div></div>
+        </div>`;
+    } catch (e) { el.innerHTML = `<div class="empty" style="color:#dc2626">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadTimeseriesOrders(days, btn) {
+    selectedDays.timeseries = days || selectedDays.timeseries;
+    if (btn) setPeriodActive('tsOrdersPeriodBtns', btn);
+    try {
+        const r = await authFetch(`/api/analytics-v2/timeseries/orders?days=${selectedDays.timeseries}`);
+        if (!r) return;
+        const data = await r.json();
+        const items = data.data || [];
+        if (tsOrdersChart) tsOrdersChart.destroy();
+        const ctx = document.getElementById('tsOrdersChart').getContext('2d');
+        tsOrdersChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: items.map(d => d.date),
+                datasets: [
+                    { label: 'Заказы', data: items.map(d => d.count), borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,.1)', fill: true, tension: .3 },
+                    { label: 'Revenue $', data: items.map(d => d.revenue), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.1)', fill: true, tension: .3, yAxisID: 'y1' }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    y: { type: 'linear', position: 'left', title: { display: true, text: 'Заказы' } },
+                    y1: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Revenue $' } }
+                }
+            }
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function loadTimeseriesUsers(days, btn) {
+    selectedDays.timeseries = days || selectedDays.timeseries;
+    if (btn) setPeriodActive('tsUsersPeriodBtns', btn);
+    try {
+        const r = await authFetch(`/api/analytics-v2/timeseries/users?days=${selectedDays.timeseries}`);
+        if (!r) return;
+        const data = await r.json();
+        const items = data.data || [];
+        if (tsUsersChart) tsUsersChart.destroy();
+        const ctx = document.getElementById('tsUsersChart').getContext('2d');
+        tsUsersChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: items.map(d => d.date),
+                datasets: [{ label: 'Регистрации', data: items.map(d => d.count), borderColor: '#667eea', backgroundColor: 'rgba(102,126,234,.15)', fill: true, tension: .3 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+    } catch (e) { console.error(e); }
+}
+
+setAnalyticsQuickRange(30);
+</script>
+{% endblock %}

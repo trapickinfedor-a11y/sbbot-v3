@@ -1,0 +1,441 @@
+{% extends "_base.html" %}
+{% block title %}Документы и Fullz{% endblock %}
+{% block header_title %}📄 Управление документами и Fullz{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ──────────────────────────────────────────── */
+.page-tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:24px}
+.tab-btn{padding:10px 24px;background:none;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;cursor:pointer;font-size:14px;font-weight:600;color:#6b7280;transition:all .15s}
+.tab-btn.active{color:#667eea;border-bottom-color:#667eea}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── Stat cards ──────────────────────────────────────── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:18px 16px;box-shadow:0 2px 8px rgba(0,0,0,.07);text-align:center;border-top:4px solid #667eea}
+.stat-card.warn{border-top-color:#f59e0b}
+.stat-card.ok{border-top-color:#10b981}
+.stat-card.info{border-top-color:#3b82f6}
+.stat-card .val{font-size:28px;font-weight:700;color:#1f2937;line-height:1}
+.stat-card .lbl{font-size:12px;color:#6b7280;margin-top:5px}
+
+/* ── Filters ─────────────────────────────────────────── */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:flex-end}
+.filters label{font-size:13px;color:#374151;display:flex;flex-direction:column;gap:4px;font-weight:500}
+.filters select,.filters input{padding:8px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;min-width:140px;background:#fff}
+.filters select:focus,.filters input:focus{outline:none;border-color:#667eea}
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:#667eea;color:#fff}.btn-primary:hover{background:#5a6fd6}
+.btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-warn{background:#f59e0b;color:#fff}.btn-warn:hover{background:#d97706}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+
+/* ── Table ───────────────────────────────────────────── */
+.section{background:#fff;border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.07);margin-bottom:20px}
+.section h2{font-size:17px;color:#1f2937;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{background:#f9fafb;font-weight:600;color:#374151;padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb}
+.data-table td{padding:9px 12px;border-bottom:1px solid #f3f4f6;vertical-align:middle;color:#374151}
+.data-table tr:hover td{background:#f9fafb}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ── Badges ──────────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-pending{background:#fef3c7;color:#92400e}
+.badge-approved{background:#d1fae5;color:#065f46}
+.badge-rejected{background:#fee2e2;color:#991b1b}
+.badge-personal{background:#dbeafe;color:#1e40af}
+.badge-business{background:#ede9fe;color:#5b21b6}
+.badge-standard{background:#f3f4f6;color:#374151}
+.badge-premium{background:#fef3c7;color:#92400e}
+
+/* ── Pagination ──────────────────────────────────────── */
+.pagination{display:flex;gap:8px;align-items:center;margin-top:14px}
+.pagination button{padding:7px 14px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+.pagination span{color:#6b7280;font-size:13px}
+
+/* ── Modal ───────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal h3{margin:0 0 14px;font-size:17px;color:#1f2937}
+.modal textarea{width:100%;border:1.5px solid #d1d5db;border-radius:8px;padding:10px;font-size:13px;resize:vertical;min-height:80px;box-sizing:border-box}
+.modal textarea:focus{outline:none;border-color:#667eea}
+.modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+
+/* ── Empty state ─────────────────────────────────────── */
+.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
+.empty-icon{font-size:48px;margin-bottom:12px}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-tabs">
+  <button class="tab-btn active" onclick="switchTab('docs',this)">📄 Документы</button>
+  <button class="tab-btn"       onclick="switchTab('fullz',this)">🧑‍💼 Fullz</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ВКЛАДКА ДОКУМЕНТЫ -->
+<div id="tab-docs" class="tab-panel active">
+
+  <!-- Статистика -->
+  <div id="doc-stats" class="stats-row">
+    <div class="stat-card"><div class="val" id="doc-total">—</div><div class="lbl">Всего позиций</div></div>
+    <div class="stat-card warn"><div class="val" id="doc-pending">—</div><div class="lbl">На проверке</div></div>
+    <div class="stat-card ok"><div class="val" id="doc-approved">—</div><div class="lbl">Одобрено</div></div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filters">
+    <label>Статус
+      <select id="doc-filter-status">
+        <option value="">Все</option>
+        <option value="pending_moderation">На проверке</option>
+        <option value="approved">Одобрено</option>
+        <option value="rejected">Отклонено</option>
+      </select>
+    </label>
+    <label>Тип
+      <select id="doc-filter-subtype">
+        <option value="">Все типы</option>
+        <option value="dl_front_back">Права (Перед+Зад)</option>
+        <option value="dl_selfie">Права + Селфи</option>
+        <option value="passport">Паспорт</option>
+        <option value="business_docs">Бизнес-документы</option>
+      </select>
+    </label>
+    <label>ID продавца
+      <input type="number" id="doc-filter-seller" placeholder="Любой">
+    </label>
+    <button class="btn btn-primary" onclick="loadDocs(0)">🔍 Найти</button>
+  </div>
+
+  <!-- Таблица -->
+  <div class="section">
+    <h2>📄 Документы продавцов</h2>
+    <table class="data-table" id="doc-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Тип</th><th>Штат</th><th>Качество</th>
+          <th>Голограмма</th><th>Селфи</th><th>Продавец</th>
+          <th>Цена</th><th>Статус</th><th>Наличие</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="doc-tbody"></tbody>
+    </table>
+    <div class="pagination" id="doc-pagination"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ ВКЛАДКА FULLZ -->
+<div id="tab-fullz" class="tab-panel">
+
+  <!-- Статистика -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="val" id="fullz-total">—</div><div class="lbl">Всего позиций</div></div>
+    <div class="stat-card warn"><div class="val" id="fullz-pending">—</div><div class="lbl">На проверке</div></div>
+    <div class="stat-card ok"><div class="val" id="fullz-approved">—</div><div class="lbl">Одобрено</div></div>
+    <div class="stat-card info"><div class="val" id="fullz-personal">—</div><div class="lbl">Персональных</div></div>
+    <div class="stat-card"><div class="val" id="fullz-business">—</div><div class="lbl">Бизнес</div></div>
+  </div>
+
+  <!-- Фильтры -->
+  <div class="filters">
+    <label>Статус
+      <select id="fullz-filter-status">
+        <option value="">Все</option>
+        <option value="pending_moderation">На проверке</option>
+        <option value="approved">Одобрено</option>
+        <option value="rejected">Отклонено</option>
+      </select>
+    </label>
+    <label>Тип
+      <select id="fullz-filter-type">
+        <option value="">Все типы</option>
+        <option value="personal">Персональный</option>
+        <option value="business">Бизнес</option>
+      </select>
+    </label>
+    <label>ID продавца
+      <input type="number" id="fullz-filter-seller" placeholder="Любой">
+    </label>
+    <button class="btn btn-primary" onclick="loadFullz(0)">🔍 Найти</button>
+  </div>
+
+  <!-- Таблица -->
+  <div class="section">
+    <h2>🧑‍💼 Fullz продавцов</h2>
+    <table class="data-table" id="fullz-table">
+      <thead>
+        <tr>
+          <th>ID</th><th>Тип</th><th>Штат</th><th>КС</th>
+          <th>Возраст / Компания</th><th>Пол / Займ</th><th>Отчёт</th><th>Кол.</th>
+          <th>Продавец</th><th>Цена</th><th>Статус</th><th>Наличие</th><th>Действия</th>
+        </tr>
+      </thead>
+      <tbody id="fullz-tbody"></tbody>
+    </table>
+    <div class="pagination" id="fullz-pagination"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ МОДАЛ ОТКЛОНЕНИЯ -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal">
+    <h3>❌ Отклонить позицию</h3>
+    <textarea id="reject-comment" placeholder="Причина отклонения (необязательно)…"></textarea>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeRejectModal()">Отмена</button>
+      <button class="btn btn-danger"  onclick="confirmReject()">Отклонить</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PER_PAGE = 50;
+let docOffset = 0, fullzOffset = 0;
+let rejectTarget = null; // {id, kind}
+
+const MOD_LABELS = {
+  pending_moderation: 'На проверке',
+  approved:           'Одобрено',
+  rejected:           'Отклонено',
+};
+const SUBTYPE_LABELS = {
+  dl_front_back: 'Права (П+З)',
+  dl_selfie:     'Права + Селфи',
+  passport:      'Паспорт',
+  business_docs: 'Бизнес-документы',
+};
+const QUALITY_LABELS = {
+  standard: 'Стандарт',
+  premium:  'Премиум',
+};
+const FULLZ_TYPE_LABELS = {
+  personal: 'Персональный',
+  business: 'Бизнес',
+};
+
+// ── Tab switching ───────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── Stats ────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await apiFetch('/api/documents/stats');
+    document.getElementById('doc-total').textContent    = r.documents.total;
+    document.getElementById('doc-pending').textContent  = r.documents.pending;
+    document.getElementById('doc-approved').textContent = r.documents.approved;
+    document.getElementById('fullz-total').textContent    = r.fullz.total;
+    document.getElementById('fullz-pending').textContent  = r.fullz.pending;
+    document.getElementById('fullz-approved').textContent = r.fullz.approved;
+    document.getElementById('fullz-personal').textContent = r.fullz.by_type?.personal ?? 0;
+    document.getElementById('fullz-business').textContent = r.fullz.by_type?.business ?? 0;
+  } catch(e) { console.error('Ошибка статистики:', e); }
+}
+
+// ── Document items ───────────────────────────────────────
+async function loadDocs(offset = 0) {
+  docOffset = offset;
+  const status  = document.getElementById('doc-filter-status').value;
+  const subtype = document.getElementById('doc-filter-subtype').value;
+  const seller  = document.getElementById('doc-filter-seller').value;
+  const params  = new URLSearchParams({limit: PER_PAGE, offset});
+  if (status)  params.append('status', status);
+  if (subtype) params.append('subtype', subtype);
+  if (seller)  params.append('seller_id', seller);
+  try {
+    const r = await apiFetch('/api/documents/items?' + params);
+    renderDocTable(r.items);
+    renderPagination('doc-pagination', r.total, offset, loadDocs);
+  } catch(e) { console.error(e); }
+}
+
+function badgeMod(status) {
+  const cls   = {pending_moderation:'pending', approved:'approved', rejected:'rejected'}[status] || 'pending';
+  const label = MOD_LABELS[status] || status;
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function renderDocTable(items) {
+  const tbody = document.getElementById('doc-tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty"><div class="empty-icon">📄</div>Позиции не найдены</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(it => {
+    const subtypeLabel  = SUBTYPE_LABELS[it.subtype_label] || it.subtype_label;
+    const qualityLabel  = QUALITY_LABELS[it.quality] || it.quality;
+    const qualityBadge  = `<span class="badge badge-${it.quality}">${qualityLabel}</span>`;
+    return `
+    <tr>
+      <td>#${it.id}</td>
+      <td>${escHtml(subtypeLabel)}</td>
+      <td>${it.state || '<em>ЛЮБОЙ</em>'}</td>
+      <td>${qualityBadge}</td>
+      <td>${it.has_hologram ? '✅' : '❌'}</td>
+      <td>${it.has_selfie ? '✅' : '❌'}</td>
+      <td title="ID: ${it.seller_id}">${escHtml(it.seller_name || '—')}</td>
+      <td>$${it.seller_price.toFixed(2)}</td>
+      <td>${badgeMod(it.moderation_status)}</td>
+      <td>${it.is_in_stock ? '✅' : '❌'}</td>
+      <td>
+        <div class="actions">
+          ${it.moderation_status !== 'approved'
+            ? `<button class="btn btn-success btn-sm" onclick="approveDoc(${it.id})">✅ Одобрить</button>` : ''}
+          ${it.moderation_status !== 'rejected'
+            ? `<button class="btn btn-danger btn-sm" onclick="openReject(${it.id},'doc')">❌ Откл.</button>` : ''}
+          <button class="btn btn-warn btn-sm" onclick="toggleDocStock(${it.id})">📦 Наличие</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteDoc(${it.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function approveDoc(id) {
+  await apiFetch(`/api/documents/items/${id}/approve`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  loadDocs(docOffset); loadStats();
+}
+async function toggleDocStock(id) {
+  await apiFetch(`/api/documents/items/${id}/toggle-stock`, {method:'POST'});
+  loadDocs(docOffset);
+}
+async function deleteDoc(id) {
+  if (!confirm('Удалить эту позицию документа?')) return;
+  await apiFetch(`/api/documents/items/${id}`, {method:'DELETE'});
+  loadDocs(docOffset); loadStats();
+}
+
+// ── Fullz items ──────────────────────────────────────────
+async function loadFullz(offset = 0) {
+  fullzOffset = offset;
+  const status = document.getElementById('fullz-filter-status').value;
+  const ftype  = document.getElementById('fullz-filter-type').value;
+  const seller = document.getElementById('fullz-filter-seller').value;
+  const params = new URLSearchParams({limit: PER_PAGE, offset});
+  if (status) params.append('status', status);
+  if (ftype)  params.append('fullz_type', ftype);
+  if (seller) params.append('seller_id', seller);
+  try {
+    const r = await apiFetch('/api/documents/fullz?' + params);
+    renderFullzTable(r.items);
+    renderPagination('fullz-pagination', r.total, offset, loadFullz);
+  } catch(e) { console.error(e); }
+}
+
+function renderFullzTable(items) {
+  const tbody = document.getElementById('fullz-tbody');
+  if (!items.length) {
+    tbody.innerHTML = '<tr><td colspan="13"><div class="empty"><div class="empty-icon">🧑‍💼</div>Позиции не найдены</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = items.map(it => {
+    const typeLabel = FULLZ_TYPE_LABELS[it.fullz_type] || it.fullz_type;
+    const typeBadge = `<span class="badge badge-${it.fullz_type}">${typeLabel}</span>`;
+    const ageOrCompany  = it.fullz_type === 'personal' ? it.age_range  : (it.company_type || '—');
+    const genderOrLoan  = it.fullz_type === 'personal' ? it.gender     : (it.loan_size    || '—');
+    return `
+    <tr>
+      <td>#${it.id}</td>
+      <td>${typeBadge}</td>
+      <td>${it.state || '<em>ЛЮБОЙ</em>'}</td>
+      <td>${it.credit_score}</td>
+      <td>${ageOrCompany}</td>
+      <td>${genderOrLoan}</td>
+      <td>${it.report_group}</td>
+      <td>${it.quantity}</td>
+      <td title="ID: ${it.seller_id}">${escHtml(it.seller_name || '—')}</td>
+      <td>$${it.seller_price.toFixed(2)}</td>
+      <td>${badgeMod(it.moderation_status)}</td>
+      <td>${it.is_in_stock ? '✅' : '❌'}</td>
+      <td>
+        <div class="actions">
+          ${it.moderation_status !== 'approved'
+            ? `<button class="btn btn-success btn-sm" onclick="approveFullz(${it.id})">✅ Одобрить</button>` : ''}
+          ${it.moderation_status !== 'rejected'
+            ? `<button class="btn btn-danger btn-sm" onclick="openReject(${it.id},'fullz')">❌ Откл.</button>` : ''}
+          <button class="btn btn-warn btn-sm" onclick="toggleFullzStock(${it.id})">📦 Наличие</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteFullz(${it.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function approveFullz(id) {
+  await apiFetch(`/api/documents/fullz/${id}/approve`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  loadFullz(fullzOffset); loadStats();
+}
+async function toggleFullzStock(id) {
+  await apiFetch(`/api/documents/fullz/${id}/toggle-stock`, {method:'POST'});
+  loadFullz(fullzOffset);
+}
+async function deleteFullz(id) {
+  if (!confirm('Удалить эту fullz-позицию?')) return;
+  await apiFetch(`/api/documents/fullz/${id}`, {method:'DELETE'});
+  loadFullz(fullzOffset); loadStats();
+}
+
+// ── Reject modal ─────────────────────────────────────────
+function openReject(id, kind) {
+  rejectTarget = {id, kind};
+  document.getElementById('reject-comment').value = '';
+  document.getElementById('reject-modal').classList.add('open');
+}
+function closeRejectModal() {
+  rejectTarget = null;
+  document.getElementById('reject-modal').classList.remove('open');
+}
+async function confirmReject() {
+  if (!rejectTarget) return;
+  const comment = document.getElementById('reject-comment').value.trim();
+  const {id, kind} = rejectTarget;
+  const url = kind === 'doc'
+    ? `/api/documents/items/${id}/reject`
+    : `/api/documents/fullz/${id}/reject`;
+  await apiFetch(url, {
+    method:  'POST',
+    headers: {'Content-Type': 'application/json'},
+    body:    JSON.stringify({comment: comment || null}),
+  });
+  closeRejectModal();
+  if (kind === 'doc') loadDocs(docOffset); else loadFullz(fullzOffset);
+  loadStats();
+}
+
+// ── Pagination helper ────────────────────────────────────
+function renderPagination(containerId, total, offset, loadFn) {
+  const el = document.getElementById(containerId);
+  const page = Math.floor(offset / PER_PAGE);
+  const total_pages = Math.ceil(total / PER_PAGE);
+  if (total_pages <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <button onclick="${loadFn.name}(${Math.max(0, offset - PER_PAGE)})" ${offset === 0 ? 'disabled' : ''}>◀ Назад</button>
+    <span>Стр. ${page + 1} / ${total_pages} (всего: ${total})</span>
+    <button onclick="${loadFn.name}(${offset + PER_PAGE})" ${offset + PER_PAGE >= total ? 'disabled' : ''}>Вперёд ▶</button>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadStats();
+  loadDocs(0);
+  loadFullz(0);
+});
+</script>
+{% endblock %}

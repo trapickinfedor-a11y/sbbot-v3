@@ -1,0 +1,245 @@
+{% extends "_base.html" %}
+{% block title %}Типы заказов и ETA{% endblock %}
+{% block header_title %}⚡ Типы заказов & ETA{% endblock %}
+{% block container_modifier %} admin-container--w1400{% endblock %}
+{% block extra_css %}
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  .section{background:#fff;padding:25px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+  .section h2{color:#333;font-size:20px;margin-bottom:16px}
+  .tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:8px 16px;border:2px solid #667eea;background:#fff;color:#667eea;border-radius:8px;cursor:pointer;font-weight:500;font-size:13px;transition:.2s}
+  .tab:hover{background:#f0f3ff}
+  .tab.active{background:#667eea;color:#fff}
+  table{width:100%;border-collapse:collapse}
+  th{background:#f9fafb;padding:10px 12px;text-align:left;font-weight:600;color:#666;font-size:13px}
+  td{padding:8px 12px;border-bottom:1px solid #e0e0e0;font-size:14px;vertical-align:middle}
+  tr:hover{background:#f9fafb}
+  .btn{padding:6px 14px;border:none;border-radius:6px;font-weight:500;cursor:pointer;font-size:12px;transition:.2s}
+  .btn-primary{background:#667eea;color:#fff}
+  .btn-primary:hover{background:#5568d5}
+  .btn-success{background:#4caf50;color:#fff}
+  .btn-warning{background:#ff9800;color:#fff}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  select.inline-sel{border:1px solid #ddd;border-radius:4px;padding:4px 6px;font-size:12px;background:#fff;cursor:pointer}
+  select.inline-sel:focus{outline:none;border-color:#667eea}
+  input.inline-num{border:1px solid #ddd;border-radius:4px;padding:4px 8px;width:70px;font-size:12px;text-align:right}
+  input.inline-num:focus{outline:none;border-color:#667eea}
+  input.inline-url{border:1px solid #ddd;border-radius:4px;padding:4px 8px;width:200px;font-size:12px}
+  input.inline-url:focus{outline:none;border-color:#667eea}
+  .badge{padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+  .badge-order{background:#e0f2fe;color:#0369a1}
+  .badge-order_catalog{background:#fef3c7;color:#92400e}
+  .badge-catalog{background:#dcfce7;color:#166534}
+  .save-btn{padding:4px 10px;border:none;border-radius:5px;background:#667eea;color:#fff;cursor:pointer;font-size:12px;display:none}
+  .row-changed .save-btn{display:inline-block}
+  .save-indicator{font-size:11px;margin-left:6px}
+  .save-indicator.ok{color:#4caf50}
+  .save-indicator.err{color:#f44336}
+  #bulkSaveBar{display:none;position:sticky;top:0;z-index:100;background:#667eea;color:#fff;padding:12px 20px;border-radius:8px;margin-bottom:12px;align-items:center;justify-content:space-between}
+  #bulkSaveBar.show{display:flex}
+  .info-tip{font-size:12px;color:#888;margin-top:6px}
+</style>
+{% endblock %}
+{% block content %}
+<div id="bulkSaveBar">
+  <span>⚠️ Есть несохранённые изменения (<span id="changedCount">0</span> строк)</span>
+  <div style="display:flex;gap:8px">
+    <button class="btn btn-sm" style="background:rgba(255,255,255,.3);color:#fff" onclick="discardAll()">✖ Отмена</button>
+    <button class="btn btn-sm btn-success" onclick="saveAll()">💾 Сохранить все</button>
+  </div>
+</div>
+
+<div class="section">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <h2>⚡ Типы заказов и ETA по сервисам</h2>
+    <div style="font-size:13px;color:#666">
+      <b>order</b> — реалтайм | <b>order+catalog</b> — воркер / каталог | <b>catalog</b> — только загрузка
+    </div>
+  </div>
+  <p class="info-tip" style="margin-bottom:14px">
+    💡 <b>ETA (мин)</b> — время выполнения в минутах (0 = мгновенно, пусто = использовать дефолт кода).
+    <b>Ссылка на сервис</b> — показывается пользователю при заказе (только для типов <em>order</em> и <em>order+catalog</em>).
+  </p>
+  <div class="tabs" id="catTabs"></div>
+  <div id="tableWrap"><div style="text-align:center;padding:40px;color:#666">Загрузка...</div></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const API = '/api/service-order-config';
+let allServices = [];
+let categories = [];
+let currentCat = null;
+let changedRows = {};
+
+const TYPE_LABELS = {
+  order: '⚡ Order',
+  order_catalog: '📦 Order+Catalog',
+  catalog: '📂 Catalog'
+};
+const TYPE_CLASS = {
+  order: 'badge-order',
+  order_catalog: 'badge-order_catalog',
+  catalog: 'badge-catalog'
+};
+
+async function load() {
+  try {
+    const r = await fetch(API + '/');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    allServices = await r.json();
+    categories = [...new Set(allServices.map(s => s.category))].sort();
+    renderTabs();
+    if (categories.length) selectCat(categories[0]);
+  } catch(e) {
+    document.getElementById('tableWrap').innerHTML = '<div style="color:#f44336;padding:20px">Ошибка загрузки: ' + e.message + '</div>';
+  }
+}
+
+function renderTabs() {
+  const el = document.getElementById('catTabs');
+  el.innerHTML = categories.map(c =>
+    `<button class="tab" onclick="selectCat('${c}')" id="tab-${c}">${c}</button>`
+  ).join('');
+}
+
+function selectCat(cat) {
+  currentCat = cat;
+  categories.forEach(c => {
+    const t = document.getElementById('tab-' + c);
+    if (t) t.classList.toggle('active', c === cat);
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const rows = allServices.filter(s => s.category === currentCat);
+  if (!rows.length) {
+    document.getElementById('tableWrap').innerHTML = '<div style="padding:20px;color:#888">Нет сервисов в категории</div>';
+    return;
+  }
+  const html = `
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Key</th><th>Название</th>
+        <th>Тип заказа</th><th>ETA (мин)</th><th>Ссылка на сервис</th><th>Действие</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(s => renderRow(s)).join('')}
+      </tbody>
+    </table>`;
+  document.getElementById('tableWrap').innerHTML = html;
+}
+
+function renderRow(s) {
+  const cur = changedRows[s.id] || {};
+  const ot = cur.order_type !== undefined ? cur.order_type : s.order_type;
+  const eta = cur.eta_minutes !== undefined ? cur.eta_minutes : s.eta_minutes;
+  const link = cur.service_link !== undefined ? cur.service_link : s.service_link;
+  const changed = changedRows[s.id] !== undefined;
+  return `<tr id="row-${s.id}" class="${changed ? 'row-changed' : ''}">
+    <td><small style="color:#aaa">${s.id}</small></td>
+    <td><code style="font-size:11px">${s.key}</code></td>
+    <td>${s.display_name}</td>
+    <td>
+      <select class="inline-sel" onchange="markChanged(${s.id}, 'order_type', this.value)">
+        <option value="order" ${ot==='order'?'selected':''}>⚡ Order</option>
+        <option value="order_catalog" ${ot==='order_catalog'?'selected':''}>📦 Order+Catalog</option>
+        <option value="catalog" ${ot==='catalog'?'selected':''}>📂 Catalog</option>
+      </select>
+    </td>
+    <td>
+      <input type="number" class="inline-num" min="0" max="10080" placeholder="—"
+        value="${eta !== null && eta !== undefined ? eta : ''}"
+        onchange="markChanged(${s.id}, 'eta_minutes', this.value===''?null:parseInt(this.value))">
+    </td>
+    <td>
+      <input type="url" class="inline-url" placeholder="${ot==='catalog' ? 'N/A для catalog' : 'https://...'}"
+        ${ot==='catalog' ? 'disabled' : ''}
+        value="${link || ''}"
+        onchange="markChanged(${s.id}, 'service_link', this.value||null)">
+    </td>
+    <td>
+      <button class="save-btn" onclick="saveRow(${s.id})">💾 Save</button>
+      <span class="save-indicator" id="ind-${s.id}"></span>
+    </td>
+  </tr>`;
+}
+
+function markChanged(id, field, value) {
+  if (!changedRows[id]) changedRows[id] = {};
+  changedRows[id][field] = value;
+  const row = document.getElementById('row-' + id);
+  if (row) row.classList.add('row-changed');
+  updateBulkBar();
+
+  // If changing order_type to/from catalog, enable/disable link input
+  if (field === 'order_type') {
+    const linkInput = row ? row.querySelector('input[type="url"]') : null;
+    if (linkInput) {
+      const isCatalog = value === 'catalog';
+      linkInput.disabled = isCatalog;
+      if (isCatalog) {
+        linkInput.value = '';
+        changedRows[id].service_link = null;
+      }
+      linkInput.placeholder = isCatalog ? 'N/A для catalog' : 'https://...';
+    }
+  }
+}
+
+function updateBulkBar() {
+  const count = Object.keys(changedRows).length;
+  document.getElementById('changedCount').textContent = count;
+  const bar = document.getElementById('bulkSaveBar');
+  bar.classList.toggle('show', count > 0);
+}
+
+async function saveRow(id) {
+  const changes = changedRows[id];
+  if (!changes) return;
+  const ind = document.getElementById('ind-' + id);
+  if (ind) { ind.textContent = '⏳'; ind.className = 'save-indicator'; }
+  try {
+    const r = await fetch(`${API}/${id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(changes)
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || 'Error');
+    }
+    const updated = await r.json();
+    // Update allServices
+    const idx = allServices.findIndex(s => s.id === id);
+    if (idx >= 0) {
+      allServices[idx] = {...allServices[idx], ...updated};
+    }
+    delete changedRows[id];
+    if (ind) { ind.textContent = '✓'; ind.className = 'save-indicator ok'; }
+    const row = document.getElementById('row-' + id);
+    if (row) row.classList.remove('row-changed');
+    updateBulkBar();
+    setTimeout(() => { if (ind) ind.textContent = ''; }, 2000);
+  } catch(e) {
+    if (ind) { ind.textContent = '✗ ' + e.message; ind.className = 'save-indicator err'; }
+  }
+}
+
+async function saveAll() {
+  const ids = Object.keys(changedRows);
+  for (const id of ids) await saveRow(parseInt(id));
+}
+
+function discardAll() {
+  changedRows = {};
+  updateBulkBar();
+  renderTable();
+}
+
+load();
+</script>
+{% endblock %}

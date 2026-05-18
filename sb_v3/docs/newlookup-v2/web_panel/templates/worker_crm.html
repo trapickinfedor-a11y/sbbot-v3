@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker CRM - NewLookup</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa}
+        .admin-header{background:linear-gradient(135deg,#0ea5e9 0%,#6366f1 100%);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+        .admin-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+        .admin-header h1{font-size:22px;font-weight:600}
+        .admin-header-actions{display:flex;align-items:center;gap:12px}
+        .admin-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;border:none}
+        .admin-btn-outline{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+        .container{max-width:1400px;margin:0 auto;padding:24px 32px}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+        .section h2{font-size:18px;margin-bottom:16px;color:#111}
+        .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+        .tab{padding:10px 18px;border-radius:8px;background:#f3f4f6;cursor:pointer;font-size:14px}
+        .tab.active{background:#0ea5e9;color:#fff}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        table th{background:#f9fafb;padding:12px;text-align:left;font-weight:600;color:#6b7280}
+        table td{padding:12px;border-bottom:1px solid #eee}
+        .btn{padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;margin-right:6px;border:none;font-weight:500}
+        .btn-approve{background:#22c55e;color:#fff}
+        .btn-reject{background:#ef4444;color:#fff}
+        .empty{color:#9ca3af;padding:20px;text-align:center}
+        .metrics-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+        .metric-card{background:#f9fafb;padding:16px;border-radius:8px}
+        .metric-card .label{font-size:12px;color:#6b7280}
+        .metric-card .value{font-size:20px;font-weight:600;color:#111}
+        select{padding:8px 12px;border-radius:6px;border:1px solid #d1d5db;font-size:14px;margin-right:8px}
+    </style>
+</head>
+<body>
+<header class="admin-header">
+    <div class="admin-header-top">
+        <h1>👷 Worker CRM <a href="/workers" style="margin-left:16px;font-size:14px;opacity:0.8;text-decoration:none;color:#fff">← К списку воркеров</a></h1>
+        <div class="admin-header-actions">
+            <span id="adminName">Admin</span>
+            <a href="/dashboard" class="admin-btn admin-btn-outline">← Dashboard</a>
+            <button class="admin-btn admin-btn-outline" onclick="logout()">🚪 Выход</button>
+        </div>
+    </div>
+    {% include '_nav.html' %}
+</header>
+
+<div class="container">
+    <div class="tabs">
+        <span class="tab active" data-tab="withdrawals">💸 Выводы</span>
+        <span class="tab" data-tab="expenses">📋 Отчёты о расходах</span>
+        <span class="tab" data-tab="hr">📊 HR-метрики</span>
+    </div>
+
+    <div id="tab-withdrawals" class="tab-content active">
+        <div class="section">
+            <h2>💸 Заявки на вывод (из Support Bot)</h2>
+            <div id="withdrawalsList"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <div id="tab-expenses" class="tab-content">
+        <div class="section">
+            <h2>📋 Отчёты воркеров о расходах</h2>
+            <div style="margin-bottom:12px">
+                <select id="expenseFilter" onchange="loadExpenses()">
+                    <option value="">Все статусы</option>
+                    <option value="pending">Ожидают</option>
+                    <option value="approved">Одобрены</option>
+                    <option value="rejected">Отклонены</option>
+                </select>
+            </div>
+            <div id="expensesList"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <div id="tab-hr" class="tab-content">
+        <div class="section">
+            <h2>📊 HR-метрики</h2>
+            <p style="color:#6b7280;margin-bottom:16px">Время выполнения заказов (taken_at → completed_at), заказов на воркера, доход</p>
+            <div style="margin-bottom:16px">
+                <select id="hrPeriod" onchange="loadHRMetrics()">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="30" selected>30 дней</option>
+                    <option value="90">90 дней</option>
+                </select>
+            </div>
+            <div id="hrSummary" class="metrics-grid"></div>
+            <h3 style="margin:20px 0 12px">По воркерам</h3>
+            <div id="hrByWorker"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const API = '/api/worker-crm';
+const token = localStorage.getItem('token');
+function authHeaders() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+function logout(){localStorage.removeItem('token');window.location.href='/';}
+
+document.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+        if(t.dataset.tab==='withdrawals') loadWithdrawals();
+        if(t.dataset.tab==='expenses') loadExpenses();
+        if(t.dataset.tab==='hr') loadHRMetrics();
+    };
+});
+
+async function loadWithdrawals(){
+    try{
+        const r=await fetch(API+'/withdrawal-tasks?status=pending',{headers:authHeaders()});
+        const d=await r.json();
+        const list=d.withdrawals||[];
+        const el=document.getElementById('withdrawalsList');
+        if(!list.length){el.innerHTML='<div class="empty">Нет заявок на вывод</div>';return;}
+        el.innerHTML=list.map(w=>`
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eee">
+                <span><b>${w.worker_name}</b> — $${w.amount.toFixed(2)}</span>
+                ${w.requisites?`<small style="color:#666">${w.requisites.substring(0,50)}...</small>`:''}
+                <button class="btn btn-approve" onclick="approveWithdrawal(${w.id})">✓ Одобрить</button>
+                <button class="btn btn-reject" onclick="rejectWithdrawal(${w.id})">✗ Отклонить</button>
+            </div>
+        `).join('');
+    }catch(e){document.getElementById('withdrawalsList').innerHTML='<div class="empty">Ошибка: '+e.message+'</div>';}
+}
+async function approveWithdrawal(id){
+    try{
+        const r=await fetch(API+'/withdrawal-tasks/'+id+'/approve',{method:'POST',headers:authHeaders()});
+        if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+        loadWithdrawals();
+    }catch(e){alert(e.message);}
+}
+async function rejectWithdrawal(id){
+    const reason=prompt('Причина отклонения (опционально):')||'';
+    try{
+        const r=await fetch(API+'/withdrawal-tasks/'+id+'/reject',{method:'POST',headers:authHeaders(),body:JSON.stringify({reason})});
+        if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+        loadWithdrawals();
+    }catch(e){alert(e.message);}
+}
+
+async function loadExpenses(){
+    const status=document.getElementById('expenseFilter').value;
+    try{
+        const url=API+'/expense-reports'+(status?'?status='+status:'');
+        const r=await fetch(url,{headers:authHeaders()});
+        const d=await r.json();
+        const list=d.reports||[];
+        const el=document.getElementById('expensesList');
+        if(!list.length){el.innerHTML='<div class="empty">Нет отчётов</div>';return;}
+        el.innerHTML='<table><thead><tr><th>Воркер</th><th>Сумма</th><th>Категория</th><th>Описание</th><th>Статус</th><th>Дата</th><th></th></tr></thead><tbody>'+
+            list.map(r=>`
+                <tr>
+                    <td>${r.worker_name}</td>
+                    <td>$${r.amount.toFixed(2)}</td>
+                    <td>${r.category}</td>
+                    <td>${r.description||'-'}</td>
+                    <td>${r.status}</td>
+                    <td>${r.created_at?r.created_at.slice(0,10):'-'}</td>
+                    <td>${r.status==='pending'?`<button class="btn btn-approve" onclick="approveExpense(${r.id})">✓</button><button class="btn btn-reject" onclick="rejectExpense(${r.id})">✗</button>`:''}</td>
+                </tr>
+            `).join('')+'</tbody></table>';
+    }catch(e){document.getElementById('expensesList').innerHTML='<div class="empty">Ошибка: '+e.message+'</div>';}
+}
+async function approveExpense(id){
+    try{
+        const r=await fetch(API+'/expense-reports/'+id+'/approve',{method:'POST',headers:authHeaders()});
+        if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+        loadExpenses();
+    }catch(e){alert(e.message);}
+}
+async function rejectExpense(id){
+    const reason=prompt('Причина отклонения:')||'';
+    try{
+        const r=await fetch(API+'/expense-reports/'+id+'/reject',{method:'POST',headers:authHeaders(),body:JSON.stringify({reason})});
+        if(!r.ok) throw new Error((await r.json()).detail||r.statusText);
+        loadExpenses();
+    }catch(e){alert(e.message);}
+}
+
+async function loadHRMetrics(){
+    const days=document.getElementById('hrPeriod').value;
+    try{
+        const r=await fetch(API+'/hr-metrics?period_days='+days,{headers:authHeaders()});
+        const d=await r.json();
+        const s=d.summary||{};
+        document.getElementById('hrSummary').innerHTML=`
+            <div class="metric-card"><div class="label">Заказов</div><div class="value">${s.total_orders||0}</div></div>
+            <div class="metric-card"><div class="label">Доход ($)</div><div class="value">${(s.total_revenue||0).toFixed(2)}</div></div>
+            <div class="metric-card"><div class="label">Ср. время (мин)</div><div class="value">${s.avg_completion_minutes||0}</div></div>
+            <div class="metric-card"><div class="label">Мин/Макс (мин)</div><div class="value">${s.min_completion_minutes||0} / ${s.max_completion_minutes||0}</div></div>
+            <div class="metric-card"><div class="label">Воркеров</div><div class="value">${s.workers_count||0}</div></div>
+        `;
+        const by=d.by_worker||[];
+        if(!by.length){document.getElementById('hrByWorker').innerHTML='<div class="empty">Нет данных</div>';return;}
+        document.getElementById('hrByWorker').innerHTML='<table><thead><tr><th>Воркер</th><th>Заказов</th><th>Ср. время (мин)</th><th>Мин/Макс</th><th>Доход ($)</th></tr></thead><tbody>'+
+            by.map(w=>`<tr><td>${w.worker_name}</td><td>${w.orders_count}</td><td>${w.avg_completion_minutes}</td><td>${w.min_completion_minutes} / ${w.max_completion_minutes}</td><td>${w.total_revenue.toFixed(2)}</td></tr>`).join('')+
+            '</tbody></table>';
+    }catch(e){document.getElementById('hrByWorker').innerHTML='<div class="empty">Ошибка: '+e.message+'</div>';}
+}
+
+loadWithdrawals();
+if(token){fetch('/api/auth/me',{headers:authHeaders()}).then(r=>r.ok?r.json():null).then(u=>{if(u&&u.username)document.getElementById('adminName').textContent=u.username})})();
+</script>
+</body>
+</html>

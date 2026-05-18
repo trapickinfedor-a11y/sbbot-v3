@@ -1,0 +1,154 @@
+# Metabase Dashboard: User Analytics
+# Dashboard ID: 002
+# Description: User growth, activity, and segmentation
+
+dashboard:
+  name: "👥 User Analytics"
+  description: "User growth, retention, and behavior analytics"
+  position: 2
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last90days"
+    - name: "Language"
+      type: "string"
+      required: false
+      values: ["ru", "en", "es", "zh"]
+
+  cards:
+    - name: "Total Users"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_users
+        FROM users
+        WHERE created_at <= {{date_range.end}}
+
+    - name: "New Users"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as new_users
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Banned Users"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as banned_users
+        FROM users
+        WHERE is_banned = true
+
+    - name: "Total User Balance"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT SUM(balance) as total_balance
+        FROM users
+        WHERE balance > 0
+
+    - name: "User Growth Trend"
+      type: "area"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as new_users,
+          SUM(COUNT(*)) OVER (ORDER BY DATE(created_at)) as cumulative_users
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Users by Language"
+      type: "pie"
+      position: { row: 3, col: 1, size: 4 }
+      query: |
+        SELECT 
+          language,
+          COUNT(*) as count
+        FROM users
+        GROUP BY language
+        ORDER BY count DESC
+
+    - name: "User Activity Heatmap"
+      type: "heatmap"
+      position: { row: 3, col: 5, size: 8 }
+      query: |
+        SELECT 
+          EXTRACT(DOW FROM created_at) as day_of_week,
+          EXTRACT(HOUR FROM created_at) as hour_of_day,
+          COUNT(*) as activity
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY day_of_week, hour_of_day
+        ORDER BY day_of_week, hour_of_day
+
+    - name: "User Balance Distribution"
+      type: "histogram"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN balance = 0 THEN '0'
+            WHEN balance < 10 THEN '0-10'
+            WHEN balance < 50 THEN '10-50'
+            WHEN balance < 100 THEN '50-100'
+            WHEN balance < 500 THEN '100-500'
+            WHEN balance < 1000 THEN '500-1000'
+            ELSE '1000+'
+          END as balance_range,
+          COUNT(*) as users_count
+        FROM users
+        GROUP BY balance_range
+        ORDER BY balance_range
+
+    - name: "Top Users by Orders"
+      type: "table"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          u.user_id,
+          u.balance,
+          COUNT(o.id) as total_orders,
+          SUM(o.price) as total_spent
+        FROM users u
+        LEFT JOIN orders o ON u.user_id = o.user_id
+        GROUP BY u.user_id, u.balance
+        HAVING COUNT(o.id) > 0
+        ORDER BY total_orders DESC
+        LIMIT 20
+
+    - name: "User Retention Cohort"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        WITH user_cohorts AS (
+          SELECT 
+            user_id,
+            DATE_TRUNC('month', created_at) as cohort_month
+          FROM users
+        ),
+        user_activity AS (
+          SELECT 
+            o.user_id,
+            DATE_TRUNC('month', o.created_at) as activity_month
+          FROM orders o
+          UNION
+          SELECT 
+            user_id,
+            DATE_TRUNC('month', created_at) as activity_month
+          FROM users
+        )
+        SELECT 
+          uc.cohort_month,
+          COUNT(DISTINCT uc.user_id) as cohort_size,
+          COUNT(DISTINCT CASE WHEN ua.activity_month = uc.cohort_month THEN ua.user_id END) as month_0,
+          COUNT(DISTINCT CASE WHEN ua.activity_month = uc.cohort_month + INTERVAL '1 month' THEN ua.user_id END) as month_1,
+          COUNT(DISTINCT CASE WHEN ua.activity_month = uc.cohort_month + INTERVAL '2 months' THEN ua.user_id END) as month_2
+        FROM user_cohorts uc
+        LEFT JOIN user_activity ua ON uc.user_id = ua.user_id
+        GROUP BY uc.cohort_month
+        ORDER BY uc.cohort_month

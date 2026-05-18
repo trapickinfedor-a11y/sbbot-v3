@@ -1,0 +1,678 @@
+{% extends "_base.html" %}
+{% block title %}Automation{% endblock %}
+{% block header_title %}🤖 Automation{% endblock %}
+{% block extra_css %}
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+  /* ── Tabs ── */
+  .tabs{display:flex;gap:4px;background:#f1f5f9;padding:6px;border-radius:12px;margin-bottom:24px}
+  .tab{flex:1;padding:10px 16px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:#64748b;background:transparent;transition:.15s}
+  .tab.active{background:#fff;color:#3730a3;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+  .tab-panel{display:none}.tab-panel.active{display:block}
+  /* ── Cards ── */
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+  .card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .card .lbl{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  .card .val{font-size:28px;font-weight:700;color:#111827}
+  .card .val.green{color:#059669}.card .val.red{color:#dc2626}.card .val.blue{color:#2563eb}
+  /* ── Sections ── */
+  .section{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:24px;margin-bottom:20px}
+  .section h2{font-size:16px;font-weight:700;margin-bottom:16px;color:#111827}
+  /* ── Controls ── */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:14px;transition:.15s}
+  .btn-primary{background:#667eea;color:#fff}.btn-primary:hover{background:#5a67d8}
+  .btn-secondary{background:#eef2ff;color:#3730a3}.btn-secondary:hover{background:#e0e7ff}
+  .btn-danger{background:#fee2e2;color:#991b1b}.btn-danger:hover{background:#fecaca}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  /* ── Table ── */
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;text-align:left;vertical-align:top}
+  th{background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  /* ── Form ── */
+  .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .form-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  label{font-size:13px;color:#374151;display:block;margin-bottom:4px;font-weight:600}
+  input,select,textarea{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+  /* ── Badges ── */
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase}
+  .badge-success{background:#dcfce7;color:#166534}
+  .badge-error,.badge-failed{background:#fee2e2;color:#991b1b}
+  .badge-processing{background:#fef3c7;color:#92400e}
+  .badge-queued,.badge-assigned{background:#dbeafe;color:#1e40af}
+  .badge-noresult,.badge-skipped{background:#f3f4f6;color:#374151}
+  .badge-on{background:#dcfce7;color:#166534}.badge-off{background:#fee2e2;color:#991b1b}
+  /* ── Analytics table ── */
+  .analytics-service{font-weight:700;color:#1e293b}
+  .profit-pos{color:#059669;font-weight:700}.profit-neg{color:#dc2626;font-weight:700}
+  /* ── Misc ── */
+  .muted{color:#9ca3af;font-size:12px}
+  .toggle-wrap{display:flex;align-items:center;gap:8px}
+  .toggle{appearance:none;width:44px;height:24px;background:#d1d5db;border-radius:12px;cursor:pointer;position:relative;transition:.2s}
+  .toggle:checked{background:#667eea}
+  .toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s}
+  .toggle:checked::after{transform:translateX(20px)}
+  .usfull-balance-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;display:inline-flex;align-items:center;gap:12px}
+  @media(max-width:1000px){.grid-4,.grid-3,.form-grid,.form-grid-2{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Date range controls (shared across all tabs) -->
+<div class="section" style="margin-bottom:20px;padding:16px 24px">
+  <div class="controls" style="margin-bottom:0">
+    <input type="date" id="dateFrom" style="width:auto">
+    <input type="date" id="dateTo" style="width:auto">
+    <button class="btn btn-primary" onclick="reloadAll()">Apply</button>
+    <button class="btn btn-secondary" onclick="setRange(7)">7d</button>
+    <button class="btn btn-secondary" onclick="setRange(30)">30d</button>
+    <button class="btn btn-secondary" onclick="setRange(90)">90d</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" id="tab-cs"        onclick="switchTab('cs')">🖥 CS (Credit Score)</button>
+  <button class="tab"        id="tab-ssn"       onclick="switchTab('ssn')">🔍 SSN Lookup</button>
+  <button class="tab"        id="tab-dl"        onclick="switchTab('dl')">🪪 DL Lookup</button>
+  <button class="tab"        id="tab-analytics" onclick="switchTab('analytics')">📊 Analytics</button>
+  <button class="tab"        id="tab-keys"      onclick="switchTab('keys')">🔑 API Keys</button>
+  <button class="tab"        id="tab-proxies"   onclick="switchTab('proxies')">🌐 Proxies</button>
+</div>
+
+<!-- ═══════════════════ CS TAB ═══════════════════ -->
+<div class="tab-panel active" id="panel-cs">
+  <div class="grid-4" id="cs-cards">
+    <div class="card"><div class="lbl">Status</div><div class="val" id="cs-status">—</div></div>
+    <div class="card"><div class="lbl">Workers</div><div class="val" id="cs-workers">—</div></div>
+    <div class="card"><div class="lbl">Revenue</div><div class="val green" id="cs-income">$0</div></div>
+    <div class="card"><div class="lbl">Expense</div><div class="val red" id="cs-expense">$0</div></div>
+  </div>
+  <div class="section">
+    <h2>CS Config</h2>
+    <div class="form-grid" id="cs-config-form"></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveConfig('lookup_credit')">Save Config</button></div>
+  </div>
+  <div class="section">
+    <h2>Recent CS Jobs</h2>
+    <div class="controls">
+      <select id="cs-status-filter" onchange="loadJobs('lookup_credit')">
+        <option value="">All statuses</option>
+        <option value="success">Success</option>
+        <option value="failed">Failed</option>
+        <option value="processing">Processing</option>
+        <option value="queued">Queued</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadJobs('lookup_credit')">Refresh</button>
+    </div>
+    <div id="cs-jobs-table"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SSN TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-ssn">
+  <div class="grid-4" id="ssn-cards">
+    <div class="card"><div class="lbl">Status</div><div class="val" id="ssn-status">—</div></div>
+    <div class="card"><div class="lbl">Found (API)</div><div class="val green" id="ssn-found">—</div></div>
+    <div class="card"><div class="lbl">Revenue</div><div class="val green" id="ssn-income">$0</div></div>
+    <div class="card"><div class="lbl">API Cost</div><div class="val red" id="ssn-expense">$0</div></div>
+  </div>
+  <div class="section">
+    <h2>SSN Automation Config</h2>
+    <p class="muted" style="margin-bottom:16px">Uses usfull.info API ($0.40 found / $0.01 not found). If disabled — all orders go directly to workers.</p>
+    <div class="form-grid" id="ssn-config-form"></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveConfig('lookup_ssn')">Save Config</button></div>
+  </div>
+  <div class="section">
+    <h2>Recent SSN Jobs</h2>
+    <div class="controls">
+      <select id="ssn-status-filter" onchange="loadJobs('lookup_ssn')">
+        <option value="">All statuses</option>
+        <option value="success">Found</option>
+        <option value="noresult">Not Found</option>
+        <option value="skipped">Skipped</option>
+        <option value="processing">Processing</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadJobs('lookup_ssn')">Refresh</button>
+    </div>
+    <div id="ssn-jobs-table"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DL TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-dl">
+  <div class="grid-4" id="dl-cards">
+    <div class="card"><div class="lbl">Status</div><div class="val" id="dl-status">—</div></div>
+    <div class="card"><div class="lbl">Found (API)</div><div class="val green" id="dl-found">—</div></div>
+    <div class="card"><div class="lbl">Revenue</div><div class="val green" id="dl-income">$0</div></div>
+    <div class="card"><div class="lbl">API Cost</div><div class="val red" id="dl-expense">$0</div></div>
+  </div>
+  <div class="section">
+    <h2>DL Automation Config</h2>
+    <p class="muted" style="margin-bottom:16px">Uses usfull.info API ($1.00 per found license). If disabled — all orders go directly to workers.</p>
+    <div class="form-grid" id="dl-config-form"></div>
+    <div style="margin-top:16px"><button class="btn btn-primary" onclick="saveConfig('lookup_dl')">Save Config</button></div>
+  </div>
+  <div class="section">
+    <h2>Recent DL Jobs</h2>
+    <div class="controls">
+      <select id="dl-status-filter" onchange="loadJobs('lookup_dl')">
+        <option value="">All statuses</option>
+        <option value="success">Found</option>
+        <option value="noresult">Not Found</option>
+        <option value="skipped">Skipped</option>
+        <option value="processing">Processing</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadJobs('lookup_dl')">Refresh</button>
+    </div>
+    <div id="dl-jobs-table"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ANALYTICS TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-analytics">
+  <div class="section">
+    <h2>USFull API Balance</h2>
+    <div id="usfull-balance-box" class="usfull-balance-box">
+      <span style="font-size:24px">💰</span>
+      <div>
+        <div class="lbl">Available Balance</div>
+        <div style="font-size:22px;font-weight:700;color:#059669" id="usfull-balance-val">—</div>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="refreshApiBalance()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Per-Service Analytics</h2>
+    <div id="analytics-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Total Jobs</th>
+            <th>Found</th>
+            <th>Not Found</th>
+            <th>Success %</th>
+            <th>Revenue</th>
+            <th>API Cost</th>
+            <th>Profit</th>
+            <th>Margin</th>
+          </tr>
+        </thead>
+        <tbody id="analytics-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Finance Log</h2>
+    <div class="controls">
+      <select id="finance-service-filter" onchange="loadFinance()">
+        <option value="">All services</option>
+        <option value="lookup_credit">CS Credit Score</option>
+        <option value="lookup_ssn">SSN Lookup</option>
+        <option value="lookup_dl">DL Lookup</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="loadFinance()">Refresh</button>
+    </div>
+    <div id="finance-table"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ API KEYS TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-keys">
+  <div class="section">
+    <h2>API Keys</h2>
+    <p class="muted" style="margin-bottom:16px">
+      For <strong>usfull</strong> provider: set provider=<code>usfull</code>, key_value = API key.
+      In Notes field enter JSON: <code>{"username":"your_login","password":"your_pass"}</code>
+    </p>
+    <button class="btn btn-primary btn-sm" onclick="showKeyForm()">+ Add Key</button>
+    <div id="key-form" style="display:none;margin-top:16px">
+      <div class="form-grid" style="margin-bottom:12px">
+        <div><label>Provider</label><input id="kf-provider" placeholder="usfull" value="usfull"></div>
+        <div><label>Name</label><input id="kf-name" placeholder="My usfull key"></div>
+        <div><label>API Key Value</label><input id="kf-value" placeholder="key..."></div>
+        <div><label>Daily Limit</label><input id="kf-limit" type="number" placeholder="0 = unlimited"></div>
+        <div><label>Active</label>
+          <div class="toggle-wrap" style="margin-top:8px"><input type="checkbox" class="toggle" id="kf-active" checked><span>Enabled</span></div>
+        </div>
+        <div><label>Notes (JSON creds for usfull)</label><input id="kf-notes" placeholder='{"username":"login","password":"pass"}'></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveKey()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('key-form').style.display='none'">Cancel</button>
+    </div>
+    <div id="keys-table" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ PROXIES TAB ═══════════════════ -->
+<div class="tab-panel" id="panel-proxies">
+  <div class="section">
+    <h2>Proxies (CS automation)</h2>
+    <button class="btn btn-primary btn-sm" onclick="showProxyForm()">+ Add Proxy</button>
+    <div id="proxy-form" style="display:none;margin-top:16px">
+      <div class="form-grid" style="margin-bottom:12px">
+        <div><label>Name</label><input id="pf-name" placeholder="proxy-01"></div>
+        <div><label>Host</label><input id="pf-host" placeholder="123.45.67.89"></div>
+        <div><label>Port</label><input id="pf-port" type="number" placeholder="8080"></div>
+        <div><label>Username</label><input id="pf-user" placeholder="(optional)"></div>
+        <div><label>Password</label><input id="pf-pass" type="password" placeholder="(optional)"></div>
+        <div><label>Type</label>
+          <select id="pf-type"><option>http</option><option>socks5</option></select>
+        </div>
+        <div><label>Country</label><input id="pf-country" value="us" style="width:80px"></div>
+        <div><label>Rotate every (jobs)</label><input id="pf-rotate" type="number" value="3"></div>
+        <div><label>Default</label>
+          <div class="toggle-wrap" style="margin-top:8px"><input type="checkbox" class="toggle" id="pf-default"><span>Default proxy</span></div>
+        </div>
+      </div>
+      <input type="hidden" id="pf-id">
+      <button class="btn btn-primary btn-sm" onclick="saveProxy()">Save</button>
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('proxy-form').style.display='none'">Cancel</button>
+    </div>
+    <div id="proxies-table" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<script>
+// ─── Date helpers ──────────────────────────────────────────────────────────────
+function setRange(days) {
+  const to = new Date();
+  const from = new Date(Date.now() - days * 86400000);
+  document.getElementById('dateTo').value = to.toISOString().slice(0,10);
+  document.getElementById('dateFrom').value = from.toISOString().slice(0,10);
+  reloadAll();
+}
+function dateParams() {
+  const f = document.getElementById('dateFrom').value;
+  const t = document.getElementById('dateTo').value;
+  const p = [];
+  if (f) p.push(`date_from=${f}`);
+  if (t) p.push(`date_to=${t}`);
+  return p.length ? '?' + p.join('&') : '';
+}
+function reloadAll() {
+  loadOverview('lookup_credit','cs');
+  loadOverview('lookup_ssn','ssn');
+  loadOverview('lookup_dl','dl');
+  loadAnalytics();
+}
+
+// ─── Tabs ───────────────────────────────────────────────────────────────────
+const TAB_LOADERS = {
+  cs:        () => { loadOverview('lookup_credit','cs'); loadJobs('lookup_credit'); },
+  ssn:       () => { loadOverview('lookup_ssn','ssn'); loadJobs('lookup_ssn'); },
+  dl:        () => { loadOverview('lookup_dl','dl'); loadJobs('lookup_dl'); },
+  analytics: () => { loadAnalytics(); loadFinance(); refreshApiBalance(); },
+  keys:      () => loadApiKeys(),
+  proxies:   () => loadProxies(),
+};
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if (TAB_LOADERS[name]) TAB_LOADERS[name]();
+}
+
+// ─── Overview per service ───────────────────────────────────────────────────
+async function loadOverview(serviceCode, prefix) {
+  const dp = dateParams();
+  const sep = dp ? dp+'&' : '?';
+  const r = await fetch(`/api/automation/overview${sep}service_code=${serviceCode}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  const cfg = d.config;
+  const jobs = d.jobs || {};
+  const fin = d.finance || {};
+
+  const statusEl = document.getElementById(prefix+'-status');
+  if (statusEl) {
+    statusEl.innerHTML = cfg.is_enabled
+      ? '<span class="badge badge-on">ON</span>'
+      : '<span class="badge badge-off">OFF</span>';
+  }
+  const workersEl = document.getElementById(prefix+'-workers');
+  if (workersEl) workersEl.textContent = cfg.worker_count;
+
+  const foundEl = document.getElementById(prefix+'-found');
+  if (foundEl) foundEl.textContent = jobs.success || 0;
+
+  const incomeEl = document.getElementById(prefix+'-income');
+  if (incomeEl) incomeEl.textContent = '$' + fin.income.toFixed(2);
+
+  const expenseEl = document.getElementById(prefix+'-expense');
+  if (expenseEl) expenseEl.textContent = '$' + fin.expense.toFixed(2);
+
+  // Build config form
+  buildConfigForm(prefix+'-config-form', cfg);
+}
+
+function buildConfigForm(formId, cfg) {
+  const el = document.getElementById(formId);
+  if (!el) return;
+  const fields = [
+    { id: 'enabled', label: 'Enabled', type: 'toggle', val: cfg.is_enabled },
+    { id: 'workers', label: 'Workers', type: 'number', val: cfg.worker_count },
+    { id: 'retries', label: 'Max Retries', type: 'number', val: cfg.max_retries },
+    { id: 'interval', label: 'Poll Interval (s)', type: 'number', val: cfg.poll_interval_seconds },
+  ];
+  if (cfg.service_code === 'lookup_credit') {
+    fields.push({ id: 'headless', label: 'Headless Browser', type: 'toggle', val: cfg.headless });
+    fields.push({ id: 'ss_dir', label: 'Screenshot Dir', type: 'text', val: cfg.screenshot_dir || '' });
+  }
+  el.innerHTML = fields.map(f => {
+    if (f.type === 'toggle') {
+      return `<div><label>${f.label}</label>
+        <div class="toggle-wrap" style="margin-top:8px">
+          <input type="checkbox" class="toggle" id="${formId}-${f.id}" ${f.val ? 'checked' : ''}>
+          <span>${f.val ? 'Enabled' : 'Disabled'}</span>
+        </div></div>`;
+    }
+    return `<div><label>${f.label}</label>
+      <input type="${f.type}" id="${formId}-${f.id}" value="${f.val ?? ''}"></div>`;
+  }).join('');
+  // Store service_code on form element
+  el.dataset.serviceCode = cfg.service_code;
+}
+
+async function saveConfig(serviceCode) {
+  const prefix = serviceCode === 'lookup_credit' ? 'cs' : serviceCode === 'lookup_ssn' ? 'ssn' : 'dl';
+  const formId = prefix + '-config-form';
+  const body = {};
+  const enabled = document.getElementById(formId+'-enabled');
+  if (enabled) body.is_enabled = enabled.checked;
+  const workers = document.getElementById(formId+'-workers');
+  if (workers) body.worker_count = parseInt(workers.value);
+  const retries = document.getElementById(formId+'-retries');
+  if (retries) body.max_retries = parseInt(retries.value);
+  const interval = document.getElementById(formId+'-interval');
+  if (interval) body.poll_interval_seconds = parseInt(interval.value);
+  const headless = document.getElementById(formId+'-headless');
+  if (headless) body.headless = headless.checked;
+  const ssDir = document.getElementById(formId+'-ss_dir');
+  if (ssDir) body.screenshot_dir = ssDir.value;
+
+  const r = await fetch(`/api/automation/config?service_code=${serviceCode}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if (r.ok) {
+    alert('Config saved!');
+    loadOverview(serviceCode, prefix);
+  }
+}
+
+// ─── Jobs table ────────────────────────────────────────────────────────────
+async function loadJobs(serviceCode) {
+  const prefix = serviceCode === 'lookup_credit' ? 'cs' : serviceCode === 'lookup_ssn' ? 'ssn' : 'dl';
+  const statusFilter = document.getElementById(prefix+'-status-filter');
+  const status = statusFilter ? statusFilter.value : '';
+  const dp = dateParams();
+  const qs = [dp ? dp.slice(1) : '', `service_code=${serviceCode}`, status ? `status=${status}` : ''].filter(Boolean).join('&');
+  const r = await fetch(`/api/automation/jobs?${qs}&limit=50`);
+  if (!r.ok) return;
+  const jobs = await r.json();
+  const el = document.getElementById(prefix+'-jobs-table');
+  if (!el) return;
+  if (!jobs.length) { el.innerHTML = '<p class="muted" style="padding:12px">No jobs in this period.</p>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>ID</th><th>Order</th><th>Status</th><th>Attempts</th><th>Worker</th><th>Price</th><th>Created</th><th>Error</th></tr></thead>
+    <tbody>${jobs.map(j => `<tr>
+      <td>${j.id}</td>
+      <td><a href="/orders/${j.order_id}" target="_blank">#${j.order_id}</a>${j.bulk_item_number ? ` item#${j.bulk_item_number}` : ''}</td>
+      <td><span class="badge badge-${j.status}">${j.status}</span></td>
+      <td>${j.attempts}</td>
+      <td><span class="muted">${j.worker_label || '—'}</span></td>
+      <td>$${j.price.toFixed(2)}</td>
+      <td><span class="muted">${j.created_at ? j.created_at.slice(0,16).replace('T',' ') : '—'}</span></td>
+      <td><span class="muted" title="${j.error_message || ''}">${(j.error_message||'').slice(0,40) || '—'}</span></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ─── Analytics ─────────────────────────────────────────────────────────────
+const SERVICE_LABELS = {
+  lookup_credit: '🖥 CS Credit Score',
+  lookup_ssn:    '🔍 SSN Lookup',
+  lookup_dl:     '🪪 DL Lookup',
+};
+async function loadAnalytics() {
+  const r = await fetch('/api/automation/analytics' + dateParams());
+  if (!r.ok) return;
+  const data = await r.json();
+  const tbody = document.getElementById('analytics-tbody');
+  if (!tbody) return;
+  const rows = Object.entries(data).map(([sc, d]) => {
+    const rate = d.total_jobs > 0 ? ((d.success / d.total_jobs) * 100).toFixed(1) : '0.0';
+    const profitClass = d.profit >= 0 ? 'profit-pos' : 'profit-neg';
+    const margin = d.income > 0 ? ((d.profit / d.income) * 100).toFixed(1) : '—';
+    return `<tr>
+      <td class="analytics-service">${SERVICE_LABELS[sc] || sc}</td>
+      <td>${d.total_jobs}</td>
+      <td style="color:#059669;font-weight:600">${d.success}</td>
+      <td style="color:#dc2626">${d.noresult}</td>
+      <td>${rate}%</td>
+      <td>$${d.income.toFixed(2)}</td>
+      <td>$${d.expense.toFixed(2)}</td>
+      <td class="${profitClass}">$${d.profit.toFixed(2)}</td>
+      <td>${margin !== '—' ? margin + '%' : '—'}</td>
+    </tr>`;
+  });
+  // Totals
+  const totals = Object.values(data).reduce((acc, d) => {
+    acc.jobs += d.total_jobs; acc.success += d.success; acc.noresult += d.noresult;
+    acc.income += d.income; acc.expense += d.expense; acc.profit += d.profit;
+    return acc;
+  }, {jobs:0,success:0,noresult:0,income:0,expense:0,profit:0});
+  const tRate = totals.jobs > 0 ? ((totals.success/totals.jobs)*100).toFixed(1) : '0.0';
+  const tMargin = totals.income > 0 ? ((totals.profit/totals.income)*100).toFixed(1) : '—';
+  rows.push(`<tr style="border-top:2px solid #e5e7eb;font-weight:700;background:#f8fafc">
+    <td>TOTAL</td>
+    <td>${totals.jobs}</td>
+    <td style="color:#059669">${totals.success}</td>
+    <td style="color:#dc2626">${totals.noresult}</td>
+    <td>${tRate}%</td>
+    <td>$${totals.income.toFixed(2)}</td>
+    <td>$${totals.expense.toFixed(2)}</td>
+    <td class="${totals.profit>=0?'profit-pos':'profit-neg'}">$${totals.profit.toFixed(2)}</td>
+    <td>${tMargin !== '—' ? tMargin + '%' : '—'}</td>
+  </tr>`);
+  tbody.innerHTML = rows.join('');
+}
+
+async function refreshApiBalance() {
+  const el = document.getElementById('usfull-balance-val');
+  if (el) el.textContent = '...';
+  const r = await fetch('/api/automation/api-balance');
+  if (!r.ok) { if (el) el.textContent = 'Error'; return; }
+  const d = await r.json();
+  if (el) {
+    if (d.balance !== null && d.balance !== undefined) {
+      el.textContent = '$' + parseFloat(d.balance).toFixed(2);
+    } else {
+      el.textContent = d.error || 'N/A';
+      el.style.color = '#dc2626';
+    }
+  }
+}
+
+// ─── Finance log ───────────────────────────────────────────────────────────
+async function loadFinance() {
+  const sc = document.getElementById('finance-service-filter').value;
+  const dp = dateParams();
+  const qs = [dp ? dp.slice(1) : '', sc ? `service_code=${sc}` : ''].filter(Boolean).join('&');
+  const r = await fetch(`/api/automation/finance?${qs}&limit=100`);
+  if (!r.ok) return;
+  const entries = await r.json();
+  const el = document.getElementById('finance-table');
+  if (!el) return;
+  if (!entries.length) { el.innerHTML = '<p class="muted" style="padding:12px">No finance entries.</p>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>ID</th><th>Type</th><th>Amount</th><th>Description</th><th>Order</th><th>Created</th></tr></thead>
+    <tbody>${entries.map(e => `<tr>
+      <td>${e.id}</td>
+      <td><span class="badge badge-${e.entry_type === 'income' ? 'success' : 'error'}">${e.entry_type}</span></td>
+      <td style="font-weight:600;color:${e.entry_type==='income'?'#059669':'#dc2626'}">$${e.amount.toFixed(2)}</td>
+      <td><span class="muted">${e.description || '—'}</span></td>
+      <td>${e.order_id ? `<a href="/orders/${e.order_id}" target="_blank">#${e.order_id}</a>` : '—'}</td>
+      <td><span class="muted">${e.created_at ? e.created_at.slice(0,16).replace('T',' ') : '—'}</span></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ─── API Keys ──────────────────────────────────────────────────────────────
+let editKeyId = null;
+function showKeyForm(key) {
+  editKeyId = key ? key.id : null;
+  if (key) {
+    document.getElementById('kf-provider').value = key.provider;
+    document.getElementById('kf-name').value = key.name;
+    document.getElementById('kf-value').value = key.key_value;
+    document.getElementById('kf-limit').value = key.daily_limit || '';
+    document.getElementById('kf-active').checked = key.is_active;
+    document.getElementById('kf-notes').value = key.notes || '';
+  } else {
+    document.getElementById('kf-provider').value = 'usfull';
+    document.getElementById('kf-name').value = '';
+    document.getElementById('kf-value').value = '';
+    document.getElementById('kf-limit').value = '';
+    document.getElementById('kf-active').checked = true;
+    document.getElementById('kf-notes').value = '';
+  }
+  document.getElementById('key-form').style.display = 'block';
+}
+async function saveKey() {
+  const body = {
+    provider: document.getElementById('kf-provider').value,
+    name: document.getElementById('kf-name').value,
+    key_value: document.getElementById('kf-value').value,
+    daily_limit: parseInt(document.getElementById('kf-limit').value) || null,
+    is_active: document.getElementById('kf-active').checked,
+    notes: document.getElementById('kf-notes').value || null,
+  };
+  const url = editKeyId ? `/api/automation/api-keys/${editKeyId}` : '/api/automation/api-keys';
+  const method = editKeyId ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (r.ok) { document.getElementById('key-form').style.display = 'none'; loadApiKeys(); }
+}
+async function deleteKey(id) {
+  if (!confirm('Delete this API key?')) return;
+  const r = await fetch(`/api/automation/api-keys/${id}`, { method: 'DELETE' });
+  if (r.ok) loadApiKeys();
+}
+async function loadApiKeys() {
+  const r = await fetch('/api/automation/api-keys');
+  if (!r.ok) return;
+  const keys = await r.json();
+  const el = document.getElementById('keys-table');
+  if (!el) return;
+  if (!keys.length) { el.innerHTML = '<p class="muted">No API keys configured.</p>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>ID</th><th>Provider</th><th>Name</th><th>Key</th><th>Balance</th><th>Active</th><th>Last Used</th><th>Actions</th></tr></thead>
+    <tbody>${keys.map(k => `<tr>
+      <td>${k.id}</td>
+      <td><code>${k.provider}</code></td>
+      <td>${k.name}</td>
+      <td><code style="font-size:11px">${k.key_value.slice(0,20)}...</code></td>
+      <td>${k.balance !== null ? '$'+parseFloat(k.balance).toFixed(2) : '—'}</td>
+      <td><span class="badge badge-${k.is_active?'on':'off'}">${k.is_active?'ON':'OFF'}</span></td>
+      <td><span class="muted">${k.last_used_at ? k.last_used_at.slice(0,16).replace('T',' ') : '—'}</span></td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick='showKeyForm(${JSON.stringify(k)})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteKey(${k.id})">Del</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ─── Proxies ───────────────────────────────────────────────────────────────
+let editProxyId = null;
+function showProxyForm(proxy) {
+  editProxyId = proxy ? proxy.id : null;
+  if (proxy) {
+    document.getElementById('pf-name').value = proxy.name;
+    document.getElementById('pf-host').value = proxy.host;
+    document.getElementById('pf-port').value = proxy.port;
+    document.getElementById('pf-user').value = proxy.username || '';
+    document.getElementById('pf-pass').value = proxy.password || '';
+    document.getElementById('pf-type').value = proxy.proxy_type;
+    document.getElementById('pf-country').value = proxy.country;
+    document.getElementById('pf-rotate').value = proxy.rotate_every;
+    document.getElementById('pf-default').checked = proxy.is_default;
+  } else {
+    ['pf-name','pf-host','pf-user','pf-pass'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pf-port').value = '';
+    document.getElementById('pf-type').value = 'http';
+    document.getElementById('pf-country').value = 'us';
+    document.getElementById('pf-rotate').value = '3';
+    document.getElementById('pf-default').checked = false;
+  }
+  document.getElementById('pf-id').value = editProxyId || '';
+  document.getElementById('proxy-form').style.display = 'block';
+}
+async function saveProxy() {
+  const body = {
+    name: document.getElementById('pf-name').value,
+    host: document.getElementById('pf-host').value,
+    port: parseInt(document.getElementById('pf-port').value),
+    username: document.getElementById('pf-user').value || null,
+    password: document.getElementById('pf-pass').value || null,
+    proxy_type: document.getElementById('pf-type').value,
+    country: document.getElementById('pf-country').value,
+    rotate_every: parseInt(document.getElementById('pf-rotate').value) || 3,
+    is_active: true,
+    is_default: document.getElementById('pf-default').checked,
+  };
+  const url = editProxyId ? `/api/automation/proxies/${editProxyId}` : '/api/automation/proxies';
+  const method = editProxyId ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (r.ok) { document.getElementById('proxy-form').style.display = 'none'; loadProxies(); }
+}
+async function deleteProxy(id) {
+  if (!confirm('Delete proxy?')) return;
+  const r = await fetch(`/api/automation/proxies/${id}`, { method: 'DELETE' });
+  if (r.ok) loadProxies();
+}
+async function loadProxies() {
+  const r = await fetch('/api/automation/proxies');
+  if (!r.ok) return;
+  const proxies = await r.json();
+  const el = document.getElementById('proxies-table');
+  if (!el) return;
+  if (!proxies.length) { el.innerHTML = '<p class="muted">No proxies configured.</p>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Host:Port</th><th>Type</th><th>Country</th><th>Active</th><th>Default</th><th>Actions</th></tr></thead>
+    <tbody>${proxies.map(p => `<tr>
+      <td>${p.name}</td>
+      <td><code>${p.host}:${p.port}</code></td>
+      <td>${p.proxy_type}</td>
+      <td>${p.country}</td>
+      <td><span class="badge badge-${p.is_active?'on':'off'}">${p.is_active?'ON':'OFF'}</span></td>
+      <td>${p.is_default ? '<span class="badge badge-on">Default</span>' : '—'}</td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick='showProxyForm(${JSON.stringify(p)})'>Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProxy(${p.id})">Del</button>
+      </td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+
+// ─── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Set default date range (last 30 days)
+  const to = new Date();
+  const from = new Date(Date.now() - 30 * 86400000);
+  document.getElementById('dateTo').value = to.toISOString().slice(0,10);
+  document.getElementById('dateFrom').value = from.toISOString().slice(0,10);
+  // Load CS tab (default active)
+  TAB_LOADERS.cs();
+});
+</script>
+{% endblock %}

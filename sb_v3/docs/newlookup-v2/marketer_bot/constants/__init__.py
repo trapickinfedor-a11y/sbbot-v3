@@ -1,0 +1,1 @@
+# Marketer bot constants

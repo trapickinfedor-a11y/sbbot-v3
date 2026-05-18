@@ -1,0 +1,426 @@
+{% extends "_base.html" %}
+{% block title %}Маркетологи{% endblock %}
+{% block header_title %}📢 Маркетологи{% endblock %}
+{% block extra_head %}<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>{% endblock %}
+{% block container_modifier %} admin-container--w1400{% endblock %}
+{% block extra_css %}
+<style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+        .section h2{font-size:18px;margin-bottom:16px;color:#111}
+        .section h3{font-size:14px;margin:16px 0 8px;color:#555}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        table th{background:#f9fafb;padding:12px;text-align:left;font-weight:600;color:#6b7280}
+        table td{padding:12px;border-bottom:1px solid #eee}
+        .btn{padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;margin-right:6px;border:none;font-weight:500}
+        .btn-approve{background:#22c55e;color:#fff}
+        .btn-reject{background:#ef4444;color:#fff}
+        .btn-info{background:#3b82f6;color:#fff}
+        .empty{color:#9ca3af;padding:20px;text-align:center}
+        .chart-container{position:relative;height:280px;margin:16px 0}
+        .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+        .tab{padding:8px 16px;border-radius:8px;background:#f3f4f6;cursor:pointer;font-size:14px}
+        .tab.active{background:#667eea;color:#fff}
+        .log-table .status-pending{color:#f59e0b}
+        .log-table .status-approved{color:#22c55e}
+        .log-table .status-rejected{color:#ef4444}
+        .log-table .status-blocked{color:#b91c1c;font-weight:700}
+        .log-table .action-earning{color:#22c55e}
+        .log-table .action-registration{color:#8b5cf6}
+        .log-table .action-withdrawal_request{color:#3b82f6}
+        .log-table .action-withdrawal_approved{color:#16a34a}
+        .log-table .action-withdrawal_rejected{color:#dc2626}
+        .log-table .action-withdrawal_blocked{color:#b91c1c;font-weight:700}
+        .marketer-card{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+        .marketer-card .card{padding:16px;border-radius:8px;background:#f9fafb;min-width:140px}
+        .marketer-card .card .label{font-size:12px;color:#6b7280}
+        .marketer-card .card .value{font-size:18px;font-weight:600}
+        .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:16px 0}
+        .metric-card{padding:16px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}
+        .metric-card .label{font-size:12px;color:#6b7280;margin-bottom:6px}
+        .metric-card .value{font-size:22px;font-weight:700;color:#111827}
+        .metric-card .hint{font-size:12px;color:#6b7280;margin-top:4px}
+        select{padding:8px 12px;border-radius:6px;border:1px solid #d1d5db;font-size:14px}
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="tabs">
+        <span class="tab active" data-tab="overview">📊 Обзор</span>
+        <span class="tab" data-tab="withdrawals">💸 Выводы</span>
+        <span class="tab" data-tab="owner_withdrawals">🤖 Выводы владельцев ботов</span>
+        <span class="tab" data-tab="analytics">📈 Аналитика</span>
+        <span class="tab" data-tab="logs">📋 Логи</span>
+    </div>
+
+    <div id="tab-overview" class="tab-content">
+        <div class="section">
+            <h2>💸 Заявки на вывод (ожидают)</h2>
+            <div id="withdrawalsTable"><div class="empty">Загрузка...</div></div>
+        </div>
+        <div class="section">
+            <h2>📋 Список маркетологов</h2>
+            <div id="marketersTable"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <div id="tab-owner_withdrawals" class="tab-content" style="display:none">
+        <div class="section">
+            <h2>🤖 Заявки на вывод владельцев ботов</h2>
+            <div id="ownerWithdrawalsTable"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <div id="tab-withdrawals" class="tab-content" style="display:none">
+        <div class="section">
+            <h2>📜 Полная история выводов</h2>
+            <div style="margin-bottom:12px">
+                <select id="withdrawalFilter" onchange="loadWithdrawalsFull()">
+                    <option value="">Все статусы</option>
+                    <option value="pending">Ожидают</option>
+                    <option value="approved">Одобрены</option>
+                    <option value="rejected">Отклонены</option>
+                    <option value="blocked">Заблокированы</option>
+                </select>
+            </div>
+            <div id="withdrawalsFullTable"><div class="empty">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <div id="tab-analytics" class="tab-content" style="display:none">
+        <div class="section">
+            <h2>📈 Аналитика по маркетологу</h2>
+            <div style="margin-bottom:12px">
+                <select id="analyticsMarketer">
+                    <option value="">Выберите маркетолога</option>
+                </select>
+                <select id="analyticsDays" onchange="loadAnalytics()">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="30" selected>30 дней</option>
+                    <option value="90">90 дней</option>
+                    <option value="365">365 дней</option>
+                </select>
+                <select id="analyticsGroupBy" onchange="loadAnalytics()">
+                    <option value="day" selected>День</option>
+                    <option value="week">Неделя</option>
+                    <option value="month">Месяц</option>
+                </select>
+            </div>
+            <div id="analyticsSummary" class="metrics-grid"><div class="empty">Выберите маркетолога</div></div>
+            <div class="chart-container"><canvas id="chartEarned"></canvas></div>
+            <div class="chart-container"><canvas id="chartRegistrations"></canvas></div>
+            <h3>Статистика по ботам</h3>
+            <div id="statsByBot"><div class="empty">Выберите маркетолога</div></div>
+        </div>
+    </div>
+
+    <div id="tab-logs" class="tab-content" style="display:none">
+        <div class="section">
+            <h2>📋 Лог действий маркетолога</h2>
+            <div style="margin-bottom:12px">
+                <select id="logsMarketer" onchange="loadActivityLog()">
+                    <option value="">Выберите маркетолога</option>
+                </select>
+            </div>
+            <div id="activityLogTable"><div class="empty">Выберите маркетолога</div></div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const API = '/api/marketers';
+function authHeaders() { return { 'Authorization': 'Bearer ' + token }; }
+
+document.querySelectorAll('.tab').forEach(t=>{
+    t.onclick=()=>{
+        document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(x=>x.style.display='none');
+        t.classList.add('active');
+        const id = 'tab-'+t.dataset.tab;
+        const el = document.getElementById(id);
+        if(el) el.style.display='block';
+        if(t.dataset.tab==='withdrawals') loadWithdrawalsFull();
+        if(t.dataset.tab==='owner_withdrawals') loadOwnerWithdrawals();
+        if(t.dataset.tab==='analytics') { loadMarketersSelect('analyticsMarketer'); loadAnalytics(); }
+        if(t.dataset.tab==='logs') { loadMarketersSelect('logsMarketer'); loadActivityLog(); }
+    };
+});
+
+async function loadMarketersSelect(selectId) {
+    const r = await fetch(API, { headers: authHeaders() });
+    if (!r.ok) return;
+    const list = await r.json();
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Выберите маркетолога</option>' + list.map(m =>
+        `<option value="${m.id}">${m.display_name||m.username||'?'} (${m.promo_code})</option>`
+    ).join('');
+    if (current) sel.value = current;
+}
+
+async function loadWithdrawals() {
+    try {
+        const r = await fetch(API + '/withdrawals?status=pending', { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const data = await r.json();
+        const list = data.withdrawals || [];
+        const el = document.getElementById('withdrawalsTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет заявок на вывод</div>';
+            return;
+        }
+        el.innerHTML = '<table><thead><tr><th>ID</th><th>Маркетолог</th><th>Сумма</th><th>Реквизиты</th><th>Действия</th></tr></thead><tbody>' +
+            list.map(w => `<tr>
+                <td>#${w.id}</td>
+                <td>${w.marketer_name}</td>
+                <td>$${w.amount.toFixed(2)}</td>
+                <td>${(w.requisites || '-').substring(0, 40)}</td>
+                <td>
+                    <button class="btn btn-approve" onclick="approveMw(${w.id})">✓ Одобрить</button>
+                    <button class="btn btn-reject" onclick="rejectMw(${w.id})">✗ Отклонить</button>
+                </td>
+            </tr>`).join('') + '</tbody></table>';
+    } catch (e) {
+        document.getElementById('withdrawalsTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+async function loadWithdrawalsFull() {
+    const status = document.getElementById('withdrawalFilter')?.value || '';
+    const url = status ? API + '/withdrawals/full?status=' + status : API + '/withdrawals/full';
+    try {
+        const r = await fetch(url, { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const data = await r.json();
+        const list = data.withdrawals || [];
+        const el = document.getElementById('withdrawalsFullTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет выводов</div>';
+            return;
+        }
+        const statusClass = s => ({pending:'status-pending',approved:'status-approved',rejected:'status-rejected',blocked:'status-blocked'}[s]||'');
+        el.innerHTML = '<table class="log-table"><thead><tr><th>ID</th><th>Маркетолог</th><th>Промокод</th><th>Сумма</th><th>Реквизиты</th><th>Статус</th><th>Создано</th><th>Обработано</th><th>Действия</th></tr></thead><tbody>' +
+            list.map(w => `<tr>
+                <td>#${w.id}</td>
+                <td>${w.marketer_name}</td>
+                <td><code>${w.promo_code}</code></td>
+                <td>$${w.amount.toFixed(2)}</td>
+                <td>${(w.requisites || '-').substring(0, 30)}</td>
+                <td class="${statusClass(w.status)}">${w.status}</td>
+                <td>${w.created_at ? new Date(w.created_at).toLocaleString() : '-'}</td>
+                <td>${w.processed_at ? new Date(w.processed_at).toLocaleString() : '-'}</td>
+                <td>${w.status==='pending' ? `<button class="btn btn-approve" onclick="approveMw(${w.id})">✓</button><button class="btn btn-reject" onclick="rejectMw(${w.id})">✗</button>` : (w.reject_reason ? w.reject_reason : '-')}</td>
+            </tr>`).join('') + '</tbody></table>';
+    } catch (e) {
+        document.getElementById('withdrawalsFullTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+async function approveMw(id) {
+    try {
+        const r = await fetch(API + '/withdrawals/' + id + '/approve', { method: 'POST', headers: authHeaders() });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadWithdrawals(); loadWithdrawalsFull(); loadMarketers();
+    } catch (e) { alert(e.message); }
+}
+
+async function rejectMw(id) {
+    const reason = prompt('Причина отклонения (опционально):') || '';
+    try {
+        const r = await fetch(API + '/withdrawals/' + id + '/reject', {
+            method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason })
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadWithdrawals(); loadWithdrawalsFull(); loadMarketers();
+    } catch (e) { alert(e.message); }
+}
+
+async function loadMarketers() {
+    try {
+        const r = await fetch(API, { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const list = await r.json();
+        const el = document.getElementById('marketersTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет маркетологов</div>';
+            return;
+        }
+        el.innerHTML = '<table><thead><tr><th>ID</th><th>Имя</th><th>Промокод</th><th>Баланс</th><th>Заработано</th><th>Выведено</th><th>Рефералов</th><th>Действия</th></tr></thead><tbody>' +
+            list.map(m => `<tr>
+                <td>${m.id}</td>
+                <td>${m.display_name || m.username || '-'}</td>
+                <td><code>${m.promo_code}</code></td>
+                <td>$${m.balance.toFixed(2)}</td>
+                <td>$${m.total_earned.toFixed(2)}</td>
+                <td>$${m.total_withdrawn.toFixed(2)}</td>
+                <td>${m.referrals_count}</td>
+                <td><button class="btn btn-info" onclick="showMarketerAnalytics(${m.id})">📈</button></td>
+            </tr>`).join('') + '</tbody></table>';
+        loadMarketersSelect('analyticsMarketer');
+        loadMarketersSelect('logsMarketer');
+    } catch (e) {
+        document.getElementById('marketersTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+function showMarketerAnalytics(id) {
+    document.querySelector('.tab[data-tab="analytics"]').click();
+    document.getElementById('analyticsMarketer').value = id;
+    loadAnalytics();
+}
+
+let chartEarned = null, chartRegistrations = null;
+
+async function loadAnalytics() {
+    const mid = document.getElementById('analyticsMarketer')?.value;
+    const days = document.getElementById('analyticsDays')?.value || 30;
+    const groupBy = document.getElementById('analyticsGroupBy')?.value || 'day';
+    if (!mid) {
+        document.getElementById('analyticsSummary').innerHTML = '<div class="empty">Выберите маркетолога</div>';
+        document.getElementById('statsByBot').innerHTML = '<div class="empty">Выберите маркетолога</div>';
+        return;
+    }
+    try {
+        const [r1, r2] = await Promise.all([
+            fetch(API + '/' + mid + '/analytics?days=' + days + '&group_by=' + groupBy, { headers: authHeaders() }),
+            fetch(API + '/' + mid + '/stats-by-bot', { headers: authHeaders() })
+        ]);
+        if (!r1.ok || !r2.ok) throw new Error('Ошибка загрузки');
+        const analytics = await r1.json();
+        const botsData = await r2.json();
+        const summary = analytics.summary || {};
+
+        const labels = analytics.labels || [];
+        document.getElementById('analyticsSummary').innerHTML = `
+            <div class="metric-card"><div class="label">Conversion Rate</div><div class="value">${(summary.conversion_rate || 0).toFixed(2)}%</div><div class="hint">${summary.first_topups || 0} FD из ${summary.registrations || 0} рег.</div></div>
+            <div class="metric-card"><div class="label">ARPU</div><div class="value">$${(summary.arpu || 0).toFixed(2)}</div><div class="hint">Доход с 1 регистрации</div></div>
+            <div class="metric-card"><div class="label">Churn Rate</div><div class="value">${(summary.churn_rate || 0).toFixed(2)}%</div><div class="hint">${summary.churned_users || 0} из ${summary.paying_users || 0} payers inactive 30d</div></div>
+            <div class="metric-card"><div class="label">Earnings</div><div class="value">$${(summary.earned || 0).toFixed(2)}</div><div class="hint">За выбранный период</div></div>
+            <div class="metric-card"><div class="label">Revenue</div><div class="value">$${(summary.topup_amount || 0).toFixed(2)}</div><div class="hint">First deposits / top-ups</div></div>
+            <div class="metric-card"><div class="label">Registrations</div><div class="value">${summary.registrations || 0}</div><div class="hint">Период ${summary.period_days || days} дн.</div></div>
+        `;
+        if (chartEarned) chartEarned.destroy();
+        chartEarned = new Chart(document.getElementById('chartEarned'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Заработано ($)', data: analytics.earned, borderColor: '#22c55e', fill: true, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+        if (chartRegistrations) chartRegistrations.destroy();
+        chartRegistrations = new Chart(document.getElementById('chartRegistrations'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Регистрации', data: analytics.registrations, backgroundColor: '#3b82f6' },
+                    { label: 'Первые пополнения', data: analytics.first_topups, backgroundColor: '#22c55e' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const bots = botsData.bots || [];
+        document.getElementById('statsByBot').innerHTML = bots.length ? '<table><thead><tr><th>Бот</th><th>Рефералов</th><th>Баланс юзеров</th></tr></thead><tbody>' +
+            bots.map(b => `<tr><td>@${b.bot_username||'?'}</td><td>${b.referrals_count}</td><td>$${b.users_total_balance.toFixed(2)}</td></tr>`).join('') + '</tbody></table>' :
+            '<div class="empty">Нет данных по ботам</div>';
+    } catch (e) {
+        document.getElementById('analyticsSummary').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+        document.getElementById('statsByBot').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+async function loadActivityLog() {
+    const mid = document.getElementById('logsMarketer')?.value;
+    if (!mid) {
+        document.getElementById('activityLogTable').innerHTML = '<div class="empty">Выберите маркетолога</div>';
+        return;
+    }
+    try {
+        const r = await fetch(API + '/' + mid + '/activity-log', { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const data = await r.json();
+        const list = data.items || [];
+        const actionLabels = { registration: '🆕 Регистрация', earning: '💰 Начисление', withdrawal_request: '📤 Заявка на вывод', withdrawal_approved: '✅ Одобрено', withdrawal_rejected: '❌ Отклонено', withdrawal_blocked: '⛔ Автоблок' };
+        const el = document.getElementById('activityLogTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет записей</div>';
+            return;
+        }
+        el.innerHTML = '<table class="log-table"><thead><tr><th>Дата</th><th>Действие</th><th>Сумма</th><th>Детали</th></tr></thead><tbody>' +
+            list.map(l => `<tr>
+                <td>${l.created_at ? new Date(l.created_at).toLocaleString() : '-'}</td>
+                <td class="action-${l.action}">${actionLabels[l.action] || l.action}</td>
+                <td>${l.amount != null ? '$' + l.amount.toFixed(2) : '-'}</td>
+                <td>${(l.details || '-').substring(0, 60)}</td>
+            </tr>`).join('') + '</tbody></table>';
+    } catch (e) {
+        document.getElementById('activityLogTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+async function loadOwnerWithdrawals() {
+    try {
+        const r = await fetch('/api/bot-owners/withdrawals?status=pending', { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const data = await r.json();
+        const list = data.withdrawals || [];
+        const el = document.getElementById('ownerWithdrawalsTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет заявок</div>';
+            return;
+        }
+        el.innerHTML = '<table><thead><tr><th>ID</th><th>Владелец (ID)</th><th>Сумма</th><th>Валюта</th><th>Сеть</th><th>Реквизиты</th><th>Действия</th></tr></thead><tbody>' +
+            list.map(w => `<tr>
+                <td>#${w.id}</td>
+                <td>${w.owner_user_id}</td>
+                <td>$${w.amount.toFixed(2)}</td>
+                <td>${(w.payment_method || '-').toUpperCase()}</td>
+                <td>${(w.payment_network || '-').toUpperCase()}</td>
+                <td>${(w.requisites || '-').substring(0, 40)}</td>
+                <td>
+                    <button class="btn btn-approve" onclick="payOwner(${w.id})">✓ Выплатил</button>
+                    <button class="btn btn-reject" onclick="rejectOwner(${w.id})">✗ Отклонить</button>
+                </td>
+            </tr>`).join('') + '</tbody></table>';
+    } catch (e) {
+        document.getElementById('ownerWithdrawalsTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+async function payOwner(id) {
+    try {
+        const txHash = prompt('Укажите tx hash выплаты:');
+        if (!txHash || !txHash.trim()) return;
+        const r = await fetch('/api/bot-owners/withdrawals/' + id + '/pay', {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tx_hash: txHash.trim() })
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadOwnerWithdrawals();
+    } catch (e) { alert(e.message); }
+}
+async function rejectOwner(id) {
+    try {
+        const reason = prompt('Укажите причину отклонения:') || '';
+        const r = await fetch('/api/bot-owners/withdrawals/' + id + '/reject', {
+            method: 'POST',
+            headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadOwnerWithdrawals();
+    } catch (e) { alert(e.message); }
+}
+
+loadWithdrawals();
+loadMarketers();
+(function(){if(typeof token!=='undefined'&&token){fetch('/api/auth/me',{headers:authHeaders()}).then(r=>r.ok?r.json():null).then(u=>{if(u&&u.username)document.getElementById('adminName').textContent=u.username})}})();
+</script>
+{% endblock %}

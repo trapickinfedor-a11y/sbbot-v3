@@ -1,0 +1,395 @@
+# Production Docker Compose for NewLookup
+# Optimized for 700 bots and 30K users
+# Server: 16 vCPU / 32 GB RAM
+
+services:
+  # ========== PostgreSQL Database ==========
+  postgres:
+    image: postgres:16-alpine
+    container_name: newlookup_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-newlookup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-newlookup}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 16G
+        reservations:
+          cpus: '4'
+          memory: 8G
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-newlookup}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ========== Redis Cache ==========
+  redis:
+    image: redis:7-alpine
+    container_name: newlookup_redis
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Main Bot ==========
+  main_bot:
+    build:
+      context: .
+      dockerfile: main_bot/Dockerfile
+    container_name: newlookup_main_bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./media:/app/media
+      - ./uploads:/app/uploads
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ========== Support Bot ==========
+  support_bot:
+    build:
+      context: .
+      dockerfile: support_bot/Dockerfile
+    container_name: newlookup_support_bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./media:/app/media
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Worker Bot ==========
+  worker_bot:
+    build:
+      context: .
+      dockerfile: worker_bot/Dockerfile
+    container_name: newlookup_worker_bot
+    env_file:
+      - .env
+    expose:
+      - "8181"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./media:/app/media
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Seller Bot ==========
+  seller_bot:
+    build:
+      context: .
+      dockerfile: seller_bot/Dockerfile
+    container_name: newlookup_seller_bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./media:/app/media
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Marketer Bot ==========
+  marketer_bot:
+    build:
+      context: .
+      dockerfile: marketer_bot/Dockerfile
+    container_name: newlookup_marketer_bot
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      main_bot:
+        condition: service_started
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Web Panel ==========
+  web_panel:
+    build:
+      context: .
+      dockerfile: web_panel/Dockerfile
+    container_name: newlookup_web_panel
+    env_file:
+      - .env
+    ports:
+      - "${WEB_PANEL_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./media:/app/media
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  # ========== Celery Worker ==========
+  celery_worker:
+    build:
+      context: .
+      dockerfile: main_bot/Dockerfile
+    container_name: newlookup_celery_worker
+    command: celery -A shared.tasks.auto_complete:celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./media:/app/media
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Celery Beat ==========
+  celery_beat:
+    build:
+      context: .
+      dockerfile: main_bot/Dockerfile
+    container_name: newlookup_celery_beat
+    command: celery -A shared.tasks.auto_complete:celery_app beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  # ========== Lookup API ==========
+  lookup_api:
+    build:
+      context: ./lookup_api
+      dockerfile: Dockerfile
+    container_name: newlookup_lookup_api
+    env_file:
+      - .env
+    expose:
+      - "8082"
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bot_network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8082/health')\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bot_network:
+    driver: bridge

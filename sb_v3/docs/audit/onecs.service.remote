@@ -1,0 +1,17 @@
+[Unit]
+Description=ONE CS Admin System
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/csbot_admin_system/app
+ExecStart=/opt/csbot_admin_system/app/start-onecs.sh
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/csbot_admin_system/logs/onecs-systemd.log
+StandardError=append:/opt/csbot_admin_system/logs/onecs-systemd-error.log
+
+[Install]
+WantedBy=multi-user.target

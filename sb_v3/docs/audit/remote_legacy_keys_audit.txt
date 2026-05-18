@@ -1,0 +1,162 @@
+Warning: Permanently added '193.221.200.87' (ED25519) to the list of known hosts.
+=== SYSTEMD UNITS OF INTEREST ===
+--- csbot.service ---
+# /etc/systemd/system/csbot.service
+[Unit]
+Description=Credit Score Telegram Bot
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/credit_score_bot
+Environment=PATH=/opt/credit_score_bot/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/credit_score_bot/venv/bin/python3 bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=csbot
+TimeoutStopSec=30
+# Allow up to 5GB virtual memory (RAM + swap)
+MemoryMax=5G
+MemorySwapMax=4G
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target
+
+--- nginx ---
+# /usr/lib/systemd/system/nginx.service
+# Stop dance for nginx
+# =======================
+#
+# ExecStop sends SIGQUIT (graceful stop) to the nginx process.
+# If, after 5s (--retry QUIT/5) nginx is still running, systemd takes control
+# and sends SIGTERM (fast shutdown) to the main process.
+# After another 5s (TimeoutStopSec=5), and if nginx is alive, systemd sends
+# SIGKILL to all the remaining processes in the process group (KillMode=mixed).
+#
+# nginx signals reference doc:
+# http://nginx.org/en/docs/control.html
+#
+[Unit]
+Description=A high performance web server and a reverse proxy server
+Documentation=man:nginx(8)
+After=network-online.target remote-fs.target nss-lookup.target
+Wants=network-online.target
+ConditionFileIsExecutable=/usr/sbin/nginx
+
+[Service]
+Type=forking
+PIDFile=/run/nginx.pid
+ExecStartPre=/usr/sbin/nginx -t -q -g 'daemon on; master_process on;'
+ExecStart=/usr/sbin/nginx -g 'daemon on; master_process on;'
+ExecReload=/usr/sbin/nginx -g 'daemon on; master_process on;' -s reload
+ExecStop=-/sbin/start-stop-daemon --quiet --stop --retry QUIT/5 --pidfile /run/nginx.pid
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
+
+--- pm2-root.service ---
+# /etc/systemd/system/pm2-root.service
+[Unit]
+Description=PM2 process manager
+Documentation=https://pm2.keymetrics.io/
+After=network.target
+
+[Service]
+Type=forking
+User=root
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=PM2_HOME=/root/.pm2
+PIDFile=/root/.pm2/pm2.pid
+Restart=on-failure
+
+ExecStart=/usr/lib/node_modules/pm2/bin/pm2 resurrect
+ExecReload=/usr/lib/node_modules/pm2/bin/pm2 reload all
+ExecStop=/usr/lib/node_modules/pm2/bin/pm2 kill
+
+[Install]
+WantedBy=multi-user.target
+
+
+=== LEGACY BOT TREE ===
+/opt/credit_score_bot/app/config.py
+/opt/credit_score_bot/.env
+/opt/credit_score_bot/.env.template
+
+=== REDACTED LEGACY ENV KEYS ===
+--- /opt/credit_score_bot/.env ---
+BOT_TOKEN=***
+PROXY_HOST=***
+PROXY_PORT=***
+PROXY_USERNAME=***
+PROXY_PASSWORD=***
+WORKER_COUNT=***
+CRYPTOBOT_API_TOKEN=***
+ADMIN_USER_IDS=***
+WORKER_ROTATE_ON_SUCCESS=***
+BTCPAY_URL=***
+BTCPAY_API_KEY=***
+BTCPAY_STORE_ID=***
+BTCPAY_WEBHOOK_SECRET=***
+PRIVATE_API_KEY=***
+PRIVATE_API_PORT=***
+ADMIN_PASSWORD=***
+CAPTCHA_API_KEY=***
+CAPTCHA_SERVICE=***
+
+--- /opt/credit_score_bot/.env.template ---
+BOT_TOKEN=***
+PROXY_HOST=***
+PROXY_PORT=***
+PROXY_USERNAME=***
+PROXY_PASSWORD=***
+WORKER_COUNT=***
+WORKER_ROTATE_ON_SUCCESS=***
+WORKER_HEADLESS=***
+WORKER_SCREENSHOT_DIR=***
+LOG_LEVEL=***
+
+--- /opt/credit_score_bot/app/config.py ---
+PROXY_HOST: str = ***
+PROXY_PORT: int = ***
+PROXY_USERNAME: str = ***
+PROXY_PASSWORD: str = ***
+CRYPTOBOT_API_TOKEN: str = ***
+BTCPAY_API_KEY: str = ***
+BTCPAY_WEBHOOK_SECRET: str = ***
+PRIVATE_API_KEY: str = ***
+PRIVATE_API_PORT: int = ***
+ADMIN_PASSWORD: str = ***
+ADMIN_USER_IDS: str = ***
+CAPTCHA_API_KEY: str = ***
+key = ***
+
+=== LEGACY PROXY GREP ===
+--- /opt/credit_score_bot/.env ---
+2: PROXY_HOST = ***
+3: PROXY_PORT = ***
+4: PROXY_USERNAME = ***
+5: PROXY_PASSWORD = ***
+--- /opt/credit_score_bot/app/config.py ---
+16: # --- Proxy Credentials --- = ***
+17: PROXY_HOST: str = ***
+18: PROXY_PORT: int = ***
+19: PROXY_USERNAME: str = ***
+20: PROXY_PASSWORD: str = ***
+
+=== DAISYSMS ENV KEYS ===
+--- /var/www/daisysms/.env ---
+DATABASE_URL=***
+NEXTAUTH_SECRET=***
+NEXTAUTH_URL=***
+HELEKET_API_KEY=***
+HELEKET_MERCHANT_ID=***

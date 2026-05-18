@@ -1,0 +1,227 @@
+{# Grouped navigation. active_page comes from template context. #}
+{% set active = active_page|default('') %}
+{% set ap = allowed_pages if allowed_pages is defined else none %}
+{% set analytics_pages = ['dashboard', 'analytics', 'reports', 'finance', 'ops', 'automation'] %}
+{% set users_pages = ['users', 'bots', 'deposits', 'broadcasts', 'referrals'] %}
+{% set team_pages = ['workers', 'worker_crm', 'sellers', 'seller_crm', 'seller-deposits', 'marketers', 'withdrawals'] %}
+{% set orders_pages = ['orders', 'disputes', 'complaints', 'support'] %}
+{% set catalog_pages = ['products', 'categories', 'seller_moderation', 'banks', 'brute_bank', 'accounts', 'esim', 'cc', 'education', 'another-services', 'documents'] %}
+{% set settings_pages = ['service-prices', 'pricing-config', 'bulk-discounts', 'service-order-config', 'knowledge-base', 'checks', 'instructions', 'admin-structure'] %}
+{% set system_pages = ['admins', 'admin_roles', 'audit'] %}
+{# Group visibility: true when allowed_pages not provided (server didn't send it) OR at least one page in group is allowed #}
+{% set ns = namespace(analytics_vis=true, users_vis=true, team_vis=true, orders_vis=true, catalog_vis=true, settings_vis=true, system_vis=true) %}
+{% if ap is not none %}
+  {% set ns.analytics_vis = false %}{% for p in analytics_pages %}{% if p in ap %}{% set ns.analytics_vis = true %}{% endif %}{% endfor %}
+  {% set ns.users_vis = false %}{% for p in users_pages %}{% if p in ap %}{% set ns.users_vis = true %}{% endif %}{% endfor %}
+  {% set ns.team_vis = false %}{% for p in team_pages %}{% if p in ap %}{% set ns.team_vis = true %}{% endif %}{% endfor %}
+  {% set ns.orders_vis = false %}{% for p in orders_pages %}{% if p in ap %}{% set ns.orders_vis = true %}{% endif %}{% endfor %}
+  {% set ns.catalog_vis = false %}{% for p in catalog_pages %}{% if p in ap %}{% set ns.catalog_vis = true %}{% endif %}{% endfor %}
+  {% set ns.settings_vis = false %}{% for p in settings_pages %}{% if p in ap %}{% set ns.settings_vis = true %}{% endif %}{% endfor %}
+  {% set ns.system_vis = false %}{% for p in system_pages %}{% if p in ap %}{% set ns.system_vis = true %}{% endif %}{% endfor %}
+{% endif %}
+{% if active in analytics_pages %}
+    {% set current_group = 'analytics' %}
+{% elif active in users_pages %}
+    {% set current_group = 'users' %}
+{% elif active in team_pages %}
+    {% set current_group = 'team' %}
+{% elif active in orders_pages %}
+    {% set current_group = 'orders' %}
+{% elif active in catalog_pages %}
+    {% set current_group = 'catalog' %}
+{% elif active in settings_pages %}
+    {% set current_group = 'settings' %}
+{% elif active in system_pages %}
+    {% set current_group = 'system' %}
+{% else %}
+    {% set current_group = 'analytics' %}
+{% endif %}
+<style>
+.admin-nav{background:rgba(0,0,0,.08);border-top:1px solid rgba(255,255,255,.15);position:relative;z-index:20}
+.admin-nav-inner{display:block;max-width:1600px;margin:0 auto}
+.nav-groups{display:flex;flex-wrap:nowrap;gap:14px;padding:14px 16px 10px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav-groups::-webkit-scrollbar{display:none}
+.nav-group-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:44px;padding:10px 20px;border-radius:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);color:#fff;text-decoration:none;font-size:13px;font-weight:800;white-space:nowrap;transition:all .18s ease}
+.nav-group-link:hover{background:rgba(255,255,255,.18)}
+.nav-group-link.active{background:rgba(255,255,255,.26);border-color:rgba(255,255,255,.28);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.nav-group-link[hidden],.admin-nav-item[hidden]{display:none!important}
+.nav-subgroups{display:flex;align-items:center;gap:18px;flex-wrap:nowrap;padding:14px 16px 0;background:rgba(255,255,255,.94);border-top:1px solid rgba(255,255,255,.08);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.nav-subgroups::-webkit-scrollbar{display:none}
+.nav-subgroups[hidden]{display:none!important}
+.admin-nav-item{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;min-height:44px;padding:8px 10px 14px!important;font-size:14px!important;line-height:1.25;color:#4b5563!important;text-decoration:none;border-radius:0;background:transparent!important;border:none!important;box-shadow:none!important;white-space:nowrap;text-align:center;border-bottom:3px solid transparent!important}
+.admin-nav-item:hover{color:#4338ca!important}
+.admin-nav-item.active{color:#4338ca!important;border-bottom-color:#6366f1!important}
+@media(max-width:900px){
+    .nav-groups{gap:10px;padding:12px 12px 8px}
+    .nav-group-link{min-height:40px;padding:9px 14px;font-size:12px}
+    .nav-subgroups{gap:14px;padding:12px 12px 0}
+    .admin-nav-item{min-height:40px;font-size:13px!important}
+}
+@media(max-width:760px){
+    .nav-groups,.nav-subgroups{display:flex}
+    .nav-group-link{width:auto}
+    .admin-nav-item{justify-content:center;text-align:center;padding:8px 10px 12px!important}
+}
+</style>
+<nav class="admin-nav">
+    <div class="admin-nav-inner">
+        <div class="nav-groups">
+            {% if ns.analytics_vis %}<a href="/dashboard" id="nav-group-analytics" data-group="analytics" class="nav-group-link{% if current_group == 'analytics' %} active{% endif %}">Аналитика</a>{% endif %}
+            {% if ns.users_vis %}<a href="/users" id="nav-group-users" data-group="users" class="nav-group-link{% if current_group == 'users' %} active{% endif %}">Юзеры</a>{% endif %}
+            {% if ns.team_vis %}<a href="/workers" id="nav-group-team" data-group="team" class="nav-group-link{% if current_group == 'team' %} active{% endif %}">Команда</a>{% endif %}
+            {% if ns.orders_vis %}<a href="/orders" id="nav-group-orders" data-group="orders" class="nav-group-link{% if current_group == 'orders' %} active{% endif %}">Заказы</a>{% endif %}
+            {% if ns.catalog_vis %}<a href="/products" id="nav-group-catalog" data-group="catalog" class="nav-group-link{% if current_group == 'catalog' %} active{% endif %}">Каталог</a>{% endif %}
+            {% if ns.settings_vis %}<a href="/automation" id="nav-group-settings" data-group="settings" class="nav-group-link{% if current_group == 'settings' %} active{% endif %}">Настройки</a>{% endif %}
+            {% if ns.system_vis %}<a href="/admins" id="nav-group-system" data-group="system" class="nav-group-link{% if current_group == 'system' %} active{% endif %}">Система</a>{% endif %}
+        </div>
+
+        <div class="nav-subgroups" id="nav-subgroups">
+            {% if current_group == 'analytics' %}
+                {% if ap is none or 'dashboard' in ap %}<a href="/dashboard" data-page="dashboard" class="admin-nav-item{% if active == 'dashboard' %} active{% endif %}">📊 Обзор</a>{% endif %}
+                {% if ap is none or 'finance' in ap %}<a href="/finance" data-page="finance" class="admin-nav-item{% if active == 'finance' %} active{% endif %}">💼 Finance Hub</a>{% endif %}
+                {% if ap is none or 'analytics' in ap %}<a href="/analytics" data-page="analytics" class="admin-nav-item{% if active == 'analytics' %} active{% endif %}">📈 Аналитика</a>{% endif %}
+                {% if ap is none or 'reports' in ap %}<a href="/reports" data-page="reports" class="admin-nav-item{% if active == 'reports' %} active{% endif %}">📋 Отчёты</a>{% endif %}
+                {% if ap is none or 'ops' in ap %}<a href="/ops" data-page="ops" class="admin-nav-item{% if active == 'ops' %} active{% endif %}">🚨 Ops Dashboard</a>{% endif %}
+                {% if ap is none or 'automation' in ap %}<a href="/automation" data-page="automation" class="admin-nav-item{% if active == 'automation' %} active{% endif %}">🤖 Автоматизация</a>{% endif %}
+            {% elif current_group == 'users' %}
+                {% if ap is none or 'users' in ap %}<a href="/users" data-page="users" class="admin-nav-item{% if active == 'users' %} active{% endif %}">👥 Пользователи</a>{% endif %}
+                {% if ap is none or 'bots' in ap %}<a href="/bots" data-page="bots" class="admin-nav-item{% if active == 'bots' %} active{% endif %}">🤖 Боты</a>{% endif %}
+                {% if ap is none or 'deposits' in ap %}<a href="/deposits" data-page="deposits" class="admin-nav-item{% if active == 'deposits' %} active{% endif %}">💰 Депозиты</a>{% endif %}
+                {% if ap is none or 'broadcasts' in ap %}<a href="/broadcasts" data-page="broadcasts" class="admin-nav-item{% if active == 'broadcasts' %} active{% endif %}">📢 Рассылки</a>{% endif %}
+                {% if ap is none or 'referrals' in ap %}<a href="/referrals" data-page="referrals" class="admin-nav-item{% if active == 'referrals' %} active{% endif %}">🔗 Рефералы</a>{% endif %}
+            {% elif current_group == 'team' %}
+                {% if ap is none or 'workers' in ap %}<a href="/workers" data-page="workers" class="admin-nav-item{% if active == 'workers' %} active{% endif %}">👷 Воркеры</a>{% endif %}
+                {% if ap is none or 'sellers' in ap %}<a href="/sellers" data-page="sellers" class="admin-nav-item{% if active == 'sellers' %} active{% endif %}">🏪 Селлеры</a>{% endif %}
+                {% if ap is none or 'marketers' in ap %}<a href="/marketers" data-page="marketers" class="admin-nav-item{% if active == 'marketers' %} active{% endif %}">📢 Маркетологи</a>{% endif %}
+                {% if ap is none or 'withdrawals' in ap %}<a href="/withdrawals" data-page="withdrawals" class="admin-nav-item{% if active == 'withdrawals' %} active{% endif %}">💸 Выводы</a>{% endif %}
+                {% if ap is none or 'worker_crm' in ap %}<a href="/worker-crm" data-page="worker_crm" class="admin-nav-item{% if active == 'worker_crm' %} active{% endif %}">📋 Worker CRM</a>{% endif %}
+                {% if ap is none or 'seller_crm' in ap %}<a href="/seller-crm" data-page="seller_crm" class="admin-nav-item{% if active == 'seller_crm' %} active{% endif %}">📋 Seller CRM</a>{% endif %}
+                {% if ap is none or 'seller-deposits' in ap %}<a href="/seller-deposits" data-page="seller-deposits" class="admin-nav-item{% if active == 'seller-deposits' %} active{% endif %}">💳 Seller Deposits</a>{% endif %}
+            {% elif current_group == 'orders' %}
+                {% if ap is none or 'orders' in ap %}<a href="/orders" data-page="orders" class="admin-nav-item{% if active == 'orders' %} active{% endif %}">📑 Заказы</a>{% endif %}
+                {% if ap is none or 'disputes' in ap %}<a href="/disputes" data-page="disputes" class="admin-nav-item{% if active == 'disputes' %} active{% endif %}">⚖️ Disputes</a>{% endif %}
+                {% if ap is none or 'complaints' in ap %}<a href="/complaints" data-page="complaints" class="admin-nav-item{% if active == 'complaints' %} active{% endif %}">⚠️ Жалобы</a>{% endif %}
+                {% if ap is none or 'support' in ap %}<a href="/support" data-page="support" class="admin-nav-item{% if active == 'support' %} active{% endif %}">💬 Чат</a>{% endif %}
+            {% elif current_group == 'catalog' %}
+                {% if ap is none or 'products' in ap %}<a href="/products" data-page="products" class="admin-nav-item{% if active == 'products' %} active{% endif %}">📦 Товары</a>{% endif %}
+                {% if ap is none or 'categories' in ap %}<a href="/categories" data-page="categories" class="admin-nav-item{% if active == 'categories' %} active{% endif %}">🗂️ Категории</a>{% endif %}
+                {% if ap is none or 'seller_moderation' in ap %}<a href="/seller-moderation" data-page="seller_moderation" class="admin-nav-item{% if active == 'seller_moderation' %} active{% endif %}">🛂 Модерация</a>{% endif %}
+                <span style="display:inline-block;width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 8px"></span>
+                {% if ap is none or 'banks' in ap %}<a href="/banks" data-page="banks" class="admin-nav-item{% if active == 'banks' %} active{% endif %}">🏦 Банки</a>{% endif %}
+                {% if ap is none or 'brute_bank' in ap %}<a href="/brute-bank" data-page="brute_bank" class="admin-nav-item{% if active == 'brute_bank' %} active{% endif %}">🃏 Карты (Brute)</a>{% endif %}
+                {% if ap is none or 'accounts' in ap %}<a href="/accounts" data-page="accounts" class="admin-nav-item{% if active == 'accounts' %} active{% endif %}">🧾 Аккаунты</a>{% endif %}
+                <span style="display:inline-block;width:1px;height:20px;background:rgba(0,0,0,.1);margin:0 8px"></span>
+                {% if ap is none or 'esim' in ap %}<a href="/esim" data-page="esim" class="admin-nav-item{% if active == 'esim' %} active{% endif %}">📶 eSIM</a>{% endif %}
+                {% if ap is none or 'cc' in ap %}<a href="/cc" data-page="cc" class="admin-nav-item{% if active == 'cc' %} active{% endif %}">💳 CC</a>{% endif %}
+                {% if ap is none or 'education' in ap %}<a href="/education" data-page="education" class="admin-nav-item{% if active == 'education' %} active{% endif %}">📚 Education</a>{% endif %}
+                {% if ap is none or 'another-services' in ap %}<a href="/another-services" data-page="another-services" class="admin-nav-item{% if active == 'another-services' %} active{% endif %}">📞 Another</a>{% endif %}
+                {% if ap is none or 'documents' in ap %}<a href="/documents" data-page="documents" class="admin-nav-item{% if active == 'documents' %} active{% endif %}">📄 Docs &amp; Fullz</a>{% endif %}
+            {% elif current_group == 'settings' %}
+                {% if ap is none or 'service-prices' in ap %}<a href="/service-prices" data-page="service-prices" class="admin-nav-item{% if active == 'service-prices' %} active{% endif %}">💲 Цены сервисов</a>{% endif %}
+                {% if ap is none or 'pricing-config' in ap %}<a href="/pricing-config" data-page="pricing-config" class="admin-nav-item{% if active == 'pricing-config' %} active{% endif %}">⚙️ Конфигурация</a>{% endif %}
+                {% if ap is none or 'bulk-discounts' in ap %}<a href="/bulk-discounts" data-page="bulk-discounts" class="admin-nav-item{% if active == 'bulk-discounts' %} active{% endif %}">🎁 Скидки (опт) + Рефералы</a>{% endif %}
+                {% if ap is none or 'service-order-config' in ap %}<a href="/service-order-config" data-page="service-order-config" class="admin-nav-item{% if active == 'service-order-config' %} active{% endif %}">⚡ Типы заказов &amp; ETA</a>{% endif %}
+                {% if ap is none or 'knowledge-base' in ap %}<a href="/knowledge-base" data-page="knowledge-base" class="admin-nav-item{% if active == 'knowledge-base' %} active{% endif %}">📚 База знаний</a>{% endif %}
+                {% if ap is none or 'checks' in ap %}<a href="/checks" data-page="checks" class="admin-nav-item{% if active == 'checks' %} active{% endif %}">✅ Проверки</a>{% endif %}
+                {% if ap is none or 'instructions' in ap %}<a href="/instructions" data-page="instructions" class="admin-nav-item{% if active == 'instructions' %} active{% endif %}">🎓 Инструкции</a>{% endif %}
+                {% if ap is none or 'admin-structure' in ap %}<a href="/admin-structure" data-page="admin-structure" class="admin-nav-item{% if active == 'admin-structure' %} active{% endif %}">🗺️ Структура</a>{% endif %}
+            {% elif current_group == 'system' %}
+                {% if ap is none or 'admins' in ap %}<a href="/admins" data-page="admins" class="admin-nav-item{% if active == 'admins' %} active{% endif %}">👤 Админы</a>{% endif %}
+                {% if ap is none or 'admin_roles' in ap %}<a href="/admin-roles" data-page="admin_roles" class="admin-nav-item{% if active == 'admin_roles' %} active{% endif %}">🔐 Роли</a>{% endif %}
+                {% if ap is none or 'audit' in ap %}<a href="/audit" data-page="audit" class="admin-nav-item{% if active == 'audit' %} active{% endif %}">📋 Журнал действий</a>{% endif %}
+            {% endif %}
+        </div>
+    </div>
+</nav>
+<script>
+(function(){
+    var groupPages = {
+        analytics: ['dashboard', 'finance', 'analytics', 'reports', 'ops', 'automation'],
+        users: ['users', 'bots', 'deposits', 'broadcasts', 'referrals'],
+        team: ['workers', 'worker_crm', 'sellers', 'seller_crm', 'seller-deposits', 'marketers', 'withdrawals'],
+        orders: ['orders', 'disputes', 'complaints', 'support'],
+        catalog: ['products', 'categories', 'seller_moderation', 'banks', 'brute_bank', 'accounts', 'esim', 'cc', 'education', 'another-services', 'documents'],
+        settings: ['service-prices', 'pricing-config', 'bulk-discounts', 'service-order-config', 'knowledge-base', 'checks', 'instructions', 'admin-structure'],
+        system: ['admins', 'admin_roles', 'audit']
+    };
+    var pagePaths = {
+        dashboard: '/dashboard',
+        finance: '/finance',
+        analytics: '/analytics',
+        reports: '/reports',
+        ops: '/ops',
+        users: '/users',
+        bots: '/bots',
+        deposits: '/deposits',
+        workers: '/workers',
+        worker_crm: '/worker-crm',
+        sellers: '/sellers',
+        seller_crm: '/seller-crm',
+        'seller-deposits': '/seller-deposits',
+        marketers: '/marketers',
+        withdrawals: '/withdrawals',
+        orders: '/orders',
+        disputes: '/disputes',
+        complaints: '/complaints',
+        support: '/support',
+        products: '/products',
+        banks: '/banks',
+        brute_bank: '/brute-bank',
+        seller_moderation: '/seller-moderation',
+        accounts: '/accounts',
+        esim: '/esim',
+        cc: '/cc',
+        education: '/education',
+        'another-services': '/another-services',
+        documents: '/documents',
+        automation: '/automation',
+        'service-prices': '/service-prices',
+        'pricing-config': '/pricing-config',
+        'bulk-discounts': '/bulk-discounts',
+        'service-order-config': '/service-order-config',
+        categories: '/categories',
+        broadcasts: '/broadcasts',
+        referrals: '/referrals',
+        'knowledge-base': '/knowledge-base',
+        checks: '/checks',
+        instructions: '/instructions',
+        'admin-structure': '/admin-structure',
+        admins: '/admins',
+        admin_roles: '/admin-roles',
+        audit: '/audit'
+    };
+
+    function applyAccess(ctx){
+        if(!ctx || !Array.isArray(ctx.allowed_pages)) return;
+        var allowed = new Set(ctx.allowed_pages);
+        document.querySelectorAll('.admin-nav-item[data-page]').forEach(function(node){
+            node.hidden = !allowed.has(node.dataset.page);
+        });
+        Object.keys(groupPages).forEach(function(group){
+            var groupLink = document.querySelector('.nav-group-link[data-group="'+group+'"]');
+            if(!groupLink) return;
+            var firstAllowedPage = groupPages[group].find(function(page){ return allowed.has(page); });
+            var visible = !!firstAllowedPage;
+            groupLink.hidden = !visible;
+            if (firstAllowedPage && pagePaths[firstAllowedPage]) {
+                groupLink.href = pagePaths[firstAllowedPage];
+            }
+        });
+        var subgroups = document.getElementById('nav-subgroups');
+        if(subgroups){
+            var visibleItems = Array.from(subgroups.querySelectorAll('.admin-nav-item[data-page]')).filter(function(node){
+                return !node.hidden;
+            });
+            subgroups.hidden = visibleItems.length === 0;
+        }
+    }
+
+    if(window.ADMIN_CONTEXT){
+        applyAccess(window.ADMIN_CONTEXT);
+    } else {
+        document.addEventListener('admin-context-ready', function(e){
+            applyAccess(e.detail);
+        }, { once: true });
+    }
+})();
+</script>

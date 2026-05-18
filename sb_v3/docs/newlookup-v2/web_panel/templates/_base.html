@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>{% block title %}Admin{% endblock %} - NewLookup</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:#f5f7fa;min-height:100vh}
+        .admin-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+        .admin-header-top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 32px;max-width:1600px;margin:0 auto;flex-wrap:wrap}
+        .admin-header h1{font-size:22px;font-weight:600;line-height:1.2}
+        .admin-header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:flex-end}
+        .admin-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;border:none;transition:all .2s}
+        .admin-btn-outline{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+        .admin-btn-outline:hover{background:rgba(255,255,255,.3)}
+        .admin-container{max-width:1600px;margin:0 auto;padding:24px 32px}
+        .admin-container--w900{max-width:900px}
+        .admin-container--w1200{max-width:1200px}
+        .admin-container--w1400{max-width:1400px}
+        .admin-container--w1600{max-width:1600px}
+        .admin-container--fullheight{max-width:none;padding:0;flex:1;display:flex;flex-direction:column;min-height:0}
+        .admin-subnav{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+        .admin-subnav::-webkit-scrollbar{display:none}
+        .admin-subnav .tab-btn{padding:14px 20px;border:none;background:0 0;cursor:pointer;font-size:14px;font-weight:500;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .2s}
+        .admin-subnav .tab-btn:hover{color:#667eea}
+        .admin-subnav .tab-btn.active{color:#667eea;border-bottom-color:#667eea}
+        @media(max-width:768px){.admin-header-top{padding:12px 16px;align-items:flex-start}.admin-header-actions{width:100%;justify-content:flex-start}.admin-container{padding:16px}}
+    </style>
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body{% block body_class %}{% endblock %}>
+    <header class="admin-header">
+        <div class="admin-header-top">
+            <h1>{% block header_title %}🛡️ NewLookup Admin{% endblock %}</h1>
+            <div class="admin-header-actions">
+                <div style="position:relative;margin-right:12px">
+                    <input type="text" id="globalSearch" placeholder="🔍 Поиск..." style="padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.2);color:#fff;font-size:13px;width:220px;outline:none" oninput="handleGlobalSearch(event)">
+                    <div id="globalSearchResults" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;background:#fff;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:400px;overflow-y:auto;z-index:1000"></div>
+                </div>
+                <span id="adminName" style="opacity:.9;font-size:14px">Admin</span>
+                <a href="/dashboard" class="admin-btn admin-btn-outline">← Dashboard</a>
+                <button class="admin-btn admin-btn-outline" onclick="logout()">🚪 Выход</button>
+            </div>
+        </div>
+        {% include '_nav.html' %}
+    </header>
+    {% block subnav %}{% endblock %}
+    <main class="admin-container{% block container_modifier %}{% endblock %}">
+        {% block content %}{% endblock %}
+    </main>
+    <script>
+        const token = localStorage.getItem('token');
+        const activePage = {{ active_page|default('')|tojson }};
+        if (!token && !window.location.pathname.match(/^\/(index\.html)?$/)) window.location.href = '/';
+        function logout() {
+            localStorage.removeItem('token');
+            document.cookie = 'access_token=; Max-Age=0; path=/; SameSite=Lax';
+            window.location.href = '/';
+        }
+        async function authFetch(url, o) {
+            o = o || {};
+            o.headers = o.headers || {};
+            o.headers['Authorization'] = 'Bearer ' + token;
+            const r = await fetch(url, o);
+            if (r.status === 401) { logout(); return null; }
+            return r;
+        }
+        let globalSearchTimeout = null;
+        async function handleGlobalSearch(e) {
+            const query = e.target.value.trim();
+            const resultsDiv = document.getElementById('globalSearchResults');
+            if (!query || query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            clearTimeout(globalSearchTimeout);
+            globalSearchTimeout = setTimeout(async () => {
+                try {
+                    const r = await authFetch('/api/search?q=' + encodeURIComponent(query));
+                    if (!r || !r.ok) return;
+                    const data = await r.json();
+                    const results = data.results || [];
+                    if (!results.length) {
+                        resultsDiv.innerHTML = '<div style="padding:12px;color:#9ca3af;text-align:center">Ничего не найдено</div>';
+                        resultsDiv.style.display = 'block';
+                        return;
+                    }
+                    resultsDiv.innerHTML = results.map(item => {
+                        const icon = item.type === 'user' ? '👤' : item.type === 'order' ? '📦' : item.type === 'ticket' ? '🎫' : '📄';
+                        const url = item.type === 'user' ? `/users?search=${item.id}` : item.type === 'order' ? `/orders?search=${item.id}` : item.type === 'ticket' ? `/support?ticket=${item.id}` : '#';
+                        return `<a href="${url}" style="display:block;padding:10px 14px;border-bottom:1px solid #f0f0f0;text-decoration:none;color:#374151;transition:background .15s" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='transparent'">
+                            <div style="font-weight:600;font-size:13px">${icon} ${item.title || 'Item'}</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:2px">${item.description || ''}</div>
+                        </a>`;
+                    }).join('');
+                    resultsDiv.style.display = 'block';
+                } catch(e) {
+                    console.error('Search error:', e);
+                }
+            }, 300);
+        }
+        document.addEventListener('click', function(e) {
+            const searchInput = document.getElementById('globalSearch');
+            const resultsDiv = document.getElementById('globalSearchResults');
+            if (searchInput && resultsDiv && !searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.style.display = 'none';
+            }
+        });
+        (async () => {
+            const r = await authFetch('/api/auth/me');
+            if (!r || !r.ok) return;
+            const u = await r.json();
+            window.ADMIN_CONTEXT = u;
+            document.body.dataset.role = u.role || '';
+            document.dispatchEvent(new CustomEvent('admin-context-ready', { detail: u }));
+            if (u.username) {
+                const nameNode = document.getElementById('adminName');
+                if (nameNode) nameNode.textContent = `${u.username} (${u.role})`;
+            }
+            if (activePage && Array.isArray(u.allowed_pages) && !u.allowed_pages.includes(activePage)) {
+                window.location.href = u.default_path || '/';
+            }
+        })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

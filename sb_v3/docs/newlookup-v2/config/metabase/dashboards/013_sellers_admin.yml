@@ -1,0 +1,191 @@
+# Metabase Dashboard: Sellers Admin
+# Dashboard ID: 013
+# Description: Управление селлерами - активация, балансы, модерация
+
+dashboard:
+  name: "🏪 Sellers Admin"
+  description: "Администрирование селлеров - активация, деактивация, балансы, статистика"
+  position: 13
+
+  parameters:
+    - name: "Seller ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "active", "inactive", "pending_deposit"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "🏪 Total Sellers"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_sellers
+        FROM sellers
+
+    - name: "✅ Active Sellers"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_sellers
+        FROM sellers
+        WHERE is_active = true
+
+    - name: "⏸️ Inactive Sellers"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as inactive_sellers
+        FROM sellers
+        WHERE is_active = false
+
+    - name: "💰 Total Seller Balances"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_seller_balances
+        FROM sellers
+
+    # ========== SELLERS TABLE ==========
+    - name: "🏪 All Sellers"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          s.id,
+          s.user_id,
+          u.username,
+          s.balance,
+          s.total_earned,
+          s.total_withdrawn,
+          s.is_active,
+          s.deposit_paid,
+          s.created_at,
+          (SELECT COUNT(*) FROM seller_banks WHERE seller_id = s.user_id) as banks_count,
+          (SELECT COUNT(*) FROM seller_cc_items WHERE seller_id = s.user_id) as cc_count,
+          (SELECT COUNT(*) FROM seller_orders WHERE seller_id = s.user_id) as orders_count,
+          'Activate/Deactivate/View' as actions
+        FROM sellers s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        WHERE ({{seller_id}} IS NULL OR s.user_id = {{seller_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'active' AND s.is_active = true) OR
+            ({{status_filter}} = 'inactive' AND s.is_active = false)
+          )
+        ORDER BY s.created_at DESC
+        LIMIT 100
+
+    # ========== TOP SELLERS ==========
+    - name: "💎 Top Sellers by Revenue"
+      type: "table"
+      position: { row: 3, col: 1, size: 6 }
+      query: |
+        SELECT 
+          s.user_id as seller_id,
+          u.username,
+          s.balance,
+          s.total_earned,
+          s.total_withdrawn,
+          COUNT(DISTINCT so.id) as total_orders,
+          SUM(so.seller_amount) as revenue_30d
+        FROM sellers s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        LEFT JOIN seller_orders so ON s.user_id = so.seller_id 
+          AND so.created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY s.user_id, u.username, s.balance, s.total_earned, s.total_withdrawn
+        HAVING SUM(so.seller_amount) > 0
+        ORDER BY revenue_30d DESC
+        LIMIT 20
+
+    - name: "📦 Top Sellers by Products"
+      type: "table"
+      position: { row: 3, col: 7, size: 6 }
+      query: |
+        SELECT 
+          s.user_id as seller_id,
+          u.username,
+          (SELECT COUNT(*) FROM seller_banks WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_cc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_enroll_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_logs_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_nfc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_otp_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_selfreg_cc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_check_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_document_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_fullz_items WHERE seller_id = s.user_id)
+          as total_products,
+          s.balance,
+          s.is_active,
+          'View Products' as action
+        FROM sellers s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        ORDER BY total_products DESC
+        LIMIT 20
+
+    # ========== PRODUCTS BY SELLER ==========
+    - name: "📊 Products by Seller"
+      type: "bar"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          s.user_id as seller_id,
+          u.username,
+          (SELECT COUNT(*) FROM seller_banks WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_cc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_enroll_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_logs_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_nfc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_otp_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_selfreg_cc_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_check_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_document_items WHERE seller_id = s.user_id) +
+          (SELECT COUNT(*) FROM seller_fullz_items WHERE seller_id = s.user_id)
+          as total_products
+        FROM sellers s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        WHERE s.is_active = true
+        ORDER BY total_products DESC
+        LIMIT 30
+
+    # ========== RECENT REGISTRATIONS ==========
+    - name: "🆕 Recent Seller Registrations"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          s.id,
+          s.user_id,
+          u.username,
+          s.deposit_paid,
+          s.is_active,
+          s.created_at,
+          (SELECT COUNT(*) FROM seller_banks WHERE seller_id = s.user_id AND moderation_status = 'pending') as pending_banks,
+          (SELECT COUNT(*) FROM seller_cc_items WHERE seller_id = s.user_id AND moderation_status = 'pending') as pending_cc,
+          'Review/Activate' as action
+        FROM sellers s
+        LEFT JOIN users u ON s.user_id = u.user_id
+        WHERE s.created_at >= NOW() - INTERVAL '7 days'
+        ORDER BY s.created_at DESC
+        LIMIT 50
+
+    # ========== SELLER ACTIVITY ==========
+    - name: "📈 Seller Activity (7 days)"
+      type: "line"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(so.created_at) as date,
+          COUNT(DISTINCT so.seller_id) as active_sellers,
+          COUNT(*) as orders_count,
+          SUM(so.seller_amount) as seller_revenue
+        FROM seller_orders so
+        WHERE so.created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(so.created_at)
+        ORDER BY date

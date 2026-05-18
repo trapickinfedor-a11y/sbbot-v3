@@ -1,0 +1,97 @@
+=== HOST ===
+lovely-east.yeezyhost.net
+
+=== ACTIVE SERVICES ===
+csbot.service=active
+nginx=active
+pm2-root.service=active
+
+=== CSBOT UNIT ===
+# /etc/systemd/system/csbot.service
+[Unit]
+Description=Credit Score Telegram Bot
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/credit_score_bot
+Environment=PATH=/opt/credit_score_bot/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/credit_score_bot/venv/bin/python3 bot.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=csbot
+TimeoutStopSec=30
+# Allow up to 5GB virtual memory (RAM + swap)
+MemoryMax=5G
+MemorySwapMax=4G
+OOMScoreAdjust=-500
+
+[Install]
+WantedBy=multi-user.target
+
+=== PM2 LIST ===
+┌────┬─────────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name        │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+├────┼─────────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+│ 0  │ daisysms    │ default     │ N/A     │ fork    │ 882      │ 3h     │ 0    │ online    │ 0%       │ 58.4mb   │ root     │ disabled │
+└────┴─────────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+
+=== NGINX ROUTING HINTS ===
+	# server_names_hash_bucket_size 64;
+	# server_name_in_redirect off;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.click www.daisysms.click;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.codes www.daisysms.codes;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.icu www.daisysms.icu;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.rest www.daisysms.rest;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.shop www.daisysms.shop;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.space www.daisysms.space;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.store www.daisysms.store;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.top www.daisysms.top;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.us www.daisysms.us;
+        proxy_pass http://127.0.0.1:3000;
+    listen 80;
+    listen [::]:80;
+    server_name daisysms.vip www.daisysms.vip;
+        proxy_pass http://127.0.0.1:3000;
+
+=== LISTEN PORTS ===
+LISTEN 0      2048         0.0.0.0:8000      0.0.0.0:*    users:(("python3",pid=833,fd=21))                                           
+LISTEN 0      511          0.0.0.0:80        0.0.0.0:*    users:(("nginx",pid=861,fd=5),("nginx",pid=860,fd=5),("nginx",pid=859,fd=5))
+LISTEN 0      4096         0.0.0.0:22        0.0.0.0:*    users:(("sshd",pid=1018,fd=3),("systemd",pid=1,fd=94))                      
+LISTEN 0      511                *:3000            *:*    users:(("next-server (v1",pid=920,fd=18))                                   
+LISTEN 0      511             [::]:80           [::]:*    users:(("nginx",pid=861,fd=6),("nginx",pid=860,fd=6),("nginx",pid=859,fd=6))
+LISTEN 0      4096            [::]:22           [::]:*    users:(("sshd",pid=1018,fd=4),("systemd",pid=1,fd=95))                      
+
+=== APP DIRECTORIES ===
+drwxrwxr-x  8 root root 4096 Mar 24 03:24 /opt/credit_score_bot
+drwxrwxr-x 10 1000 1000 4096 Mar 13 09:46 /var/www/daisysms

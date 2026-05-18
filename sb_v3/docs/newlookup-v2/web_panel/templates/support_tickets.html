@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Tickets - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .nav {
+            display: flex;
+            gap: 30px;
+            padding: 15px 40px 20px 40px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .nav-group-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+            padding: 15px 0;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding-right: 15px;
+        }
+        
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .nav-btn.active {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 40px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .category-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .category-btn:hover {
+            background: #f0f3ff;
+        }
+        
+        .category-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .tickets-list {
+            background: transparent;
+        }
+        
+        .ticket-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+        
+        .ticket-card:last-child {
+            margin-bottom: 0;
+        }
+        
+        .ticket-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .ticket-id {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .ticket-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-open { background: #e3fcef; color: #006644; }
+        .status-in_progress { background: #fff4e6; color: #b95000; }
+        .status-waiting_user { background: #e6f4ff; color: #0050b3; }
+        .status-closed { background: #f0f0f0; color: #666; }
+        
+        .ticket-subject {
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .ticket-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .unread-badge {
+            background: #ff4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        /* Новые стили для карточек тикетов */
+        .ticket-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .ticket-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .ticket-id-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ticket-number {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-answered {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #74b9ff;
+        }
+        
+        .status-closed {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #00b894;
+        }
+        
+        .ticket-category {
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .ticket-content {
+            margin-bottom: 15px;
+        }
+        
+        .ticket-preview {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .ticket-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 15px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        
+        .ticket-user, .ticket-date {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #666;
+        }
+        
+        .user-icon, .date-icon {
+            font-size: 12px;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            padding: 20px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        
+        .messages {
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 12px;
+        }
+        
+        .message-user {
+            background: #f0f3ff;
+            margin-left: 50px;
+        }
+        
+        .message-admin {
+            background: #e3fcef;
+            margin-right: 50px;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+        }
+        
+        .message-time {
+            color: #666;
+        }
+        
+        .message-text {
+            color: #333;
+            line-height: 1.5;
+        }
+        
+        .message-files {
+            margin-top: 10px;
+        }
+        
+        .file-item {
+            margin-bottom: 8px;
+        }
+        
+        .document-file,
+        .video-file {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .reply-form {
+            border-top: 2px solid #e0e0e0;
+            padding: 20px 30px;
+        }
+        
+        .reply-form textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .reply-form textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .reply-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        
+        .status-selector {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <h1>📞 Support Tickets - NewLookup</h1>
+            <div class="header-actions">
+                <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+                <span id="adminName">Admin</span>
+                <button onclick="logout()" class="logout-btn">
+                    🚪 Logout
+                </button>
+            </div>
+        </div>
+        
+        <div class="nav">
+            <!-- Обзор -->
+            <div class="nav-group">
+                <span class="nav-group-title">Обзор</span>
+                <a href="/dashboard" class="nav-btn">📊 Dashboard</a>
+            </div>
+            
+               <!-- Управление -->
+               <div class="nav-group">
+                   <span class="nav-group-title">Управление</span>
+                   <a href="/users" class="nav-btn">👥 Пользователи</a>
+                   <a href="/bots" class="nav-btn">🤖 Боты</a>
+                   <a href="/workers" class="nav-btn">👷 Воркеры</a>
+                   <a href="/products" class="nav-btn">📦 Товары</a>
+                   <a href="/complaints" class="nav-btn">⚠️ Жалобы</a>
+               </div>
+            
+            <!-- Финансы -->
+            <div class="nav-group">
+                <span class="nav-group-title">Финансы</span>
+                <a href="/deposits" class="nav-btn">💰 Депозиты</a>
+            </div>
+            
+            <!-- Тикеты -->
+            <div class="nav-group">
+                <span class="nav-group-title">Тикеты</span>
+                <a href="/support" class="nav-btn active">💬 Чат</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="stats" id="stats">
+            <!-- Stats will be loaded here -->
+        </div>
+        
+        <div class="categories" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="category-btn active" data-category="all">All</button>
+            <button class="category-btn" data-category="payment">💰 Payment</button>
+            <button class="category-btn" data-category="product">📦 Product</button>
+            <button class="category-btn" data-category="general">💬 General</button>
+            <button class="category-btn" data-category="partnership">🤝 Partnership</button>
+            <div style="margin-left:auto;display:flex;gap:6px">
+                <button onclick="setView('list')" id="viewList" class="category-btn active" style="font-size:12px">☰ List</button>
+                <button onclick="setView('kanban')" id="viewKanban" class="category-btn" style="font-size:12px">🗂 Kanban</button>
+            </div>
+        </div>
+
+        <!-- Kanban Board (hidden by default) -->
+        <div id="kanbanBoard" style="display:none;gap:12px;margin-top:16px;overflow-x:auto">
+            <style>
+                #kanbanBoard { display: none; grid-template-columns: repeat(4,minmax(220px,1fr)); }
+                #kanbanBoard.active { display: grid !important; }
+                .kb-col { background:#1e2533; border-radius:10px; padding:12px; min-height:300px; }
+                .kb-col h3 { font-size:13px; margin:0 0 10px; text-transform:uppercase; letter-spacing:1px; }
+                .kb-col .kb-card { background:#252d3d; border-radius:8px; padding:8px 10px; margin-bottom:8px; cursor:pointer; font-size:12px; border-left:3px solid #3498db; }
+                .kb-col .kb-card.sla-breach { border-left-color:#e74c3c !important; }
+                .kb-col .kb-card .kb-id { color:#aaa; font-size:11px; }
+            </style>
+            <div class="kb-col" id="kb-new"><h3 style="color:#f39c12">🆕 New</h3></div>
+            <div class="kb-col" id="kb-open"><h3 style="color:#3498db">📂 Open</h3></div>
+            <div class="kb-col" id="kb-pending"><h3 style="color:#e67e22">⏳ Pending</h3></div>
+            <div class="kb-col" id="kb-solved"><h3 style="color:#27ae60">✅ Solved</h3></div>
+        </div>
+
+        <div class="tickets-list" id="ticketsList">
+            <div class="loading">Loading tickets...</div>
+        </div>
+    </div>
+    
+    <!-- Ticket Detail Modal -->
+    <div class="modal" id="ticketModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Ticket #123</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Messages will be loaded here -->
+            </div>
+            <div class="reply-form">
+                <select class="status-selector" id="statusSelector">
+                    <option value="open">🟢 Open</option>
+                    <option value="in_progress">🟡 In Progress</option>
+                    <option value="waiting_user">🔵 Waiting User</option>
+                    <option value="closed">⚪ Closed</option>
+                </select>
+                <textarea id="replyText" placeholder="Type your reply..."></textarea>
+                <div class="file-upload-section">
+                    <label for="replyFile" style="display: block; margin: 10px 0 5px 0; font-weight: 500;">Attach File (optional):</label>
+                    <input type="file" id="replyFile" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip" style="margin-bottom: 10px;">
+                    <div id="filePreview" style="display: none; padding: 10px; background: #f8f9fa; border-radius: 6px; margin-bottom: 10px;"></div>
+                </div>
+                <div class="reply-actions">
+                    <button class="btn btn-primary" onclick="sendReply()">📤 Send Reply</button>
+                    <button class="btn btn-secondary" onclick="updateStatus()">🔄 Update Status</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ========== АВТОРИЗАЦИЯ ==========
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+        
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return null;
+            }
+            
+            return response;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+        
+        let currentCategory = 'all';
+        let currentTicketId = null;
+        
+        // Load stats
+        async function loadStats() {
+            try {
+                const response = await authFetch('/api/support-tickets/stats');
+                const stats = await response.json();
+                
+                // Load CSAT from new tickets table if available
+                let csatHtml = '';
+                try {
+                    const csatResp = await authFetch('/api/support-tickets/csat');
+                    if (csatResp && csatResp.ok) {
+                        const csat = await csatResp.json();
+                        const pct = csat.total > 0 ? Math.round((csat.good / csat.total) * 100) : 0;
+                        csatHtml = `<div class="stat-card" style="border-top:3px solid #22c55e">
+                            <h3>CSAT</h3>
+                            <div class="number" style="color:#22c55e">${pct}%</div>
+                            <small style="color:#6b7280">${csat.good}👍 / ${csat.ok}😐 / ${csat.bad}👎</small>
+                        </div>`;
+                    }
+                } catch {}
+
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-card">
+                        <h3>Total Tickets</h3>
+                        <div class="number">${stats.total}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Open</h3>
+                        <div class="number">${stats.open}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>In Progress</h3>
+                        <div class="number">${stats.in_progress}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Closed</h3>
+                        <div class="number">${stats.closed}</div>
+                    </div>
+                    ${csatHtml}
+                `;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Load tickets
+        async function loadTickets(category = 'all') {
+            try {
+                const url = category === 'all' 
+                    ? '/api/support-tickets/'
+                    : `/api/support-tickets/category/${category}`;
+                
+                const response = await authFetch(url);
+                const tickets = await response.json();
+                
+                const ticketsList = document.getElementById('ticketsList');
+                allTickets = tickets.items || tickets;  // cache for kanban
+
+                if ((tickets.items || tickets).length === 0) {
+                    ticketsList.innerHTML = '<div class="loading">No tickets found</div>';
+                    if (currentView === 'kanban') renderKanban([]);
+                    return;
+                }
+                const ticketsArr = tickets.items || tickets;
+                
+                ticketsList.innerHTML = ticketsArr.map(ticket => {
+                    const date = new Date(ticket.created_at).toLocaleDateString('ru-RU', {
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    const unreadBadge = ticket.unread_count > 0 
+                        ? `<span class="unread-badge">${ticket.unread_count}</span>`
+                        : '';
+                    
+                    // Определяем иконку для категории
+                    const categoryIcons = {
+                        'payment': '💳',
+                        'product': '📦',
+                        'general': '💬',
+                        'partnership': '🤝',
+                        'complaint': '⚠️'
+                    };
+                    const categoryIcon = categoryIcons[ticket.category] || '📞';
+                    
+                    // Определяем цвет статуса
+                    const statusColors = {
+                        'pending': 'status-pending',
+                        'answered': 'status-answered', 
+                        'closed': 'status-closed',
+                        'open': 'status-pending',
+                        'in_progress': 'status-answered',
+                        'solved': 'status-closed',
+                    };
+                    const statusClass = statusColors[ticket.status] || 'status-pending';
+
+                    // SLA timer
+                    const priorityColors = { CRITICAL: '#e74c3c', HIGH: '#e67e22', NORMAL: '#f39c12', LOW: '#27ae60' };
+                    const priorityLabel = ticket.priority || 'NORMAL';
+                    const prioColor = priorityColors[priorityLabel] || '#888';
+                    let slaHtml = '';
+                    if (ticket.sla_due && ticket.status !== 'solved' && ticket.status !== 'closed') {
+                        const slaMs = new Date(ticket.sla_due) - Date.now();
+                        const slaMins = Math.round(slaMs / 60000);
+                        const slaText = ticket.sla_breached
+                            ? `⚠️ SLA BREACHED`
+                            : slaMins < 60
+                                ? `⏱ ${slaMins}m left`
+                                : `⏱ ${Math.round(slaMins/60)}h left`;
+                        const slaStyle = ticket.sla_breached ? 'color:#e74c3c;font-weight:bold' : 'color:#888';
+                        slaHtml = `<span style="${slaStyle};font-size:11px">${slaText}</span>`;
+                    }
+                    
+                    return `
+                        <div class="ticket-card" onclick="openTicket(${ticket.id})" style="${ticket.sla_breached ? 'border-left:3px solid #e74c3c' : ''}">
+                            <div class="ticket-card-header">
+                                <div class="ticket-info">
+                                    <div class="ticket-id-section">
+                                        <span class="ticket-number">#${ticket.id}</span>
+                                        ${unreadBadge}
+                                        <span style="background:${prioColor};color:#fff;border-radius:4px;padding:1px 6px;font-size:10px;margin-left:4px">${priorityLabel}</span>
+                                    </div>
+                                    <span class="ticket-status ${statusClass}">${ticket.status.toUpperCase()}</span>
+                                </div>
+                                <div class="ticket-category">
+                                    ${categoryIcon} ${ticket.category} ${slaHtml}
+                                </div>
+                            </div>
+                            
+                            <div class="ticket-content">
+                                <h4 class="ticket-subject">${ticket.subject}</h4>
+                                <div class="ticket-preview">${ticket.message ? ticket.message.substring(0, 100) + '...' : 'Нет сообщения'}</div>
+                            </div>
+                            
+                            <div class="ticket-footer">
+                                <div class="ticket-user">
+                                    <span class="user-icon">👤</span>
+                                    <span class="user-info">User ID: ${ticket.user_id}</span>
+                                </div>
+                                <div class="ticket-date">
+                                    <span class="date-icon">🕒</span>
+                                    <span>${date}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading tickets:', error);
+                document.getElementById('ticketsList').innerHTML = '<div class="loading">Error loading tickets</div>';
+            }
+        }
+        
+        // Open ticket modal
+        async function openTicket(ticketId) {
+            currentTicketId = ticketId;
+            
+            try {
+                const response = await authFetch(`/api/support-tickets/${ticketId}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert('❌ Error loading ticket: ' + (error.detail || 'Ticket not found'));
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (!data.ticket) {
+                    alert('❌ Ticket data not found');
+                    return;
+                }
+                
+                document.getElementById('modalTitle').textContent = `Ticket #${ticketId} - ${data.ticket.category}`;
+                document.getElementById('statusSelector').value = data.ticket.status;
+                
+                const messagesHtml = data.messages.map(msg => {
+                    const date = new Date(msg.created_at).toLocaleString();
+                    const isUser = msg.sender_type === 'user';
+                    
+                    // Обработка файлов
+                    let filesHtml = '';
+                    if (msg.files && msg.files.length > 0) {
+                        filesHtml = '<div class="message-files">';
+                        msg.files.forEach(file => {
+                            const fileUrl = `/api/files/telegram/${data.ticket.mirror_bot_id}/${file.file_id}`;
+                            
+                            if (file.type === 'photo') {
+                                filesHtml += `<div class="file-item">
+                                    <img src="${fileUrl}" 
+                                         alt="Photo" style="max-width: 300px; max-height: 200px; border-radius: 8px; cursor: pointer;"
+                                         onclick="window.open('${fileUrl}', '_blank')"
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                                    <div style="display: none; padding: 10px; background: #f0f0f0; border-radius: 8px; color: #666;">
+                                        📷 Image could not be loaded
+                                    </div>
+                                </div>`;
+                            } else if (file.type === 'document') {
+                                filesHtml += `<div class="file-item">
+                                    <div class="document-file">
+                                        📄 ${file.file_name || 'Document'}
+                                        <button onclick="downloadTelegramFile('${fileUrl}', '${file.file_name || 'document'}')" 
+                                                style="margin-left: 10px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            Download
+                                        </button>
+                                    </div>
+                                </div>`;
+                            } else if (file.type === 'video') {
+                                filesHtml += `<div class="file-item">
+                                    <div class="video-file">
+                                        🎥 Video
+                                        <button onclick="downloadTelegramFile('${fileUrl}', 'video')" 
+                                                style="margin-left: 10px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            Download
+                                        </button>
+                                    </div>
+                                </div>`;
+                            }
+                        });
+                        filesHtml += '</div>';
+                    }
+                    
+                    return `
+                        <div class="message message-${msg.sender_type}">
+                            <div class="message-header">
+                                <span class="message-sender">${isUser ? '👤 User' : '👨‍💼 Admin'}</span>
+                                <span class="message-time">${date}</span>
+                            </div>
+                            <div class="message-text">${msg.message_text}</div>
+                            ${filesHtml}
+                        </div>
+                    `;
+                }).join('');
+                
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="messages">
+                        <h3>Subject: ${data.ticket.subject}</h3>
+                        <p>User ID: ${data.user_info.user_id} | Balance: $${data.user_info.balance}</p>
+                        <hr style="margin: 20px 0;">
+                        ${messagesHtml}
+                    </div>
+                `;
+                
+                document.getElementById('ticketModal').classList.add('show');
+                
+                // Mark as read
+                await authFetch(`/api/support-tickets/${ticketId}/mark_read`, { method: 'POST' });
+                
+            } catch (error) {
+                console.error('Error loading ticket:', error);
+                alert('Error loading ticket details');
+            }
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('ticketModal').classList.remove('show');
+            document.getElementById('replyText').value = '';
+            loadTickets(currentCategory);
+            loadStats();
+        }
+        
+        
+        // Update status
+        async function updateStatus() {
+            const status = document.getElementById('statusSelector').value;
+            
+            if (!currentTicketId) {
+                alert('❌ No ticket selected');
+                return;
+            }
+            
+            try {
+                const response = await authFetch(`/api/support-tickets/${currentTicketId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                
+                if (response.ok) {
+                    alert('✅ Status updated successfully');
+                    openTicket(currentTicketId);  // Reload ticket
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error updating status: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('❌ Network error updating status: ' + error.message);
+            }
+        }
+        
+        // Category buttons
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentCategory = btn.dataset.category;
+                loadTickets(currentCategory);
+            });
+        });
+        
+        // Kanban view support
+        let currentView = 'list';
+        let allTickets = [];
+
+        function setView(mode) {
+            currentView = mode;
+            document.getElementById('viewList').classList.toggle('active', mode === 'list');
+            document.getElementById('viewKanban').classList.toggle('active', mode === 'kanban');
+            document.getElementById('ticketsList').style.display = mode === 'list' ? '' : 'none';
+            const kb = document.getElementById('kanbanBoard');
+            kb.classList.toggle('active', mode === 'kanban');
+            if (mode === 'kanban') renderKanban(allTickets);
+        }
+
+        function renderKanban(tickets) {
+            const cols = { new: [], open: [], pending: [], solved: [] };
+            tickets.forEach(t => {
+                const s = t.status;
+                if (s === 'open' || s === 'new') cols.new.push(t);
+                else if (s === 'in_progress' || s === 'answered') cols.open.push(t);
+                else if (s === 'pending' || s === 'waiting_user') cols.pending.push(t);
+                else cols.solved.push(t);
+            });
+            ['new', 'open', 'pending', 'solved'].forEach(col => {
+                const el = document.getElementById(`kb-${col}`);
+                const header = el.querySelector('h3').outerHTML;
+                el.innerHTML = header + cols[col].map(t => {
+                    const prioColors = { CRITICAL: '#e74c3c', HIGH: '#e67e22', NORMAL: '#f39c12', LOW: '#27ae60' };
+                    const c = prioColors[t.priority] || '#3498db';
+                    return `<div class="kb-card ${t.sla_breached ? 'sla-breach' : ''}" onclick="openTicket(${t.id})" style="border-left-color:${c}">
+                        <div class="kb-id">#${t.id} · ${t.priority || 'NORMAL'}</div>
+                        <div style="margin-top:4px;font-size:12px">${(t.subject || '').substring(0, 50)}</div>
+                        <div style="color:#aaa;font-size:11px;margin-top:3px">${t.user_username || ''}</div>
+                    </div>`;
+                }).join('') || '<div style="color:#666;font-size:12px;text-align:center;padding:12px">Empty</div>';
+            });
+        }
+
+        // Patch loadTickets to cache tickets for kanban
+        const _origLoadTickets = loadTickets;
+        async function loadTicketsPatched(category) {
+            await _origLoadTickets(category);
+        }
+
+        // Initial load
+        loadStats();
+        loadTickets();
+        
+        // Download file function
+        async function downloadTelegramFile(fileUrl, fileName) {
+            try {
+                // Создаем временную ссылку для скачивания
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = fileName;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error('Error downloading file:', error);
+                alert('Error downloading file: ' + error.message);
+            }
+        }
+        
+        // Send reply to ticket
+        async function sendReply() {
+            if (!currentTicketId) {
+                alert('No ticket selected');
+                return;
+            }
+            
+            const replyText = document.getElementById('replyText').value.trim();
+            const fileInput = document.getElementById('replyFile');
+            
+            if (!replyText) {
+                alert('Please enter a reply message');
+                return;
+            }
+            
+            try {
+                // Получаем admin_id из API
+                const adminInfoResponse = await authFetch('/api/auth/me');
+                if (!adminInfoResponse.ok) {
+                    alert('❌ Error getting admin info');
+                    return;
+                }
+                const adminInfo = await adminInfoResponse.json();
+                const adminId = adminInfo.admin_id || adminInfo.id || 1;
+                
+                const formData = new FormData();
+                formData.append('message_text', replyText);
+                formData.append('admin_id', adminId);
+                
+                if (fileInput.files[0]) {
+                    formData.append('file', fileInput.files[0]);
+                }
+                
+                const response = await authFetch(`/api/support-tickets/${currentTicketId}/messages`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('✅ Reply sent successfully!');
+                    
+                    // Clear form
+                    document.getElementById('replyText').value = '';
+                    document.getElementById('replyFile').value = '';
+                    document.getElementById('filePreview').style.display = 'none';
+                    
+                    // Reload ticket to show new message
+                    await openTicket(currentTicketId);
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error sending reply: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                alert('❌ Error sending reply: ' + error.message);
+            }
+        }
+        
+        // File preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('replyFile');
+            const filePreview = document.getElementById('filePreview');
+            
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    
+                    if (file) {
+                        filePreview.style.display = 'block';
+                        
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                filePreview.innerHTML = `
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <img src="${e.target.result}" style="max-width: 100px; max-height: 100px; border-radius: 4px;">
+                                        <div>
+                                            <strong>📷 ${file.name}</strong><br>
+                                            <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                                        </div>
+                                    </div>
+                                `;
+                            };
+                            reader.readAsDataURL(file);
+                        } else {
+                            filePreview.innerHTML = `
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <div style="width: 50px; height: 50px; background: #667eea; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px;">
+                                        📄
+                                    </div>
+                                    <div>
+                                        <strong>${file.name}</strong><br>
+                                        <small>${(file.size / 1024 / 1024).toFixed(2)} MB</small>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        filePreview.style.display = 'none';
+                    }
+                });
+            }
+        });
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+        
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadStats();
+            loadTickets(currentCategory);
+        }, 30000);
+    </script>
+</body>
+</html>
+

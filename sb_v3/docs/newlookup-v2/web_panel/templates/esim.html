@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eSIM - NewLookup Admin</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa}
+        .admin-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+        .admin-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+        .admin-header h1{font-size:22px;font-weight:600}
+        .admin-header-actions{display:flex;align-items:center;gap:12px}
+        .admin-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;border:none}
+        .admin-btn-outline{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+        .admin-btn-outline:hover{background:rgba(255,255,255,.3)}
+        .admin-nav{background:rgba(0,0,0,.08);border-top:1px solid rgba(255,255,255,.15)}
+        .admin-nav-inner{display:grid;grid-template-columns:repeat(10,1fr);gap:0;max-width:1600px;margin:0 auto}
+        .admin-nav-item{display:flex;align-items:center;justify-content:center;padding:14px 12px;color:rgba(255,255,255,.9);text-decoration:none;font-size:13px;font-weight:500;border-bottom:3px solid transparent}
+        .admin-nav-item:hover{background:rgba(255,255,255,.15)}
+        .admin-nav-item.active{background:rgba(255,255,255,.25);border-bottom-color:#fff}
+        .container{max-width:1600px;margin:0 auto;padding:24px 32px}
+        .tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex}
+        .tab-btn{padding:14px 20px;border:none;background:0 0;cursor:pointer;font-size:14px;font-weight:500;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+        .tab-btn:hover{color:#667eea}
+        .tab-btn.active{color:#667eea;border-bottom-color:#667eea}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:20px}
+        .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+        .section h2{font-size:18px;font-weight:600}
+        .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+        .btn-primary{background:#667eea;color:#fff}
+        .btn-primary:hover{background:#5a67d8}
+        .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
+        .btn-sm{padding:5px 10px;font-size:12px}
+        .price-grid{display:grid;grid-template-columns:auto repeat(3, 1fr);gap:0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+        .grid-header{background:#f9fafb;padding:12px 16px;font-size:12px;font-weight:700;text-transform:uppercase;color:#6b7280;border-bottom:1px solid #e5e7eb}
+        .grid-label{background:#f9fafb;padding:12px 16px;font-weight:600;color:#374151;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;display:flex;align-items:center}
+        .grid-cell{padding:10px 12px;border-bottom:1px solid #f0f0f0;border-right:1px solid #f0f0f0;display:flex;align-items:center;gap:8px}
+        .grid-cell:last-child{border-right:none}
+        .price-input{width:90px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;font-weight:500}
+        .price-input:focus{outline:none;border-color:#667eea}
+        .save-btn{padding:4px 10px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px}
+        .save-btn:hover{background:#5a67d8}
+        .saved-indicator{color:#059669;font-size:12px;display:none}
+        .op-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600}
+        .op-verizon{background:#e0e7ff;color:#3730a3}
+        .op-att{background:#fef3c7;color:#92400e}
+        .op-tmobile{background:#fce7f3;color:#9d174d}
+        @media(max-width:768px){.container{padding:16px}.price-grid{grid-template-columns:auto 1fr 1fr 1fr}}
+    </style>
+</head>
+<body>
+<header class="admin-header">
+    <div class="admin-header-top">
+        <h1>📶 eSIM</h1>
+        <div class="admin-header-actions">
+            <span id="adminName">Admin</span>
+            <a href="/dashboard" class="admin-btn admin-btn-outline">← Dashboard</a>
+            <button class="admin-btn admin-btn-outline" onclick="logout()">🚪 Выход</button>
+        </div>
+    </div>
+    {% include '_nav.html' %}
+</header>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="showTab('sms', this)">📱 SMS-тарифы</button>
+    <button class="tab-btn" onclick="showTab('data', this)">📡 Data-тарифы</button>
+</div>
+
+<div class="container">
+    <!-- SMS Tariffs -->
+    <div class="tab-content active" id="tab-sms">
+        <div class="section">
+            <div class="section-head">
+                <h2>📱 SMS-тарифы — цены по операторам и периодам</h2>
+                <button class="btn btn-secondary btn-sm" onclick="seedPrices()">📥 Seed defaults</button>
+            </div>
+            <div id="sms-grid"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <!-- Data Tariffs -->
+    <div class="tab-content" id="tab-data">
+        <div class="section">
+            <div class="section-head">
+                <h2>📡 Data-тарифы — цены по объёму</h2>
+            </div>
+            <div id="data-grid"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+async function authFetch(url, o = {}) {
+    if (!o.headers) o.headers = {};
+    o.headers['Authorization'] = 'Bearer ' + token;
+    const r = await fetch(url, o);
+    if (r.status === 401) { localStorage.removeItem('token'); window.location.href = '/'; return null; }
+    return r;
+}
+function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+
+let priceData = null;
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+    if (priceData) {
+        if (name === 'sms') renderSms();
+        else renderData();
+    }
+}
+
+async function loadPrices() {
+    try {
+        const r = await authFetch('/api/esim/prices');
+        if (!r) return;
+        priceData = await r.json();
+        renderSms();
+    } catch (e) {
+        document.getElementById('sms-grid').innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`;
+    }
+}
+
+const OP_NAMES = { verizon: 'Verizon', att: 'AT&T', tmobile: 'T-Mobile' };
+const OP_BADGE = { verizon: 'op-verizon', att: 'op-att', tmobile: 'op-tmobile' };
+const PERIOD_LABELS = { '1': '1 месяц', '3': '3 месяца', '6': '6 месяцев' };
+
+function renderSms() {
+    if (!priceData) return;
+    const { sms, operators, sms_periods } = priceData;
+    let html = `<div class="price-grid">
+        <div class="grid-header">Оператор</div>
+        ${sms_periods.map(p => `<div class="grid-header" style="text-align:center">${PERIOD_LABELS[p]||p}</div>`).join('')}`;
+
+    for (const op of operators) {
+        html += `<div class="grid-label"><span class="op-badge ${OP_BADGE[op]||''}">${OP_NAMES[op]||op}</span></div>`;
+        for (const period of sms_periods) {
+            const entry = sms[op] && sms[op][period];
+            if (entry) {
+                html += `<div class="grid-cell">
+                    <span style="color:#6b7280;font-size:12px">$</span>
+                    <input class="price-input" type="number" step="0.01" min="0" value="${entry.price}" id="price_${entry.id}"
+                        onchange="savePrice(${entry.id}, this)">
+                    <span class="saved-indicator" id="saved_${entry.id}">✓</span>
+                </div>`;
+            } else {
+                html += `<div class="grid-cell" style="color:#9ca3af;font-size:12px">—</div>`;
+            }
+        }
+    }
+    html += '</div>';
+    document.getElementById('sms-grid').innerHTML = html;
+}
+
+function renderData() {
+    if (!priceData) return;
+    const { data, data_gbs } = priceData;
+    let html = `<div class="price-grid" style="grid-template-columns:auto 1fr 1fr 1fr">
+        <div class="grid-header">Объём</div>
+        <div class="grid-header" style="text-align:center">Цена</div>
+        <div class="grid-header"></div><div class="grid-header"></div>`;
+
+    for (const gb of data_gbs) {
+        const entry = data[gb];
+        html += `<div class="grid-label">${gb} GB</div>`;
+        if (entry) {
+            html += `<div class="grid-cell">
+                <span style="color:#6b7280;font-size:12px">$</span>
+                <input class="price-input" type="number" step="0.01" min="0" value="${entry.price}" id="price_${entry.id}"
+                    onchange="savePrice(${entry.id}, this)">
+                <span class="saved-indicator" id="saved_${entry.id}">✓</span>
+            </div>
+            <div class="grid-cell" style="color:#6b7280;font-size:12px">${entry.display_name}</div>
+            <div class="grid-cell"></div>`;
+        } else {
+            html += `<div class="grid-cell" style="color:#9ca3af">—</div><div class="grid-cell"></div><div class="grid-cell"></div>`;
+        }
+    }
+    html += '</div>';
+    document.getElementById('data-grid').innerHTML = html;
+}
+
+async function savePrice(priceId, input) {
+    const price = parseFloat(input.value);
+    if (isNaN(price) || price < 0) return;
+    const r = await authFetch(`/api/esim/prices/${priceId}`, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ price })
+    });
+    if (r && r.ok) {
+        const ind = document.getElementById('saved_' + priceId);
+        if (ind) { ind.style.display = 'inline'; setTimeout(() => ind.style.display = 'none', 2000); }
+    } else {
+        alert('Ошибка сохранения');
+    }
+}
+
+async function seedPrices() {
+    const r = await authFetch('/api/esim/seed', { method: 'POST' });
+    if (r && r.ok) { const d = await r.json(); alert(`Создано: ${d.created}`); loadPrices(); }
+}
+
+loadPrices();
+</script>
+</body>
+</html>

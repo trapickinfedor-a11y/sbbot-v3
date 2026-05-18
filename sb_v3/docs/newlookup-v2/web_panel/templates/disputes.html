@@ -1,0 +1,394 @@
+{% extends "_base.html" %}
+{% block title %}Disputes Kanban{% endblock %}
+{% block header_title %}⚖️ Disputes Kanban{% endblock %}
+{% block extra_css %}
+<style>
+.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
+.kanban-col{background:#f8fafc;border-radius:12px;padding:12px;min-height:300px}
+.kanban-col-header{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;padding:8px 4px 12px;display:flex;justify-content:space-between;align-items:center}
+.kanban-card{background:#fff;border-radius:8px;padding:12px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);cursor:pointer;transition:box-shadow .2s}
+.kanban-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600}
+.badge-open{background:#fef3c7;color:#b45309}
+.badge-waiting{background:#e0e7ff;color:#4338ca}
+.badge-moderation{background:#fee2e2;color:#dc2626}
+.badge-resolved{background:#dcfce7;color:#16a34a}
+.priority-critical{border-left:3px solid #dc2626}
+.priority-high{border-left:3px solid #f59e0b}
+.priority-normal{border-left:3px solid #3b82f6}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:1000;justify-content:center;align-items:center}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:24px;max-width:600px;width:100%;max-height:80vh;overflow-y:auto}
+.btn{padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600}
+.btn-green{background:#22c55e;color:#fff}
+.btn-red{background:#ef4444;color:#fff}
+.btn-orange{background:#f59e0b;color:#fff}
+.btn-blue{background:#3b82f6;color:#fff}
+.btn-gray{background:#6b7280;color:#fff}
+.stats-bar{display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.stat-card{background:#fff;border-radius:8px;padding:12px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+.stat-num{font-size:24px;font-weight:700;color:#1f2937}
+.stat-lbl{font-size:12px;color:#6b7280}
+@media(max-width:900px){.kanban-board{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.kanban-board{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Stats bar -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-lbl">Всего споров</div></div>
+  <div class="stat-card"><div class="stat-num" id="statOpen">—</div><div class="stat-lbl">Открытых</div></div>
+  <div class="stat-card"><div class="stat-num" id="statModeration">—</div><div class="stat-lbl">На модерации</div></div>
+  <div class="stat-card"><div class="stat-num" id="statResolved">—</div><div class="stat-lbl">Решено сегодня</div></div>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-blue" onclick="loadAllDisputes()">🔄 Обновить</button>
+    <select id="filterPriority" onchange="applyFilters()" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px">
+      <option value="">Все приоритеты</option>
+      <option value="CRITICAL">🔴 Критический</option>
+      <option value="HIGH">🟠 Высокий</option>
+      <option value="NORMAL">🟡 Обычный</option>
+    </select>
+    <select id="filterSeller" onchange="applyFilters()" style="padding:8px 12px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px">
+      <option value="">Все продавцы</option>
+    </select>
+  </div>
+</div>
+
+<!-- Kanban board -->
+<div class="kanban-board">
+  <div class="kanban-col">
+    <div class="kanban-col-header">🆕 Новые <span id="cnt-open" class="badge badge-open">0</span></div>
+    <div id="col-open"></div>
+  </div>
+  <div class="kanban-col">
+    <div class="kanban-col-header">⏳ Ожидание <span id="cnt-waiting" class="badge badge-waiting">0</span></div>
+    <div id="col-waiting"></div>
+  </div>
+  <div class="kanban-col">
+    <div class="kanban-col-header">🔍 Модерация <span id="cnt-moderation" class="badge badge-moderation">0</span></div>
+    <div id="col-moderation"></div>
+  </div>
+  <div class="kanban-col">
+    <div class="kanban-col-header">✅ Решено <span id="cnt-resolved" class="badge badge-resolved">0</span></div>
+    <div id="col-resolved"></div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal" id="disputeModal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="modalTitle">Спор</h3>
+      <button class="btn btn-gray" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+    
+    <!-- Internal Notes Section -->
+    <div style="margin-top:20px;padding:16px;background:#fff3cd;border-radius:8px;border:1px solid #fbbf24">
+      <h4 style="margin:0 0 12px 0;font-size:14px;color:#92400e">🔒 Internal Notes (Admin Only)</h4>
+      <div id="internalNotesList" style="margin-bottom:12px;max-height:150px;overflow-y:auto"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newInternalNote" placeholder="Add internal note..." style="flex:1;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px">
+        <button class="btn btn-blue" onclick="addInternalNote()">💬 Add Note</button>
+      </div>
+    </div>
+    
+    <div id="modalActions" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"></div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+let allDisputes = [];
+let canModerate = false;
+let currentDisputeId = null;
+
+const COL_MAP = {
+  open: 'col-open',
+  waiting_for_seller_response: 'col-waiting',
+  waiting_for_buyer_response: 'col-waiting',
+  in_moderation: 'col-moderation',
+  resolved: 'col-resolved',
+  appealed: 'col-moderation',
+  closed: 'col-resolved',
+};
+
+const STATUS_BADGE = {
+  open: '<span class="badge badge-open">Открыт</span>',
+  waiting_for_seller_response: '<span class="badge badge-waiting">Ждём продавца</span>',
+  waiting_for_buyer_response: '<span class="badge badge-waiting">Ждём покупателя</span>',
+  in_moderation: '<span class="badge badge-moderation">Модерация</span>',
+  resolved: '<span class="badge badge-resolved">Решён</span>',
+  appealed: '<span class="badge badge-moderation">Апелляция</span>',
+  closed: '<span class="badge badge-resolved">Закрыт</span>',
+};
+
+function priorityClass(d) {
+  // Simulate priority from reason/status
+  if (d.status === 'appealed') return 'priority-critical';
+  if (d.status === 'open') return 'priority-high';
+  return 'priority-normal';
+}
+
+function renderCard(d) {
+  return `<div class="kanban-card ${priorityClass(d)}" onclick="openModal(${d.id})">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <b>#${d.id}</b>${STATUS_BADGE[d.status] || ''}
+    </div>
+    <div style="font-size:13px;color:#374151">Заказ #${d.order_id}</div>
+    <div style="font-size:12px;color:#6b7280;margin-top:4px">${d.seller_name || '—'} · ${d.reason || '—'}</div>
+    ${d.seller_response_due_at ? `<div style="font-size:11px;color:#ef4444">SLA: ${new Date(d.seller_response_due_at).toLocaleString('ru')}</div>` : ''}
+  </div>`;
+}
+
+function applyFilters() {
+  const priorityFilter = document.getElementById('filterPriority').value;
+  const sellerFilter = document.getElementById('filterSeller').value;
+  
+  let filtered = allDisputes;
+  
+  if (priorityFilter) {
+    filtered = filtered.filter(d => d.priority === priorityFilter);
+  }
+  
+  if (sellerFilter) {
+    const sellerId = parseInt(sellerFilter);
+    filtered = filtered.filter(d => d.seller_id === sellerId);
+  }
+  
+  renderBoard(filtered);
+}
+
+function renderBoard(disputes) {
+  const cols = {open:'',waiting:'',moderation:'',resolved:''};
+  const counts = {open:0,waiting:0,moderation:0,resolved:0};
+
+  for (const d of disputes) {
+    const colId = COL_MAP[d.status] || 'col-open';
+    const colKey = colId.replace('col-','');
+    const normKey = colKey === 'waiting' ? 'waiting' : colKey;
+    if (cols[normKey] !== undefined) {
+      cols[normKey] += renderCard(d);
+      counts[normKey]++;
+    }
+  }
+
+  document.getElementById('col-open').innerHTML = cols.open || '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">Нет споров</p>';
+  document.getElementById('col-waiting').innerHTML = cols.waiting || '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">Нет споров</p>';
+  document.getElementById('col-moderation').innerHTML = cols.moderation || '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">Нет споров</p>';
+  document.getElementById('col-resolved').innerHTML = cols.resolved || '<p style="color:#9ca3af;font-size:13px;text-align:center;padding:20px">Нет споров</p>';
+
+  document.getElementById('cnt-open').textContent = counts.open;
+  document.getElementById('cnt-waiting').textContent = counts.waiting;
+  document.getElementById('cnt-moderation').textContent = counts.moderation;
+  document.getElementById('cnt-resolved').textContent = counts.resolved;
+
+  document.getElementById('statTotal').textContent = disputes.length;
+  document.getElementById('statOpen').textContent = counts.open + counts.waiting;
+  document.getElementById('statModeration').textContent = counts.moderation;
+  document.getElementById('statResolved').textContent = counts.resolved;
+}
+
+async function loadAllDisputes() {
+  const statusList = ['open','waiting_for_seller_response','waiting_for_buyer_response','in_moderation','resolved','appealed'];
+  allDisputes = [];
+  for (const st of statusList) {
+    try {
+      const r = await authFetch(`/api/seller-crm/disputes?status=${st}&limit=50`);
+      if (r && r.ok) {
+        const d = await r.json();
+        allDisputes.push(...(d.disputes || []));
+      }
+    } catch {}
+  }
+  renderBoard(allDisputes);
+}
+
+async function loadSellers() {
+  try {
+    const r = await authFetch('/api/sellers?limit=200');
+    if (!r || !r.ok) return;
+    const data = await r.json();
+    const sel = document.getElementById('filterSeller');
+    (data || []).forEach(s => {
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = `#${s.id} ${s.display_name || s.name || s.username || ''}`;
+      sel.appendChild(o);
+    });
+  } catch (e) {
+    console.error('Failed to load sellers:', e);
+  }
+}
+
+async function openModal(id) {
+  currentDisputeId = id;
+  const d = allDisputes.find(x => x.id === id);
+  if (!d) return;
+  
+  const sellerStatsHtml = d.seller_total_disputes !== undefined && d.seller_total_disputes !== null
+    ? `<div style="padding:8px;background:#fef3c7;border-radius:6px;margin-top:8px">
+        <b>📊 Seller Dispute Stats:</b> 
+        Total: <b>${d.seller_total_disputes}</b> | 
+        Open: <b style="color:${d.seller_open_disputes > 5 ? '#dc2626' : '#16a34a'}">${d.seller_open_disputes}</b>
+       </div>`
+    : '';
+  
+  document.getElementById('modalTitle').textContent = `⚖️ Спор #${d.id} — Заказ #${d.order_id}`;
+  document.getElementById('modalBody').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><b>Продавец:</b> ${d.seller_name || '—'}</div>
+      <div><b>Статус:</b> ${STATUS_BADGE[d.status] || d.status}</div>
+      <div><b>Причина:</b> ${d.reason || '—'}</div>
+      <div><b>SLA:</b> ${d.seller_response_due_at ? new Date(d.seller_response_due_at).toLocaleString('ru') : 'н/д'}</div>
+    </div>
+    ${sellerStatsHtml}
+    <div style="margin-bottom:12px"><b>Доказательства покупателя:</b><br><span style="color:#6b7280;font-size:13px">${d.buyer_evidence ? JSON.stringify(d.buyer_evidence) : 'нет'}</span></div>
+    <div style="margin-bottom:12px"><b>Доказательства продавца:</b><br><span style="color:#6b7280;font-size:13px">${d.seller_evidence ? JSON.stringify(d.seller_evidence) : 'нет'}</span></div>
+    ${d.appeal_reason ? `<div style="margin-bottom:12px"><b>Причина апелляции:</b><br><span style="color:#6b7280;font-size:13px">${d.appeal_reason}</span></div>` : ''}
+  `;
+  
+  // Load internal notes
+  await loadInternalNotes(id);
+  
+  const actions = document.getElementById('modalActions');
+  if (canModerate) {
+    actions.innerHTML = `
+      <button class="btn btn-green" onclick="resolveDispute(${id}, 'resolved_seller')">✅ Продавец прав</button>
+      <button class="btn btn-red" onclick="resolveDispute(${id}, 'resolved_buyer')">💰 Возврат покупателю</button>
+      <button class="btn btn-orange" onclick="resolveDispute(${id}, 'partial_refund')">⚖️ Частичный возврат</button>
+      <button class="btn btn-blue" onclick="reviewAppeal(${id}, 'approved')">✅ Одобрить апелляцию</button>
+      <button class="btn btn-gray" onclick="reviewAppeal(${id}, 'rejected')">❌ Отклонить апелляцию</button>
+      <button class="btn btn-gray" onclick="resolveDispute(${id}, 'cancelled')">🗑 Отменить</button>
+      <button class="btn btn-red" onclick="escalateToOwner(${id})" style="margin-left:auto">🚨 Escalate to Owner</button>
+    `;
+  } else {
+    actions.innerHTML = '<p style="color:#9ca3af;font-size:13px">Недостаточно прав для действий</p>';
+  }
+  document.getElementById('disputeModal').classList.add('open');
+}
+
+async function loadInternalNotes(disputeId) {
+  const notesList = document.getElementById('internalNotesList');
+  try {
+    const r = await authFetch(`/api/disputes/${disputeId}/internal-notes`);
+    if (!r || !r.ok) {
+      notesList.innerHTML = '<div style="font-size:12px;color:#6b7280">No internal notes yet</div>';
+      return;
+    }
+    const notes = await r.json();
+    if (!notes || notes.length === 0) {
+      notesList.innerHTML = '<div style="font-size:12px;color:#6b7280">No internal notes yet</div>';
+      return;
+    }
+    
+    notesList.innerHTML = notes.map(note => `
+      <div style="padding:8px;background:#fff;border-radius:6px;margin-bottom:6px;border:1px solid #e5e7eb">
+        <div style="font-size:12px;color:#6b7280;margin-bottom:4px">
+          <strong>${escapeHtml(note.admin_name || 'Admin')}</strong> · ${new Date(note.created_at).toLocaleString('ru', {dateStyle: 'short', timeStyle: 'short'})}
+        </div>
+        <div style="font-size:13px;color:#111">${escapeHtml(note.note)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    notesList.innerHTML = '<div style="font-size:12px;color:#ef4444">Error loading notes</div>';
+  }
+}
+
+async function addInternalNote() {
+  if (!currentDisputeId) return;
+  const input = document.getElementById('newInternalNote');
+  const note = input.value.trim();
+  if (!note) {
+    alert('Please enter a note');
+    return;
+  }
+  
+  try {
+    const r = await authFetch(`/api/disputes/${currentDisputeId}/internal-notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note })
+    });
+    
+    if (!r || !r.ok) {
+      alert('Failed to add note');
+      return;
+    }
+    
+    input.value = '';
+    await loadInternalNotes(currentDisputeId);
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+async function escalateToOwner(id) {
+  if (!confirm('🚨 Escalate this dispute to the owner?\n\nThe owner will be notified immediately.')) return;
+  
+  try {
+    const r = await authFetch(`/api/disputes/${id}/escalate`, {
+      method: 'POST'
+    });
+    
+    if (!r || !r.ok) {
+      const err = await r.json().catch(() => ({}));
+      alert('Failed to escalate: ' + (err.detail || 'Unknown error'));
+      return;
+    }
+    
+    alert('✅ Dispute escalated to owner');
+    closeModal();
+    loadAllDisputes();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function closeModal() {
+  document.getElementById('disputeModal').classList.remove('open');
+  currentDisputeId = null;
+}
+
+async function resolveDispute(id, outcome) {
+  closeModal();
+  const note = prompt('Комментарий (опционально):') || '';
+  const r = await authFetch(`/api/seller-crm/disputes/${id}/resolve`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({outcome, resolution_note: note}),
+  });
+  if (!r || !r.ok) { alert((await r?.json().catch(()=>({})))?.detail || 'Ошибка'); return; }
+  loadAllDisputes();
+}
+
+async function reviewAppeal(id, status) {
+  closeModal();
+  const note = prompt(`Комментарий (опционально):`) || '';
+  const r = await authFetch(`/api/seller-crm/disputes/${id}/appeal/review`, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({status, note}),
+  });
+  if (!r || !r.ok) { alert((await r?.json().catch(()=>({})))?.detail || 'Ошибка'); return; }
+  loadAllDisputes();
+}
+
+(async()=>{
+  const ctx = window.ADMIN_CONTEXT || {};
+  canModerate = !!((ctx.capabilities || {}).seller_moderation);
+  await loadAllDisputes();
+})();
+</script>
+{% endblock %}

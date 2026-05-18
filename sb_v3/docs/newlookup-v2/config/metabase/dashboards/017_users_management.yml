@@ -1,0 +1,224 @@
+# Metabase Dashboard: Users Management (как в web_panel/api/users.py)
+# Dashboard ID: 017
+# Description: Управление пользователями - поиск, баны, балансы
+
+dashboard:
+  name: "👥 Users Management"
+  description: "Управление пользователями - поиск, редактирование, баны, балансы"
+  position: 17
+
+  parameters:
+    - name: "User ID"
+      type: "number"
+      required: false
+      description: "Поиск по User ID"
+    - name: "Username"
+      type: "string"
+      required: false
+      description: "Поиск по username"
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "active", "banned", "new"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "👥 Total Users"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_users
+        FROM users
+
+    - name: "🆕 New Users"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as new_users
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "🚫 Banned Users"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as banned_users
+        FROM users
+        WHERE is_banned = true
+
+    - name: "💰 Total Balances"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_balances
+        FROM users
+        WHERE balance > 0
+
+    # ========== ALL USERS TABLE ==========
+    - name: "👥 All Users"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          u.id,
+          u.user_id,
+          u.username,
+          u.balance,
+          u.language,
+          u.is_banned,
+          u.ban_reason,
+          u.created_at,
+          u.last_active_at,
+          (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders,
+          (SELECT SUM(price) FROM orders WHERE user_id = u.user_id AND status = 'completed') as total_spent,
+          'View / Edit / Ban / Adjust Balance' as actions
+        FROM users u
+        WHERE ({{user_id}} IS NULL OR u.user_id = {{user_id}})
+          AND ({{username}} IS NULL OR u.username ILIKE '%' || {{username}} || '%')
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'banned' AND u.is_banned = true) OR
+            ({{status_filter}} = 'active' AND u.is_banned = false) OR
+            ({{status_filter}} = 'new' AND u.created_at >= NOW() - INTERVAL '30 days')
+          )
+        ORDER BY u.created_at DESC
+        LIMIT 200
+
+    # ========== BANNED USERS ==========
+    - name: "🚫 Banned Users"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          u.id,
+          u.user_id,
+          u.username,
+          u.balance,
+          u.ban_reason,
+          u.created_at,
+          'Unban / Edit' as actions
+        FROM users u
+        WHERE u.is_banned = true
+        ORDER BY u.created_at DESC
+        LIMIT 100
+
+    # ========== TOP USERS BY SPENDING ==========
+    - name: "💎 Top Users by Spending"
+      type: "table"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          u.user_id,
+          u.username,
+          u.balance,
+          COUNT(o.id) as total_orders,
+          SUM(o.price) as total_spent,
+          MAX(o.created_at) as last_order_date
+        FROM users u
+        JOIN orders o ON u.user_id = o.user_id
+        WHERE o.status = 'completed'
+        GROUP BY u.user_id, u.username, u.balance
+        ORDER BY total_spent DESC
+        LIMIT 20
+
+    # ========== TOP USERS BY ORDERS ==========
+    - name: "📦 Top Users by Orders"
+      type: "table"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          u.user_id,
+          u.username,
+          u.balance,
+          COUNT(o.id) as total_orders,
+          SUM(o.price) as total_spent,
+          MAX(o.created_at) as last_order_date
+        FROM users u
+        JOIN orders o ON u.user_id = o.user_id
+        GROUP BY u.user_id, u.username, u.balance
+        ORDER BY total_orders DESC
+        LIMIT 20
+
+    # ========== BALANCE DISTRIBUTION ==========
+    - name: "💰 Balance Distribution"
+      type: "bar"
+      position: { row: 5, col: 1, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN balance = 0 THEN '$0'
+            WHEN balance < 10 THEN '$0-10'
+            WHEN balance < 50 THEN '$10-50'
+            WHEN balance < 100 THEN '$50-100'
+            WHEN balance < 500 THEN '$100-500'
+            WHEN balance < 1000 THEN '$500-1000'
+            ELSE '$1000+'
+          END as balance_range,
+          COUNT(*) as users_count,
+          SUM(balance) as total_balance
+        FROM users
+        GROUP BY balance_range
+        ORDER BY balance_range
+
+    # ========== USER ACTIVITY ==========
+    - name: "📈 User Activity (30 days)"
+      type: "line"
+      position: { row: 5, col: 7, size: 6 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(DISTINCT user_id) as active_users,
+          COUNT(*) as total_orders
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    # ========== USER DETAILS (для конкретного User ID) ==========
+    - name: "🔍 User Details"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          u.id,
+          u.user_id,
+          u.username,
+          u.balance,
+          u.language,
+          u.is_banned,
+          u.ban_reason,
+          u.referrer_id,
+          u.marketer_id,
+          u.created_at,
+          u.last_active_at,
+          (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders,
+          (SELECT SUM(price) FROM orders WHERE user_id = u.user_id AND status = 'completed') as total_spent,
+          (SELECT COUNT(*) FROM support_tickets WHERE user_id = u.user_id) as support_tickets,
+          (SELECT COUNT(*) FROM product_purchases WHERE user_id = u.user_id) as product_purchases,
+          'Full Profile / Edit' as actions
+        FROM users u
+        WHERE {{user_id}} IS NOT NULL AND u.user_id = {{user_id}}
+        LIMIT 1
+
+    # ========== USER ORDERS ==========
+    - name: "📦 User Orders"
+      type: "table"
+      position: { row: 7, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.category,
+          o.service_name,
+          o.price,
+          o.status,
+          o.worker_id,
+          o.created_at,
+          o.completed_at,
+          'View Order' as action
+        FROM orders o
+        WHERE {{user_id}} IS NOT NULL AND o.user_id = {{user_id}}
+        ORDER BY o.created_at DESC
+        LIMIT 50

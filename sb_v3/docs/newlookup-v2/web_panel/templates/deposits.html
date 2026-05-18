@@ -1,0 +1,429 @@
+{% extends "_base.html" %}
+{% block title %}Депозиты{% endblock %}
+{% block header_title %}💰 Депозиты{% endblock %}
+{% block container_modifier %} admin-container--w1600{% endblock %}
+{% block subnav %}
+<div class="admin-subnav" id="depositTabs">
+    <button class="tab-btn active" data-tab="all" onclick="switchTab('all',this)">Все</button>
+    <button class="tab-btn" data-tab="ps1" onclick="switchTab('ps1',this)">Платёжка 1</button>
+    <button class="tab-btn" data-tab="ps2" onclick="switchTab('ps2',this)">Платёжка 2</button>
+    <button class="tab-btn" data-tab="moderator" onclick="switchTab('moderator',this)" id="tabModerator" style="display:none">Пополнение модератором</button>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #6366f1;transition:transform .15s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-card.green{border-color:#22c55e}
+.stat-card.amber{border-color:#f59e0b}
+.stat-card.red{border-color:#ef4444}
+.stat-card.blue{border-color:#3b82f6}
+.stat-card.purple{border-color:#8b5cf6}
+.stat-card.cyan{border-color:#06b6d4}
+.stat-card h4{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-metric{font-size:26px;font-weight:700;color:#111827}
+.stat-sub{font-size:12px;color:#9ca3af;margin-top:4px}
+.section{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-header h2{font-size:16px;font-weight:600;color:#111827}
+.section-actions{display:flex;gap:8px;flex-wrap:wrap}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.filters select,.filters input{padding:7px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;outline:none;background:#fff}
+.filters select:focus,.filters input:focus{border-color:#6366f1;box-shadow:0 0 0 2px rgba(99,102,241,.12)}
+.btn{padding:7px 14px;border:none;border-radius:6px;font-weight:500;cursor:pointer;font-size:13px;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.btn-primary{background:#6366f1;color:#fff}
+.btn-primary:hover{background:#4f46e5}
+.btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb}
+.btn-secondary:hover{background:#e5e7eb}
+.btn-danger{background:#ef4444;color:#fff}
+.btn-danger:hover{background:#dc2626}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#f9fafb}
+th{padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;font-weight:600;border-bottom:2px solid #e5e7eb;white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151;vertical-align:middle}
+tr:hover td{background:#f9fafb}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+.badge-completed{background:#dcfce7;color:#166534}
+.badge-pending{background:#fef9c3;color:#854d0e}
+.badge-on_hold{background:#fef3c7;color:#92400e}
+.badge-failed{background:#fee2e2;color:#991b1b}
+.badge-disputed{background:#fce7f3;color:#9d174d}
+.badge-topup{background:#dbeafe;color:#1e40af}
+.badge-admin_adjustment{background:#f3e8ff;color:#6b21a8}
+.badge-referral_commission{background:#d1fae5;color:#065f46}
+.badge-withdrawal{background:#ffe4e6;color:#9f1239}
+.badge-purchase{background:#fef3c7;color:#854d0e}
+.badge-commission{background:#e0f2fe;color:#075985}
+.badge-refund{background:#fee2e2;color:#991b1b}
+.amount-pos{color:#16a34a;font-weight:600}
+.amount-neg{color:#ef4444;font-weight:600}
+.pager{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:12px 16px;background:#f9fafb;border-radius:8px;flex-wrap:wrap;gap:10px;font-size:13px}
+.pager-btns{display:flex;gap:6px;align-items:center}
+.pager button{padding:6px 12px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager button:hover:not(:disabled){background:#f3f4f6}
+.pager-info{color:#6b7280}
+.pager-current{padding:6px 12px;background:#fff;border-radius:6px;font-weight:600;border:1px solid #e5e7eb}
+.reconciliation-box{display:none;margin-bottom:16px;padding:14px 18px;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;font-size:13px}
+.empty-state{text-align:center;padding:40px;color:#9ca3af}
+.audit-detail{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:11px;max-width:300px;white-space:pre-wrap;word-break:break-word;color:#6b7280}
+.cell-truncate{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-nowrap{white-space:nowrap}
+.hidden{display:none!important}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="stats-grid" id="statsGrid">
+    <div class="stat-card green"><h4>Сегодня</h4><div class="stat-metric" id="statToday">…</div><div class="stat-sub" id="statTodayCount">…</div></div>
+    <div class="stat-card blue"><h4>За период</h4><div class="stat-metric" id="statPeriod">…</div><div class="stat-sub" id="statPeriodCount">…</div></div>
+    <div class="stat-card"><h4>Completed</h4><div class="stat-metric" id="statCompleted">…</div><div class="stat-sub">Все завершённые</div></div>
+    <div class="stat-card amber"><h4>Pending</h4><div class="stat-metric" id="statPending">…</div><div class="stat-sub">Ожидают</div></div>
+    <div class="stat-card purple"><h4>On hold</h4><div class="stat-metric" id="statOnHold">…</div><div class="stat-sub">Заморожены</div></div>
+    <div class="stat-card red"><h4>Failed</h4><div class="stat-metric" id="statFailed">…</div><div class="stat-sub">Откат / отмена</div></div>
+</div>
+
+<div class="section">
+    <div class="section-header">
+        <h2 id="sectionTitle">💰 Все транзакции</h2>
+        <div class="section-actions">
+            <button class="btn btn-secondary" onclick="runReconciliation()">🧮 Reconciliation</button>
+            <button class="btn btn-secondary" onclick="exportCsv()">📥 Export CSV</button>
+            <button class="btn btn-primary" onclick="resetAndLoad()">🔄 Обновить</button>
+        </div>
+    </div>
+
+    <div class="reconciliation-box" id="reconciliationBox"></div>
+
+    <div class="filters" id="filtersRow">
+        <select id="statusFilter" onchange="resetAndLoad()">
+            <option value="">Все статусы</option>
+            <option value="completed">completed</option>
+            <option value="pending">pending</option>
+            <option value="on_hold">on_hold</option>
+            <option value="disputed">disputed</option>
+            <option value="failed">failed</option>
+        </select>
+        <select id="accountTypeFilter" onchange="resetAndLoad()">
+            <option value="">Все аккаунты</option>
+            <option value="user">user</option>
+            <option value="seller">seller</option>
+            <option value="worker">worker</option>
+            <option value="marketer">marketer</option>
+            <option value="owner">owner</option>
+        </select>
+        <input type="number" id="accountIdFilter" placeholder="Account ID…" style="width:110px" onkeydown="if(event.key==='Enter')resetAndLoad()">
+        <input type="number" id="userIdFilter" placeholder="User ID…" style="width:100px" onkeydown="if(event.key==='Enter')resetAndLoad()">
+        <input type="text" id="searchFilter" placeholder="Поиск по описанию / ключу…" style="width:220px" onkeydown="if(event.key==='Enter')resetAndLoad()">
+        <select id="perPage" onchange="resetAndLoad()">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+        </select>
+        <button class="btn btn-primary" onclick="resetAndLoad()">🔍 Найти</button>
+    </div>
+
+    <div id="tableContainer"><div class="empty-state">Загрузка транзакций…</div></div>
+
+    <div class="pager hidden" id="pager">
+        <div class="pager-info">Показано <b id="showFrom">0</b>–<b id="showTo">0</b> из <b id="totalCount">0</b></div>
+        <div class="pager-btns">
+            <button id="btnFirst" onclick="goPage('first')">⏮</button>
+            <button id="btnPrev" onclick="goPage('prev')">← Назад</button>
+            <span class="pager-current">Стр. <span id="curPage">1</span> / <span id="totalPages">1</span></span>
+            <button id="btnNext" onclick="goPage('next')">Вперёд →</button>
+            <button id="btnLast" onclick="goPage('last')">⏭</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+(function() {
+    const PAGE_SIZES = [25, 50, 100];
+    let currentTab = 'all';
+    let curOffset = 0;
+    let curLimit = 50;
+    let totalRecs = 0;
+    let isAdmin = false;
+
+    const TAB_CONFIG = {
+        all:       { title: '💰 Все транзакции',            type: null,               search: null },
+        ps1:       { title: '💳 Платёжка 1',                type: 'topup',            search: 'system1' },
+        ps2:       { title: '💳 Платёжка 2',                type: 'topup',            search: 'system2' },
+        moderator: { title: '🔧 Пополнение модератором',    type: 'admin_adjustment', search: null }
+    };
+
+    function esc(v) {
+        return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmt$(v) {
+        return v == null ? '—' : '$' + Number(v).toFixed(2);
+    }
+
+    function fmtDate(d) {
+        if (!d) return '—';
+        const dt = new Date(d);
+        return dt.toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit', year:'numeric' }) +
+               ' ' + dt.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+    }
+
+    function typeBadge(t) {
+        const labels = {
+            topup: 'Пополнение', admin_adjustment: 'Корректировка', referral_commission: 'Реферальная',
+            refund: 'Возврат', purchase: 'Покупка', withdrawal: 'Вывод', commission: 'Комиссия'
+        };
+        return `<span class="badge badge-${esc(t)}">${esc(labels[t] || t)}</span>`;
+    }
+
+    function statusBadge(s) {
+        return `<span class="badge badge-${esc(s)}">${esc(s)}</span>`;
+    }
+
+    document.addEventListener('admin-context-ready', function(e) {
+        const ctx = e.detail;
+        const role = (ctx.role || '').toLowerCase();
+        isAdmin = role === 'admin' || role === 'owner';
+        if (isAdmin) {
+            document.getElementById('tabModerator').style.display = '';
+        }
+    });
+    if (window.ADMIN_CONTEXT) {
+        const role = (window.ADMIN_CONTEXT.role || '').toLowerCase();
+        isAdmin = role === 'admin' || role === 'owner';
+        if (isAdmin) {
+            document.getElementById('tabModerator').style.display = '';
+        }
+    }
+
+    window.switchTab = function(tab, btn) {
+        currentTab = tab;
+        curOffset = 0;
+        document.querySelectorAll('#depositTabs .tab-btn').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+
+        const cfg = TAB_CONFIG[tab];
+        document.getElementById('sectionTitle').innerHTML = cfg.title;
+
+        loadDeposits();
+        loadStats();
+    };
+
+    async function loadStats() {
+        try {
+            const r = await authFetch('/api/deposits/stats');
+            if (!r || !r.ok) return;
+            const s = await r.json();
+            document.getElementById('statToday').textContent = fmt$(s.today_total);
+            document.getElementById('statTodayCount').textContent = s.today_count + ' транзакций';
+            document.getElementById('statPeriod').textContent = fmt$(s.period_total);
+            document.getElementById('statPeriodCount').textContent = s.period_count + ' за ' + s.period_days + ' дн.';
+            document.getElementById('statCompleted').textContent = fmt$(s.completed_total_amount);
+            document.getElementById('statPending').textContent = s.pending_count;
+            document.getElementById('statOnHold').textContent = s.on_hold_count;
+            document.getElementById('statFailed').textContent = s.failed_count;
+        } catch(e) { console.error('Stats error:', e); }
+    }
+
+    window.resetAndLoad = function() {
+        curOffset = 0;
+        loadDeposits();
+    };
+
+    async function loadDeposits() {
+        curLimit = parseInt(document.getElementById('perPage').value);
+        const cfg = TAB_CONFIG[currentTab];
+
+        const params = new URLSearchParams({ limit: curLimit, offset: curOffset });
+
+        if (cfg.type) params.set('type', cfg.type);
+        if (cfg.search) params.set('search', cfg.search);
+
+        const status = document.getElementById('statusFilter').value;
+        const accountType = document.getElementById('accountTypeFilter').value;
+        const accountId = document.getElementById('accountIdFilter').value.trim();
+        const userId = document.getElementById('userIdFilter').value.trim();
+        const search = document.getElementById('searchFilter').value.trim();
+
+        if (status) params.set('status', status);
+        if (accountType) params.set('account_type', accountType);
+        if (accountId) params.set('account_id', accountId);
+        if (userId) params.set('user_id', userId);
+        if (search) {
+            const existing = params.get('search');
+            params.set('search', existing ? existing + ' ' + search : search);
+        }
+
+        const container = document.getElementById('tableContainer');
+        container.innerHTML = '<div class="empty-state">Загрузка…</div>';
+
+        try {
+            const r = await authFetch('/api/deposits/?' + params);
+            if (!r || !r.ok) throw new Error('Ошибка загрузки');
+            const data = await r.json();
+            totalRecs = data.total;
+            const items = data.items || [];
+
+            if (!items.length) {
+                container.innerHTML = '<div class="empty-state">Нет транзакций</div>';
+                document.getElementById('pager').classList.add('hidden');
+                return;
+            }
+
+            const showAudit = currentTab === 'moderator' && isAdmin;
+
+            let cols = '<th>ID</th><th>Дата</th><th>Account</th><th>Тип</th><th>Статус</th><th>Сумма</th><th>Пользователь</th><th>Связь</th><th>Описание</th><th>Key</th>';
+            if (showAudit) {
+                cols += '<th>Аудит</th>';
+            }
+
+            const rows = items.map(t => {
+                const amtClass = Number(t.amount) >= 0 ? 'amount-pos' : 'amount-neg';
+                const amtStr = Number(t.amount) >= 0 ? '+' + fmt$(t.amount) : '-' + fmt$(Math.abs(t.amount));
+                const userCell = t.username
+                    ? `@${esc(t.username)}` + (t.user_id ? `<div style="font-size:11px;color:#9ca3af">uid:${t.user_id}</div>` : '')
+                    : (t.user_id ? `uid:${t.user_id}` : '—');
+                const relation = (t.related_entity_type || '—') + (t.related_entity_id ? ` #${t.related_entity_id}` : '');
+
+                let auditCell = '';
+                if (showAudit) {
+                    const desc = t.description || '';
+                    const parts = [];
+                    const adminMatch = desc.match(/admin[:\s#]*(\d+)/i) || desc.match(/by\s+(\S+)/i);
+                    if (adminMatch) parts.push('Кто: ' + esc(adminMatch[1]));
+                    parts.push('Когда: ' + fmtDate(t.created_at));
+                    parts.push('Сумма: ' + amtStr);
+                    if (t.description) parts.push('Описание: ' + esc(t.description));
+                    if (t.idempotency_key) parts.push('Key: ' + esc(t.idempotency_key));
+                    auditCell = `<td><div class="audit-detail">${parts.join('\n')}</div></td>`;
+                }
+
+                return `<tr>
+                    <td style="font-family:monospace;color:#6b7280">#${t.id}</td>
+                    <td class="cell-nowrap">${fmtDate(t.created_at)}</td>
+                    <td><b>${esc(t.account_type)}:${t.account_id}</b></td>
+                    <td>${typeBadge(t.type)}</td>
+                    <td>${statusBadge(t.status)}</td>
+                    <td class="${amtClass}">${amtStr}</td>
+                    <td style="font-size:12px">${userCell}</td>
+                    <td class="cell-nowrap" style="font-size:12px">${esc(relation)}</td>
+                    <td class="cell-truncate" title="${esc(t.description)}">${esc(t.description || '—')}</td>
+                    <td class="cell-truncate" style="font-size:11px;font-family:monospace" title="${esc(t.idempotency_key)}">${esc(t.idempotency_key || '—')}</td>
+                    ${auditCell}
+                </tr>`;
+            }).join('');
+
+            container.innerHTML = `<div style="overflow-x:auto"><table><thead><tr>${cols}</tr></thead><tbody>${rows}</tbody></table></div>`;
+            updatePagination();
+        } catch(e) {
+            container.innerHTML = `<div class="empty-state" style="color:#ef4444">Ошибка: ${esc(e.message)}</div>`;
+        }
+    }
+
+    function updatePagination() {
+        const pg = document.getElementById('pager');
+        if (totalRecs <= 0) { pg.classList.add('hidden'); return; }
+        pg.classList.remove('hidden');
+        const pages = Math.ceil(totalRecs / curLimit);
+        const cur = Math.floor(curOffset / curLimit) + 1;
+        document.getElementById('showFrom').textContent = curOffset + 1;
+        document.getElementById('showTo').textContent = Math.min(curOffset + curLimit, totalRecs);
+        document.getElementById('totalCount').textContent = totalRecs;
+        document.getElementById('curPage').textContent = cur;
+        document.getElementById('totalPages').textContent = pages;
+        document.getElementById('btnFirst').disabled = cur === 1;
+        document.getElementById('btnPrev').disabled = cur === 1;
+        document.getElementById('btnNext').disabled = cur >= pages;
+        document.getElementById('btnLast').disabled = cur >= pages;
+    }
+
+    window.goPage = function(action) {
+        const pages = Math.ceil(totalRecs / curLimit);
+        const cur = Math.floor(curOffset / curLimit) + 1;
+        switch(action) {
+            case 'first': curOffset = 0; break;
+            case 'prev':  if (cur > 1) curOffset -= curLimit; break;
+            case 'next':  if (cur < pages) curOffset += curLimit; break;
+            case 'last':  curOffset = (pages - 1) * curLimit; break;
+        }
+        loadDeposits();
+    };
+
+    window.runReconciliation = async function() {
+        const box = document.getElementById('reconciliationBox');
+        box.style.display = 'block';
+        box.innerHTML = '⏳ Запуск reconciliation…';
+        try {
+            const r = await authFetch('/api/deposits/reconciliation/run', { method: 'POST' });
+            if (!r || !r.ok) throw new Error('Request failed');
+            const data = await r.json();
+            if (data.ok) {
+                box.innerHTML = '<span style="color:#16a34a;font-weight:600">✅ OK</span> — расхождений нет.';
+            } else {
+                box.innerHTML = `<span style="color:#ef4444;font-weight:600">⚠️ Issues: ${data.issue_count}</span><br>` +
+                    (data.issues || []).slice(0, 10).map(i =>
+                        `${esc(i.account_type)}:${i.account_id} / ${esc(i.field)} expected ${i.expected}, actual ${i.actual}`
+                    ).join('<br>');
+            }
+        } catch(e) {
+            box.innerHTML = `<span style="color:#ef4444">Ошибка: ${esc(e.message)}</span>`;
+        }
+    };
+
+    window.exportCsv = async function() {
+        const cfg = TAB_CONFIG[currentTab];
+        const params = new URLSearchParams({ limit: 5000, offset: 0 });
+        if (cfg.type) params.set('type', cfg.type);
+        if (cfg.search) params.set('search', cfg.search);
+
+        const status = document.getElementById('statusFilter').value;
+        const accountType = document.getElementById('accountTypeFilter').value;
+        const search = document.getElementById('searchFilter').value.trim();
+        if (status) params.set('status', status);
+        if (accountType) params.set('account_type', accountType);
+        if (search) {
+            const existing = params.get('search');
+            params.set('search', existing ? existing + ' ' + search : search);
+        }
+
+        try {
+            const r = await authFetch('/api/deposits/?' + params);
+            if (!r || !r.ok) { alert('Export failed'); return; }
+            const data = await r.json();
+            const items = data.items || [];
+
+            const showAudit = currentTab === 'moderator' && isAdmin;
+            const header = ['ID','Date','AccountType','AccountID','Type','Status','Amount','Currency','UserID','Username','RelatedType','RelatedID','Description','IdempotencyKey'];
+            if (showAudit) header.push('AuditInfo');
+
+            const csvRows = [header.join(',')];
+            items.forEach(t => {
+                const row = [
+                    t.id, t.created_at, t.account_type, t.account_id, t.type, t.status,
+                    t.amount, t.currency || 'USD', t.user_id || '', t.username || '',
+                    t.related_entity_type || '', t.related_entity_id || '',
+                    '"' + (t.description || '').replace(/"/g, '""') + '"',
+                    t.idempotency_key || ''
+                ];
+                if (showAudit) row.push('"' + (t.description || '').replace(/"/g, '""') + '"');
+                csvRows.push(row.join(','));
+            });
+
+            const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'deposits_' + currentTab + '_' + new Date().toISOString().slice(0,10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        } catch(e) { alert('Export error: ' + e.message); }
+    };
+
+    loadStats();
+    loadDeposits();
+    setInterval(loadStats, 60000);
+})();
+</script>
+{% endblock %}

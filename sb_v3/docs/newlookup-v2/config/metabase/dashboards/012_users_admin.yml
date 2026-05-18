@@ -1,0 +1,192 @@
+# Metabase Dashboard: Users Admin
+# Dashboard ID: 012
+# Description: Управление пользователями - баны, балансы, активность
+
+dashboard:
+  name: "👥 Users Admin"
+  description: "Администрирование пользователей - баны, балансы, нарушения, активность"
+  position: 12
+
+  parameters:
+    - name: "User ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "banned", "active", "new"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "👥 Total Users"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_users
+        FROM users
+
+    - name: "🚫 Banned Users"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as banned_users
+        FROM users
+        WHERE is_banned = true
+
+    - name: "🆕 New Users (24h)"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as new_users_24h
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+
+    - name: "💰 Total User Balances"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_balances
+        FROM users
+        WHERE balance > 0
+
+    # ========== USER TABLES ==========
+    - name: "🚫 Banned Users"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          user_id,
+          username,
+          balance,
+          language,
+          ban_reason,
+          is_banned,
+          created_at,
+          last_active_at,
+          'Unban' as action
+        FROM users
+        WHERE is_banned = true
+        ORDER BY created_at DESC
+        LIMIT 100
+
+    - name: "🔍 Search User"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          u.id,
+          u.user_id,
+          u.username,
+          u.balance,
+          u.language,
+          u.is_banned,
+          u.created_at,
+          u.last_active_at,
+          (SELECT COUNT(*) FROM orders WHERE user_id = u.user_id) as total_orders,
+          (SELECT SUM(price) FROM orders WHERE user_id = u.user_id AND status = 'completed') as total_spent,
+          (SELECT COUNT(*) FROM support_tickets WHERE user_id = u.user_id) as support_tickets,
+          'View Details / Ban / Adjust Balance' as actions
+        FROM users u
+        WHERE ({{user_id}} IS NULL OR u.user_id = {{user_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'banned' AND u.is_banned = true) OR
+            ({{status_filter}} = 'active' AND u.is_banned = false AND u.created_at < NOW() - INTERVAL '24 hours') OR
+            ({{status_filter}} = 'new' AND u.created_at >= NOW() - INTERVAL '24 hours')
+          )
+        ORDER BY u.created_at DESC
+        LIMIT 100
+
+    # ========== TOP USERS ==========
+    - name: "💎 Top Users by Spending"
+      type: "table"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          u.user_id,
+          u.username,
+          u.balance,
+          COUNT(o.id) as total_orders,
+          SUM(o.price) as total_spent,
+          MAX(o.created_at) as last_order
+        FROM users u
+        JOIN orders o ON u.user_id = o.user_id
+        WHERE o.status = 'completed'
+        GROUP BY u.user_id, u.username, u.balance
+        ORDER BY total_spent DESC
+        LIMIT 20
+
+    - name: "🎰 Top Users by Orders"
+      type: "table"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          u.user_id,
+          u.username,
+          u.balance,
+          COUNT(o.id) as total_orders,
+          SUM(o.price) as total_spent,
+          MAX(o.created_at) as last_order
+        FROM users u
+        JOIN orders o ON u.user_id = o.user_id
+        GROUP BY u.user_id, u.username, u.balance
+        ORDER BY total_orders DESC
+        LIMIT 20
+
+    # ========== BALANCE DISTRIBUTION ==========
+    - name: "💰 Balance Distribution"
+      type: "bar"
+      position: { row: 5, col: 1, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN balance = 0 THEN '$0'
+            WHEN balance < 10 THEN '$0-10'
+            WHEN balance < 50 THEN '$10-50'
+            WHEN balance < 100 THEN '$50-100'
+            WHEN balance < 500 THEN '$100-500'
+            WHEN balance < 1000 THEN '$500-1000'
+            ELSE '$1000+'
+          END as balance_range,
+          COUNT(*) as users_count,
+          SUM(balance) as total_balance
+        FROM users
+        GROUP BY balance_range
+        ORDER BY balance_range
+
+    # ========== ACTIVITY ==========
+    - name: "📈 User Activity (7 days)"
+      type: "line"
+      position: { row: 5, col: 7, size: 6 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(DISTINCT user_id) as active_users,
+          COUNT(*) as total_actions
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    # ========== VIOLATIONS ==========
+    - name: "⚠️ Recent Violations"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          wv.id,
+          wv.worker_id,
+          u.username,
+          wv.violation_type,
+          wv.penalty_amount,
+          wv.description,
+          wv.created_at,
+          'Review' as action
+        FROM worker_violations wv
+        LEFT JOIN users u ON wv.worker_id = u.user_id
+        ORDER BY wv.created_at DESC
+        LIMIT 50

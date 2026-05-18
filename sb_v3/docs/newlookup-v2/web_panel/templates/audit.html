@@ -1,0 +1,261 @@
+{% extends "_base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block header_title %}📋 Журнал аудита{% endblock %}
+{% block extra_css %}
+<style>
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{color:#333;font-size:20px;margin-bottom:16px}
+.section-note{color:#6b7280;font-size:14px;margin:-6px 0 16px}
+.loading{text-align:center;padding:40px;color:#666}
+.empty{text-align:center;padding:30px;color:#6b7280}
+.error-msg{background:#ffe6e6;color:#d32f2f;padding:12px;border-radius:8px;margin-bottom:16px;display:none}
+.audit-table{width:100%;border-collapse:collapse;font-size:13px}
+.audit-table th,.audit-table td{padding:10px 12px;text-align:left;border-bottom:1px solid #e5e7eb;vertical-align:top}
+.audit-table th{background:#f9fafb;font-weight:600;color:#374151}
+.audit-table tr:hover{background:#f9fafb}
+.details-json{max-width:420px;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}
+.access-denied{text-align:center;padding:60px 24px;color:#6b7280}
+.access-denied h2{margin-bottom:12px;color:#374151}
+.pagination{margin-top:16px;display:flex;gap:8px;align-items:center}
+.pagination button{padding:8px 16px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px}
+.pagination button:disabled{opacity:.5;cursor:not-allowed}
+.pagination span{color:#6b7280;font-size:14px}
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.filters button,.filters select,.filters input{padding:8px 12px;border:1px solid #d1d5db;border-radius:999px;background:#fff;color:#374151;font-size:13px;cursor:pointer}
+.filters button.active{background:#111827;border-color:#111827;color:#fff}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.badge-withdrawal{background:#ecfdf3;color:#047857}
+.badge-balance_change{background:#eff6ff;color:#1d4ed8}
+.badge-moderation{background:#fef3c7;color:#b45309}
+.badge-access{background:#f3f4f6;color:#4b5563}
+.badge-admin,.badge-other{background:#f5f3ff;color:#6d28d9}
+</style>
+{% endblock %}
+{% block content %}
+<div id="errorMsg" class="error-msg"></div>
+<div id="accessDenied" class="section access-denied" style="display:none">
+    <h2>⛔ Доступ запрещён</h2>
+    <p>Полный журнал аудита доступен только `admin` и `owner` внутри web admin panel.</p>
+</div>
+<div id="auditSection" class="section">
+    <h2>Критические действия</h2>
+    <p class="section-note">Здесь собраны balance changes, moderation decisions и withdrawals. Это единственное место в web panel, где показывается полный детальный audit trail.</p>
+    <div class="filters">
+        <button class="audit-filter active" data-mode="critical" onclick="setAuditFilter('critical', this)">Critical</button>
+        <button class="audit-filter" data-mode="all" onclick="setAuditFilter('all', this)">All</button>
+        <button class="audit-filter" data-mode="withdrawal" onclick="setAuditFilter('withdrawal', this)">Withdrawals</button>
+        <button class="audit-filter" data-mode="balance_change" onclick="setAuditFilter('balance_change', this)">Balance</button>
+        <button class="audit-filter" data-mode="moderation" onclick="setAuditFilter('moderation', this)">Moderation</button>
+        <input type="date" id="auditDateFrom" onchange="reloadAudit()">
+        <input type="date" id="auditDateTo" onchange="reloadAudit()">
+        <select id="auditStream" onchange="reloadAudit()">
+            <option value="all">All streams</option>
+            <option value="admin">Admin only</option>
+            <option value="universal">Universal only</option>
+        </select>
+        <select id="auditSource" onchange="reloadAudit()">
+            <option value="">All sources</option>
+            <option value="web_panel">web_panel</option>
+            <option value="support_bot">support_bot</option>
+            <option value="marketer_bot">marketer_bot</option>
+            <option value="automation">automation</option>
+            <option value="system">system</option>
+            <option value="bot">bot</option>
+        </select>
+        <input type="text" id="auditEntityType" placeholder="entity_type" onkeydown="handleAuditSearchKey(event)">
+        <input type="text" id="auditAction" placeholder="action" onkeydown="handleAuditSearchKey(event)">
+        <input type="text" id="auditSearch" placeholder="Search details / actor / reason" onkeydown="handleAuditSearchKey(event)">
+        <button onclick="reloadAudit()">Apply</button>
+    </div>
+    <div id="auditContent"><div class="loading">Загрузка...</div></div>
+    <div class="pagination" id="pagination" style="display:none">
+        <button id="prevBtn" onclick="loadPage(offset-pageSize)">← Назад</button>
+        <span id="pageInfo"></span>
+        <button id="nextBtn" onclick="loadPage(offset+pageSize)">Вперёд →</button>
+    </div>
+</div>
+<div id="productAuditSection" class="section">
+    <h2>Журнал действий по товарам</h2>
+    <p class="section-note">Отдельный технический лог продуктовых операций. Он не заменяет критический audit feed выше.</p>
+    <div id="productAuditContent"><div class="loading">Загрузка...</div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let offset = 0;
+let auditFilter = 'critical';
+const pageSize = 100;
+
+function showError(text) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = text;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+}
+
+function fmtDate(value) {
+    return value ? new Date(value).toLocaleString('ru-RU') : '—';
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function buildAuditQuery() {
+    const params = new URLSearchParams({ limit: String(pageSize), offset: String(offset) });
+    if (auditFilter === 'critical') {
+        params.set('critical_only', 'true');
+    } else if (auditFilter !== 'all') {
+        params.set('action_group', auditFilter);
+    }
+    const dateFrom = document.getElementById('auditDateFrom').value;
+    const dateTo = document.getElementById('auditDateTo').value;
+    const source = document.getElementById('auditSource').value;
+    const stream = document.getElementById('auditStream').value;
+    const entityType = document.getElementById('auditEntityType').value.trim();
+    const action = document.getElementById('auditAction').value.trim();
+    const search = document.getElementById('auditSearch').value.trim();
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    if (source) params.set('source', source);
+    if (stream) params.set('stream', stream);
+    if (entityType) params.set('entity_type', entityType);
+    if (action) params.set('action', action);
+    if (search) params.set('search', search);
+    return params.toString();
+}
+
+function reloadAudit() {
+    loadPage(0);
+}
+
+function handleAuditSearchKey(event) {
+    if (event.key === 'Enter') reloadAudit();
+}
+
+function setAuditFilter(mode, btn) {
+    auditFilter = mode;
+    offset = 0;
+    document.querySelectorAll('.audit-filter').forEach(node => node.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    loadPage(0);
+}
+
+async function loadPage(off) {
+    if (off < 0) return;
+    offset = off;
+    const r = await authFetch(`/api/audit?${buildAuditQuery()}`);
+    if (!r) return;
+    if (r.status === 403) {
+        document.getElementById('accessDenied').style.display = 'block';
+        document.getElementById('auditSection').style.display = 'none';
+        document.getElementById('productAuditSection').style.display = 'none';
+        return;
+    }
+    if (!r.ok) {
+        showError('Ошибка загрузки аудита');
+        return;
+    }
+
+    const payload = await r.json();
+    const logs = payload.items || [];
+    const total = payload.total || 0;
+    if (!logs.length) {
+        document.getElementById('auditContent').innerHTML = '<div class="empty">Нет записей для выбранного фильтра</div>';
+        document.getElementById('pagination').style.display = 'none';
+        return;
+    }
+
+    document.getElementById('auditContent').innerHTML = `
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Время</th>
+                    <th>Поток</th>
+                    <th>Группа</th>
+                    <th>Актор</th>
+                    <th>Источник</th>
+                    <th>Действие</th>
+                    <th>Тип</th>
+                    <th>ID сущности</th>
+                    <th>IP</th>
+                    <th>Детали</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logs.map(log => `
+                    <tr>
+                        <td>${log.id}</td>
+                        <td>${fmtDate(log.created_at)}</td>
+                        <td>${escapeHtml(log.stream || 'admin')}</td>
+                        <td><span class="badge badge-${escapeHtml(log.action_group)}">${escapeHtml(log.action_group)}</span></td>
+                        <td>${escapeHtml(log.actor_display || log.admin_username || log.admin_id || 'system')}</td>
+                        <td>${escapeHtml(log.source || 'system')}</td>
+                        <td>${escapeHtml(log.action || '—')}</td>
+                        <td>${escapeHtml(log.entity_type || '—')}</td>
+                        <td>${log.entity_id ?? '—'}</td>
+                        <td>${escapeHtml(log.ip_address || '—')}</td>
+                        <td><div class="details-json">${escapeHtml(JSON.stringify(log.details || {}, null, 2))}</div></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+
+    document.getElementById('pagination').style.display = 'flex';
+    document.getElementById('prevBtn').disabled = offset === 0;
+    document.getElementById('nextBtn').disabled = !payload.has_more;
+    document.getElementById('pageInfo').textContent = `Записи ${offset + 1}-${offset + logs.length} из ${total}`;
+}
+
+async function loadProductAudit() {
+    const r = await authFetch('/api/audit/product-actions?limit=100&offset=0');
+    if (!r || !r.ok) {
+        document.getElementById('productAuditContent').innerHTML = '<div class="empty">Не удалось загрузить product audit</div>';
+        return;
+    }
+    const logs = await r.json();
+    if (!logs.length) {
+        document.getElementById('productAuditContent').innerHTML = '<div class="empty">Нет product audit записей</div>';
+        return;
+    }
+    document.getElementById('productAuditContent').innerHTML = `
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Время</th>
+                    <th>Действие</th>
+                    <th>Актор</th>
+                    <th>Товар</th>
+                    <th>Возраст</th>
+                    <th>Детали</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${logs.map(log => `
+                    <tr>
+                        <td>${log.id}</td>
+                        <td>${fmtDate(log.created_at)}</td>
+                        <td>${escapeHtml(log.action || '—')}</td>
+                        <td>${escapeHtml(`${log.actor_type || '—'}:${log.actor_id ?? '—'}`)}</td>
+                        <td>${escapeHtml(log.product_name || log.product_id || '—')}</td>
+                        <td>${log.product_age_days ?? '—'}</td>
+                        <td><div class="details-json">${escapeHtml(JSON.stringify(log.details || {}, null, 2))}</div></td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+loadPage(0);
+loadProductAudit();
+</script>
+{% endblock %}

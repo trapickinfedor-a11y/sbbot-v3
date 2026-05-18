@@ -1,0 +1,620 @@
+{% extends "_base.html" %}
+{% block title %}Проверки{% endblock %}
+{% block header_title %}🔔 Проверки уведомлений{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ─────────────────────────────────────── */
+.checks-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{color:#333;font-size:18px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+/* ── Stat cards ─────────────────────────────────── */
+.stat-card{background:#fff;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.08);text-align:center;border-top:4px solid #667eea}
+.stat-card.danger{border-top-color:#ef4444}
+.stat-card.warn{border-top-color:#f59e0b}
+.stat-card.ok{border-top-color:#10b981}
+.stat-card .val{font-size:32px;font-weight:700;color:#1f2937;line-height:1}
+.stat-card .lbl{font-size:13px;color:#6b7280;margin-top:6px}
+.stat-card .sub{font-size:11px;color:#9ca3af;margin-top:4px}
+
+/* ── Date range bar ──────────────────────────────── */
+.date-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:20px;padding:16px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb}
+.date-bar label{font-size:13px;color:#374151;display:flex;flex-direction:column;gap:4px;font-weight:500}
+.date-bar input[type=datetime-local]{padding:8px 10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;color:#1f2937;background:#fff;cursor:pointer}
+.date-bar input[type=datetime-local]:focus{outline:none;border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.15)}
+.preset-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.preset-chip{padding:6px 14px;border-radius:20px;border:1.5px solid #d1d5db;background:#fff;cursor:pointer;font-size:12px;font-weight:600;color:#374151;transition:all .15s;white-space:nowrap}
+.preset-chip:hover{border-color:#667eea;color:#667eea}
+.preset-chip.active{background:#667eea;border-color:#667eea;color:#fff}
+.range-summary{font-size:12px;color:#6b7280;padding:6px 12px;background:#ede9fe;border-radius:8px;align-self:flex-end}
+
+/* ── Filters ─────────────────────────────────────── */
+.filters{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;align-items:flex-end}
+.filters label{font-size:13px;color:#374151;display:flex;flex-direction:column;gap:4px}
+.filters select,.filters input{padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;min-width:140px}
+.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
+.btn-primary{background:#667eea;color:#fff}.btn-primary:hover{background:#5a6fd6}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-success{background:#10b981;color:#fff}.btn-success:hover{background:#059669}
+.btn-sm{padding:5px 12px;font-size:12px;border-radius:6px}
+
+/* ── Table ───────────────────────────────────────── */
+.log-table{width:100%;border-collapse:collapse;font-size:13px}
+.log-table th{background:#f9fafb;font-weight:600;color:#374151;padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb}
+.log-table td{padding:9px 12px;border-bottom:1px solid #f3f4f6;vertical-align:top;color:#374151}
+.log-table tr:hover td{background:#f9fafb}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge-sent{background:#d1fae5;color:#065f46}
+.badge-failed{background:#fee2e2;color:#991b1b}
+.badge-retried{background:#fef3c7;color:#92400e}
+
+/* ── Channel badges ──────────────────────────────── */
+.ch-admin{background:#ede9fe;color:#5b21b6}
+.ch-mirror_bot{background:#dbeafe;color:#1e40af}
+.ch-support_bot{background:#e0f2fe;color:#075985}
+.ch-http_api{background:#f3f4f6;color:#374151}
+.ch-api{background:#fce7f3;color:#831843}
+.ch-user{background:#ecfdf5;color:#065f46}
+
+/* ── Error tooltip ───────────────────────────────── */
+.err-text{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:help;color:#ef4444;font-size:12px}
+
+/* ── Channel breakdown ────────────────────────────── */
+.ch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.ch-card{background:#f9fafb;border-radius:10px;padding:14px;border:1px solid #e5e7eb}
+.ch-card .ch-name{font-weight:600;font-size:13px;color:#374151;margin-bottom:8px}
+.ch-card .ch-row{display:flex;justify-content:space-between;font-size:12px;margin-top:4px}
+.ch-card .ch-sent{color:#065f46}.ch-card .ch-fail{color:#991b1b}
+
+/* ── Auto-refresh indicator ──────────────────────── */
+.refresh-bar{display:flex;align-items:center;gap:10px;font-size:13px;color:#6b7280}
+.dot{width:8px;height:8px;border-radius:50%;background:#10b981;display:inline-block}
+.dot.off{background:#d1d5db}
+
+/* ── Pagination ───────────────────────────────────── */
+.pagination{display:flex;gap:8px;align-items:center;margin-top:14px}
+.pagination button{padding:7px 14px;background:#667eea;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.pagination button:disabled{opacity:.4;cursor:not-allowed}
+.pagination span{color:#6b7280;font-size:13px}
+
+/* ── Top-failed bar ───────────────────────────────── */
+.topfail-list{display:flex;flex-direction:column;gap:8px}
+.topfail-row{display:flex;justify-content:space-between;align-items:center;background:#fef2f2;border-radius:8px;padding:8px 12px}
+.topfail-row .et{font-size:13px;font-weight:600;color:#991b1b}
+.topfail-row .cnt{font-size:13px;color:#6b7280}
+
+/* ── Payload modal ────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:14px;padding:28px;max-width:580px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-box h3{margin-bottom:14px;color:#1f2937}
+.modal-body{background:#f9fafb;padding:14px;border-radius:8px;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-all;color:#374151}
+.modal-close{margin-top:16px;width:100%}
+
+.loading{text-align:center;padding:40px;color:#6b7280}
+.empty{text-align:center;padding:40px;color:#9ca3af;font-size:14px}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ STATS HEADER ═══════════════════════════════════════════════════════ -->
+<div class="section" style="padding-bottom:10px">
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+    <h2 style="margin:0">📊 Статистика доставки</h2>
+    <div class="refresh-bar" style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-success btn-sm" id="sendTestBtn" onclick="sendTestMessage()" title="Отправить проверочное сообщение «Проверка» админам">📤 Проверка отправки</button>
+      <span class="dot" id="refreshDot"></span>
+      <span id="refreshLabel">Обновление каждые 30 сек</span>
+      <button class="btn btn-primary btn-sm" onclick="loadAll()">⟳ Обновить</button>
+    </div>
+  </div>
+
+  <!-- Date range picker -->
+  <div class="date-bar">
+    <div class="preset-chips">
+      <span style="font-size:12px;color:#6b7280;font-weight:600;margin-right:2px">Быстро:</span>
+      <button class="preset-chip" onclick="applyPreset('today',this)">Сегодня</button>
+      <button class="preset-chip" onclick="applyPreset('yesterday',this)">Вчера</button>
+      <button class="preset-chip active" onclick="applyPreset('24h',this)">24 часа</button>
+      <button class="preset-chip" onclick="applyPreset('3d',this)">3 дня</button>
+      <button class="preset-chip" onclick="applyPreset('7d',this)">7 дней</button>
+      <button class="preset-chip" onclick="applyPreset('30d',this)">30 дней</button>
+      <button class="preset-chip" onclick="applyPreset('all',this)">Всё время</button>
+    </div>
+    <label>С
+      <input type="datetime-local" id="dateFrom" onchange="onDateChange()">
+    </label>
+    <label>По
+      <input type="datetime-local" id="dateTo" onchange="onDateChange()">
+    </label>
+    <button class="btn btn-primary btn-sm" onclick="loadAll()" style="align-self:flex-end">🔍 Применить</button>
+    <span class="range-summary" id="rangeSummary"></span>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="checks-grid" id="statsCards"><div class="loading">Загрузка...</div></div>
+</div>
+
+<!-- ══ CHANNEL BREAKDOWN ══════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>📡 По каналам <span id="chPeriodLabel" style="font-size:13px;color:#6b7280;font-weight:400"></span></h2>
+  <div class="ch-grid" id="channelGrid"><div class="loading">Загрузка...</div></div>
+</div>
+
+<!-- ══ TOP FAILED EVENTS ═════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>🔥 Топ ошибок <span id="topPeriodLabel" style="font-size:13px;color:#6b7280;font-weight:400"></span></h2>
+  <div id="topFailedList"><div class="loading">Загрузка...</div></div>
+</div>
+
+<!-- ══ LOGS TABLE ═════════════════════════════════════════════════════════ -->
+<div class="section">
+  <h2>📋 Лог уведомлений</h2>
+
+  <!-- Filters -->
+  <div class="filters">
+    <label>Статус
+      <select id="fStatus">
+        <option value="">Все</option>
+        <option value="failed">❌ Failed</option>
+        <option value="sent">✅ Sent</option>
+        <option value="retried">♻️ Retried</option>
+      </select>
+    </label>
+    <label>Канал
+      <select id="fChannel">
+        <option value="">Все</option>
+        <option value="admin">admin</option>
+        <option value="mirror_bot">mirror_bot</option>
+        <option value="support_bot">support_bot</option>
+        <option value="http_api">http_api</option>
+        <option value="api">api</option>
+      </select>
+    </label>
+    <label>Тип события
+      <select id="fEventType">
+        <option value="">Все</option>
+      </select>
+    </label>
+    <label>С
+      <input type="datetime-local" id="fDateFrom" style="min-width:180px">
+    </label>
+    <label>По
+      <input type="datetime-local" id="fDateTo" style="min-width:180px">
+    </label>
+    <label>Order/Ticket ID
+      <input type="number" id="fRelatedId" placeholder="ID..." style="width:100px">
+    </label>
+    <button class="btn btn-primary" onclick="syncLogsDateFromStats(); resetAndLoad()">🔍 Применить</button>
+    <button class="btn" style="background:#f3f4f6;color:#374151" onclick="clearLogFilters()">✕ Сброс</button>
+  </div>
+
+  <div id="logTableWrap"><div class="loading">Загрузка...</div></div>
+  <div class="pagination" id="pagination" style="display:none">
+    <button id="prevBtn" onclick="loadLogs(logsOffset-100)" disabled>← Назад</button>
+    <span id="pageInfo"></span>
+    <button id="nextBtn" onclick="loadLogs(logsOffset+100)">Вперёд →</button>
+  </div>
+</div>
+
+<!-- ══ CLEANUP ════════════════════════════════════════════════════════════ -->
+<div class="section" id="cleanupSection" style="display:none">
+  <h2>🗑️ Очистка старых записей</h2>
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <label style="font-size:13px">Удалить записи старше
+      <select id="cleanupDays" style="padding:8px;border:1px solid #d1d5db;border-radius:8px;margin-left:6px">
+        <option value="7">7 дней</option>
+        <option value="14">14 дней</option>
+        <option value="30" selected>30 дней</option>
+        <option value="60">60 дней</option>
+        <option value="90">90 дней</option>
+      </select>
+    </label>
+    <button class="btn btn-danger" onclick="cleanupLogs()">🗑️ Удалить</button>
+  </div>
+</div>
+
+<!-- ══ PAYLOAD MODAL ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="payloadModal" onclick="closeModal(event)">
+  <div class="modal-box">
+    <h3>📦 Payload / Детали</h3>
+    <div class="modal-body" id="modalBody"></div>
+    <button class="btn btn-primary modal-close" onclick="closePayloadModal()">Закрыть</button>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── State ────────────────────────────────────────
+let logsOffset = 0;
+let statsData = null;
+let autoRefreshTimer = null;
+let activePreset = '24h';
+
+// ──────────────────────────────────────────────────
+// Date helpers
+// ──────────────────────────────────────────────────
+
+/** Форматируем Date → строку для input[type=datetime-local] (YYYY-MM-DDTHH:MM) */
+function toInputVal(d) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Читаем значение input datetime-local → ISO UTC строку для API */
+function inputToISO(id) {
+  const v = document.getElementById(id).value;
+  if (!v) return null;
+  // Браузер хранит local-time; переводим в UTC
+  return new Date(v).toISOString().replace('Z','');
+}
+
+/** Пресеты → устанавливают dateFrom/dateTo */
+function applyPreset(preset, btn) {
+  activePreset = preset;
+  document.querySelectorAll('.preset-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const now = new Date();
+  let from = null;
+
+  if (preset === 'today') {
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  } else if (preset === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate() - 1);
+    from = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 0, 0, 0);
+    const to = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
+    document.getElementById('dateTo').value = toInputVal(to);
+    document.getElementById('dateFrom').value = toInputVal(from);
+    updateRangeSummary();
+    return;
+  } else if (preset === '24h') {
+    from = new Date(now - 24*3600*1000);
+  } else if (preset === '3d') {
+    from = new Date(now - 3*24*3600*1000);
+  } else if (preset === '7d') {
+    from = new Date(now - 7*24*3600*1000);
+  } else if (preset === '30d') {
+    from = new Date(now - 30*24*3600*1000);
+  } else if (preset === 'all') {
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+    updateRangeSummary();
+    return;
+  }
+
+  document.getElementById('dateFrom').value = toInputVal(from);
+  document.getElementById('dateTo').value = toInputVal(now);
+  updateRangeSummary();
+}
+
+function onDateChange() {
+  // Снимаем активный пресет при ручном вводе
+  activePreset = 'custom';
+  document.querySelectorAll('.preset-chip').forEach(b => b.classList.remove('active'));
+  updateRangeSummary();
+}
+
+function updateRangeSummary() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  const fmt = s => s ? new Date(s).toLocaleString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '∞';
+  const el = document.getElementById('rangeSummary');
+  if (!from && !to) { el.textContent = 'Всё время'; return; }
+  el.textContent = `${fmt(from)} — ${fmt(to)}`;
+}
+
+/** Собрать date_from/date_to из inputs в UTC ISO для API */
+function getStatsDates() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  const params = new URLSearchParams();
+  if (from) params.set('date_from', new Date(from).toISOString().replace('Z',''));
+  if (to)   params.set('date_to',   new Date(to).toISOString().replace('Z',''));
+  return params;
+}
+
+// ── Init ─────────────────────────────────────────
+(async () => {
+  applyPreset('24h', document.querySelector('.preset-chip.active'));
+  await loadMeta();
+  await loadAll();
+  startAutoRefresh();
+
+  const r = await authFetch('/api/auth/me');
+  if (r && r.ok) {
+    const u = await r.json();
+    if (u.role === 'super_admin' || u.role === 'owner') {
+      document.getElementById('cleanupSection').style.display = '';
+    }
+  }
+})();
+
+async function loadMeta() {
+  const r = await authFetch('/api/checks/meta');
+  if (!r || !r.ok) return;
+  const meta = await r.json();
+  const sel = document.getElementById('fEventType');
+  sel.innerHTML = '<option value="">Все</option>';
+  for (const et of (meta.event_types || [])) {
+    const o = document.createElement('option');
+    o.value = et; o.textContent = et;
+    sel.appendChild(o);
+  }
+}
+
+async function loadAll() {
+  await Promise.all([loadStats(), loadLogs(0)]);
+}
+
+// ── Stats ─────────────────────────────────────────
+async function loadStats() {
+  const params = getStatsDates();
+  const r = await authFetch(`/api/checks/stats?${params}`);
+  if (!r || !r.ok) return;
+  statsData = await r.json();
+  renderStats();
+  renderChannels();
+  renderTopFailed();
+
+  // Обновляем подписи в заголовках секций
+  const lbl = rangeLabelShort();
+  document.getElementById('chPeriodLabel').textContent = lbl;
+  document.getElementById('topPeriodLabel').textContent = lbl;
+}
+
+function rangeLabelShort() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  if (!from && !to) return '(всё время)';
+  const fmt = s => new Date(s).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit'});
+  if (!from) return `(до ${fmt(to)})`;
+  if (!to)   return `(с ${fmt(from)})`;
+  return `(${fmt(from)} — ${fmt(to)})`;
+}
+
+function renderStats() {
+  if (!statsData) return;
+  const p = statsData.range;
+  const fClass = p.failure_rate > 20 ? 'danger' : p.failure_rate > 5 ? 'warn' : 'ok';
+  document.getElementById('statsCards').innerHTML = `
+    <div class="stat-card ok">
+      <div class="val">${p.sent.toLocaleString()}</div>
+      <div class="lbl">✅ Отправлено</div>
+    </div>
+    <div class="stat-card ${p.failed > 0 ? 'danger' : 'ok'}">
+      <div class="val">${p.failed.toLocaleString()}</div>
+      <div class="lbl">❌ Ошибок</div>
+    </div>
+    <div class="stat-card warn">
+      <div class="val">${p.retried.toLocaleString()}</div>
+      <div class="lbl">♻️ Повторов</div>
+    </div>
+    <div class="stat-card ${fClass}">
+      <div class="val">${p.failure_rate}%</div>
+      <div class="lbl">📉 Процент ошибок</div>
+    </div>
+    <div class="stat-card">
+      <div class="val">${p.total.toLocaleString()}</div>
+      <div class="lbl">📊 Всего попыток</div>
+    </div>
+  `;
+}
+
+function renderChannels() {
+  if (!statsData) return;
+  const ch = statsData.channels || {};
+  const keys = Object.keys(ch);
+  if (!keys.length) {
+    document.getElementById('channelGrid').innerHTML = '<div class="empty">Нет данных за выбранный период</div>';
+    return;
+  }
+  document.getElementById('channelGrid').innerHTML = keys.map(k => {
+    const d = ch[k];
+    const total = (d.sent || 0) + (d.failed || 0);
+    const rate = total ? Math.round((d.failed || 0) / total * 100) : 0;
+    return `<div class="ch-card">
+      <div class="ch-name"><span class="badge ch-${k}">${k}</span></div>
+      <div class="ch-row"><span class="ch-sent">✅ ${d.sent || 0}</span><span class="ch-fail">❌ ${d.failed || 0}</span></div>
+      <div class="ch-row" style="margin-top:6px;color:${rate>10?'#ef4444':'#6b7280'};font-size:11px">${rate}% ошибок</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTopFailed() {
+  if (!statsData) return;
+  const list = statsData.top_failed_events || [];
+  if (!list.length) {
+    document.getElementById('topFailedList').innerHTML = '<div class="empty">🎉 Ошибок в выбранном периоде нет</div>';
+    return;
+  }
+  document.getElementById('topFailedList').innerHTML = `<div class="topfail-list">${
+    list.map(e => `<div class="topfail-row">
+      <span class="et">${e.event_type}</span>
+      <span class="cnt">${e.count} ошибок</span>
+    </div>`).join('')
+  }</div>`;
+}
+
+// ── Logs ──────────────────────────────────────────
+function resetAndLoad() { loadLogs(0); }
+
+/** Синхронизировать даты фильтра логов с датами из верхнего date-bar */
+function syncLogsDateFromStats() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  document.getElementById('fDateFrom').value = from;
+  document.getElementById('fDateTo').value   = to;
+}
+
+function clearLogFilters() {
+  document.getElementById('fStatus').value = '';
+  document.getElementById('fChannel').value = '';
+  document.getElementById('fEventType').value = '';
+  document.getElementById('fDateFrom').value = '';
+  document.getElementById('fDateTo').value = '';
+  document.getElementById('fRelatedId').value = '';
+  loadLogs(0);
+}
+
+async function loadLogs(offset) {
+  logsOffset = offset < 0 ? 0 : offset;
+  const status    = document.getElementById('fStatus').value;
+  const channel   = document.getElementById('fChannel').value;
+  const eventType = document.getElementById('fEventType').value;
+  const relatedId = document.getElementById('fRelatedId').value;
+  const fromVal   = document.getElementById('fDateFrom').value;
+  const toVal     = document.getElementById('fDateTo').value;
+
+  const params = new URLSearchParams({ limit: 100, offset: logsOffset });
+  if (status)    params.set('status', status);
+  if (channel)   params.set('channel', channel);
+  if (eventType) params.set('event_type', eventType);
+  if (relatedId) params.set('related_id', relatedId);
+  if (fromVal)   params.set('date_from', new Date(fromVal).toISOString().replace('Z',''));
+  if (toVal)     params.set('date_to',   new Date(toVal).toISOString().replace('Z',''));
+
+  document.getElementById('logTableWrap').innerHTML = '<div class="loading">Загрузка...</div>';
+
+  const r = await authFetch(`/api/checks/logs?${params}`);
+  if (!r || !r.ok) {
+    document.getElementById('logTableWrap').innerHTML = '<div class="empty">Ошибка загрузки</div>';
+    return;
+  }
+  const data = await r.json();
+
+  if (!data.items.length) {
+    document.getElementById('logTableWrap').innerHTML = '<div class="empty">Записей не найдено</div>';
+    document.getElementById('pagination').style.display = 'none';
+    return;
+  }
+
+  const fmt = s => s ? new Date(s).toLocaleString('ru-RU') : '—';
+  const statusBadge = s => {
+    const cls = s === 'sent' ? 'badge-sent' : s === 'retried' ? 'badge-retried' : 'badge-failed';
+    const icon = s === 'sent' ? '✅' : s === 'retried' ? '♻️' : '❌';
+    return `<span class="badge ${cls}">${icon} ${s}</span>`;
+  };
+
+  document.getElementById('logTableWrap').innerHTML = `
+    <div style="overflow-x:auto">
+    <table class="log-table">
+      <thead><tr>
+        <th>ID</th><th>Время</th><th>Событие</th><th>Канал</th>
+        <th>Статус</th><th>Получатель</th><th>Связанная запись</th>
+        <th>Ошибка</th><th>Повторов</th><th>Действие</th>
+      </tr></thead>
+      <tbody>
+        ${data.items.map(l => `
+          <tr>
+            <td>${l.id}</td>
+            <td style="white-space:nowrap">${fmt(l.created_at)}</td>
+            <td><code style="font-size:12px">${l.event_type}</code></td>
+            <td><span class="badge ch-${l.channel}">${l.channel}</span></td>
+            <td>${statusBadge(l.status)}</td>
+            <td>${l.recipient_id ? `<code>${l.recipient_id}</code>` : '—'}</td>
+            <td>${l.related_type ? `${l.related_type} #${l.related_id}` : '—'}</td>
+            <td>${l.error_message
+              ? `<span class="err-text" title="${escHtml(l.error_message)}">${escHtml(l.error_message.slice(0,60))}${l.error_message.length>60?'…':''}</span>`
+              : '—'}</td>
+            <td>${l.retry_count || 0}</td>
+            <td style="white-space:nowrap">
+              ${l.payload ? `<button class="btn btn-primary btn-sm" onclick='showPayload(${JSON.stringify(JSON.stringify(l.payload))})'>Payload</button> ` : ''}
+              ${l.status === 'failed' && l.channel === 'admin'
+                ? `<button class="btn btn-success btn-sm" onclick="retryLog(${l.id}, this)">♻️ Retry</button>`
+                : ''}
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+
+  const pag = document.getElementById('pagination');
+  pag.style.display = 'flex';
+  document.getElementById('prevBtn').disabled = logsOffset === 0;
+  document.getElementById('nextBtn').disabled = data.items.length < 100;
+  document.getElementById('pageInfo').textContent = `${logsOffset + 1}–${logsOffset + data.items.length} из ${data.total}`;
+}
+
+// ── Send test message (проверка отправки) ─────────
+async function sendTestMessage() {
+  const btn = document.getElementById('sendTestBtn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Отправка...';
+  const r = await authFetch('/api/checks/send-test', { method: 'POST' });
+  if (!r) {
+    btn.disabled = false;
+    btn.textContent = '📤 Проверка отправки';
+    return;
+  }
+  const data = await r.json();
+  if (data.success) {
+    btn.textContent = '✅ Отправлено';
+    setTimeout(() => {
+      btn.textContent = '📤 Проверка отправки';
+      btn.disabled = false;
+    }, 2000);
+  } else {
+    btn.textContent = '❌ Ошибка';
+    btn.disabled = false;
+    alert('Не удалось отправить: ' + (data.errors && data.errors.length ? data.errors.map(e => e.error).join('; ') : data.detail || 'Unknown error'));
+  }
+}
+
+// ── Retry ─────────────────────────────────────────
+async function retryLog(logId, btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  const r = await authFetch(`/api/checks/retry/${logId}`, { method: 'POST' });
+  if (!r) { btn.disabled = false; btn.textContent = '♻️ Retry'; return; }
+  const data = await r.json();
+  if (data.success) {
+    btn.textContent = '✅ Отправлено';
+    btn.classList.remove('btn-success');
+    btn.classList.add('btn-primary');
+    setTimeout(() => loadLogs(logsOffset), 1500);
+  } else {
+    btn.textContent = '❌ Ошибка';
+    btn.disabled = false;
+    alert('Не удалось повторить: ' + JSON.stringify(data.errors));
+  }
+}
+
+// ── Cleanup ───────────────────────────────────────
+async function cleanupLogs() {
+  const days = document.getElementById('cleanupDays').value;
+  if (!confirm(`Удалить все записи старше ${days} дней?`)) return;
+  const r = await authFetch(`/api/checks/logs/cleanup?days=${days}`, { method: 'DELETE' });
+  if (r && r.ok) {
+    const d = await r.json();
+    alert(`Удалено ${d.deleted} записей`);
+    loadAll();
+  }
+}
+
+// ── Payload modal ─────────────────────────────────
+function showPayload(payloadStr) {
+  const obj = JSON.parse(payloadStr);
+  document.getElementById('modalBody').textContent = JSON.stringify(obj, null, 2);
+  document.getElementById('payloadModal').classList.add('open');
+}
+function closePayloadModal() { document.getElementById('payloadModal').classList.remove('open'); }
+function closeModal(e) { if (e.target === document.getElementById('payloadModal')) closePayloadModal(); }
+
+// ── Auto-refresh ──────────────────────────────────
+function startAutoRefresh() {
+  document.getElementById('refreshDot').classList.remove('off');
+  autoRefreshTimer = setInterval(() => loadAll(), 30000);
+}
+
+// ── Utils ─────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

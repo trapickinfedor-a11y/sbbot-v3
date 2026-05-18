@@ -1,0 +1,29 @@
+# Crontab Configuration for NewLookup Backups
+# Add to crontab with: crontab -e
+
+# PostgreSQL Backups
+# Daily at 3:00 AM
+0 3 * * * /opt/newlookup/scripts/backup_postgres.sh >> /var/log/newlookup/backup_postgres.log 2>&1
+
+# Weekly full backup on Sunday at 2:00 AM
+0 2 * * 0 /opt/newlookup/scripts/backup_postgres.sh >> /var/log/newlookup/backup_postgres_weekly.log 2>&1
+
+# Uploads Backups
+# Daily at 4:00 AM
+0 4 * * * /opt/newlookup/scripts/backup_uploads.sh >> /var/log/newlookup/backup_uploads.log 2>&1
+
+# System Health Check
+# Every 5 minutes
+*/5 * * * * /opt/newlookup/scripts/health_check.sh >> /var/log/newlookup/health_check.log 2>&1
+
+# Cleanup old logs
+# Daily at 1:00 AM - keep logs for 30 days
+0 1 * * * find /var/log/newlookup -name "*.log" -mtime +30 -delete
+
+# Docker cleanup
+# Weekly on Monday at 1:00 AM
+0 1 * * 1 docker system prune -af --volumes --filter "until=168h" >> /var/log/newlookup/docker_cleanup.log 2>&1
+
+# Database vacuum analyze
+# Weekly on Sunday at 5:00 AM
+0 5 * * 0 docker exec newlookup_postgres vacuumdb -U newlookup -d newlookup --analyze --verbose >> /var/log/newlookup/vacuum.log 2>&1

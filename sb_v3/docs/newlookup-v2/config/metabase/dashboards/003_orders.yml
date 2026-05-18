@@ -1,0 +1,164 @@
+# Metabase Dashboard: Orders Analytics
+# Dashboard ID: 003
+# Description: Order processing, fulfillment, and revenue
+
+dashboard:
+  name: "🛒 Orders Analytics"
+  description: "Order lifecycle, fulfillment metrics, and revenue analysis"
+  position: 3
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Category"
+      type: "string"
+      required: false
+    - name: "Status"
+      type: "string"
+      required: false
+      values: ["pending", "processing", "completed", "cancelled"]
+
+  cards:
+    - name: "Total Orders"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_orders
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Total Revenue"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(price), 0) as total_revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Pending Orders"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as pending_orders
+        FROM orders
+        WHERE status = 'pending'
+
+    - name: "Avg Order Value"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(AVG(price), 0) as avg_order_value
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Orders by Status"
+      type: "pie"
+      position: { row: 2, col: 1, size: 4 }
+      query: |
+        SELECT 
+          status,
+          COUNT(*) as count,
+          SUM(price) as total_value
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "Orders Trend"
+      type: "line"
+      position: { row: 2, col: 5, size: 8 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as orders_count,
+          SUM(CASE WHEN status = 'completed' THEN price ELSE 0 END) as revenue
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Revenue by Category"
+      type: "bar"
+      position: { row: 3, col: 1, size: 6 }
+      query: |
+        SELECT 
+          category,
+          COUNT(*) as orders,
+          SUM(price) as revenue,
+          AVG(price) as avg_price
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY category
+        ORDER BY revenue DESC
+        LIMIT 15
+
+    - name: "Orders Funnel"
+      type: "funnel"
+      position: { row: 3, col: 7, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN status = 'pending' THEN '1. Pending'
+            WHEN status = 'processing' THEN '2. Processing'
+            WHEN status = 'completed' THEN '3. Completed'
+            WHEN status = 'cancelled' THEN '4. Cancelled'
+          END as stage,
+          COUNT(*) as count
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY stage
+        ORDER BY MIN(
+          CASE 
+            WHEN status = 'pending' THEN 1
+            WHEN status = 'processing' THEN 2
+            WHEN status = 'completed' THEN 3
+            WHEN status = 'cancelled' THEN 4
+          END
+        )
+
+    - name: "Order Processing Time"
+      type: "gauge"
+      position: { row: 4, col: 1, size: 4 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (completed_at - created_at)) / 60) as avg_minutes
+        FROM orders
+        WHERE status = 'completed'
+          AND completed_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Orders by Hour"
+      type: "heatmap"
+      position: { row: 4, col: 5, size: 8 }
+      query: |
+        SELECT 
+          EXTRACT(DOW FROM created_at) as day_of_week,
+          EXTRACT(HOUR FROM created_at) as hour_of_day,
+          COUNT(*) as orders
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY day_of_week, hour_of_day
+        ORDER BY day_of_week, hour_of_day
+
+    - name: "Recent Orders"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          o.category,
+          o.service_name,
+          o.price,
+          o.status,
+          o.created_at,
+          o.completed_at,
+          EXTRACT(EPOCH FROM (o.completed_at - o.created_at)) / 60 as processing_minutes
+        FROM orders o
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY o.created_at DESC
+        LIMIT 100

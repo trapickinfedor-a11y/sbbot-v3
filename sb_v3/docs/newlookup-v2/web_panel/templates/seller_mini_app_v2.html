@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ru" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#0D1117" />
+    <title>Seller Hub</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module">
+      // Development mode - load from Vite dev server at localhost:3000
+      // For production, build the app first
+      const VITE_DEV_SERVER = 'http://localhost:3000';
+      
+      async function loadViteApp() {
+        try {
+          // Load Vite client
+          const response = await fetch(`${VITE_DEV_SERVER}/@vite/client`);
+          if (response.ok) {
+            // Dev server is running, load app from there
+            window.location.href = `${VITE_DEV_SERVER}`;
+            return;
+          }
+        } catch (e) {
+          // Dev server not running, show message
+        }
+        
+        // Show build required message
+        document.body.innerHTML = `
+          <div style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #0D1117;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+            text-align: center;
+          ">
+            <div style="
+              width: 80px;
+              height: 80px;
+              background: linear-gradient(135deg, #409EFF, #67C23A);
+              border-radius: 20px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              margin-bottom: 24px;
+              box-shadow: 0 8px 32px rgba(64, 158, 255, 0.3);
+            ">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">
+              Seller Mini App v2
+            </h1>
+            <p style="font-size: 14px; color: #888; max-width: 400px; line-height: 1.6; margin-bottom: 24px;">
+              Vite dev server is not running. Start it or build the production version.
+            </p>
+            <div style="
+              background: rgba(255,255,255,0.05);
+              border: 1px solid rgba(255,255,255,0.1);
+              border-radius: 12px;
+              padding: 20px;
+              max-width: 500px;
+              text-align: left;
+            ">
+              <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #409EFF;">
+                Development Mode:
+              </h3>
+              <code style="
+                display: block;
+                background: rgba(0,0,0,0.3);
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #67C23A;
+                margin-bottom: 16px;
+              ">cd web_panel/seller_mini_app_v2<br/>pnpm install<br/>pnpm dev</code>
+              
+              <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #409EFF;">
+                Production Build:
+              </h3>
+              <code style="
+                display: block;
+                background: rgba(0,0,0,0.3);
+                padding: 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                color: #67C23A;
+              ">cd web_panel/seller_mini_app_v2<br/>pnpm install<br/>pnpm build</code>
+            </div>
+          </div>
+        `;
+      }
+      
+      loadViteApp();
+    </script>
+  </body>
+</html>

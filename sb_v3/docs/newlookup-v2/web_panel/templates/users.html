@@ -1,0 +1,1305 @@
+{% extends "_base.html" %}
+{% block title %}Пользователи{% endblock %}
+{% block header_title %}👥 Пользователи{% endblock %}
+{% block extra_css %}
+<style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        .hidden{display:none!important}
+        
+        .section{background:#fff;padding:25px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:20px}
+        
+        .section h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .controls select,
+        .controls input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+        }
+        
+        table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #e3fcef; color: #006644; }
+        .badge-danger { background: #ffe6e6; color: #d32f2f; }
+        .badge-info { background: #e3f2fd; color: #1976d2; }
+        .badge-warning { background: #fff3e0; color: #f57c00; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #e0e0e0;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #667eea;
+            background: #f9fafb;
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f9fafb;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .file-preview img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 4px;
+        }
+        .details-modal-content {
+            max-width: 1200px;
+            width: 95%;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .details-card {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 14px;
+        }
+        .details-card-label {
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 6px;
+        }
+        .details-card-value {
+            color: #111827;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .details-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 10px 20px;
+            margin-bottom: 24px;
+        }
+        .details-meta-item {
+            font-size: 14px;
+            color: #374151;
+        }
+        .details-meta-item strong {
+            color: #111827;
+        }
+        .details-section {
+            margin-bottom: 22px;
+        }
+        .details-section h4 {
+            font-size: 16px;
+            color: #111827;
+            margin-bottom: 12px;
+        }
+        .details-table-wrapper {
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .details-table th {
+            background: #f9fafb;
+            color: #6b7280;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 12px;
+            text-align: left;
+            white-space: nowrap;
+        }
+        .details-table td {
+            padding: 10px 12px;
+            border-top: 1px solid #f3f4f6;
+            vertical-align: top;
+            color: #111827;
+        }
+        .details-table tr:hover td {
+            background: #fafcff;
+        }
+        .text-positive {
+            color: #059669;
+            font-weight: 600;
+        }
+        .text-negative {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .empty-state {
+            padding: 18px;
+            border: 1px dashed #d1d5db;
+            border-radius: 10px;
+            background: #f9fafb;
+            color: #6b7280;
+            text-align: center;
+        }
+        .mono {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="section">
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>👥 Управление пользователями</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="loadUsers()">🔄 Обновить</button>
+                    <button class="btn btn-success" onclick="showAdvancedUserSearch()">🔍 Расширенный поиск</button>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <a href="#" class="btn btn-secondary" onclick="exportCsv('users'); return false;">📥 Export CSV</a>
+                <select id="userBotFilter">
+                    <option value="">Все боты</option>
+                </select>
+                <input type="text" id="userSearch" placeholder="Поиск по User ID...">
+                <select id="usersPerPage" onchange="changeUsersLimit()">
+                    <option value="10">10 на странице</option>
+                    <option value="25">25 на странице</option>
+                    <option value="50" selected>50 на странице</option>
+                    <option value="100">100 на странице</option>
+                    <option value="200">200 на странице</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadUsers()">🔍 Найти</button>
+            </div>
+
+            <div id="usersTable">
+                <div class="loading">Загрузка пользователей...</div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="usersPagination" style="display: none; margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="color: #666; font-size: 14px;">
+                        Показано <strong id="usersShowingFrom">0</strong>-<strong id="usersShowingTo">0</strong> из <strong id="usersTotalCount">0</strong> записей
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-secondary" id="usersFirstPage" onclick="goToUsersPage('first')" disabled>
+                            ⏮ Первая
+                        </button>
+                        <button class="btn btn-secondary" id="usersPrevPage" onclick="goToUsersPage('prev')" disabled>
+                            ← Назад
+                        </button>
+                        <span style="padding: 8px 16px; background: white; border-radius: 6px; font-weight: 600;">
+                            Страница <span id="usersCurrentPage">1</span> из <span id="usersTotalPages">1</span>
+                        </span>
+                        <button class="btn btn-secondary" id="usersNextPage" onclick="goToUsersPage('next')">
+                            Вперед →
+                        </button>
+                        <button class="btn btn-secondary" id="usersLastPage" onclick="goToUsersPage('last')">
+                            Последняя ⏭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- Модальные окна -->
+    
+    <!-- Модальное окно редактирования пользователя -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">✏️ Редактировать пользователя</h3>
+                <button class="close-btn" onclick="closeModal('editUserModal')">&times;</button>
+            </div>
+            <form id="editUserForm">
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="editUserId" readonly style="background: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>Текущий баланс</label>
+                    <input type="text" id="currentBalance" readonly style="background: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>Новый баланс *</label>
+                    <input type="number" id="newBalance" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Причина изменения *</label>
+                    <textarea id="balanceReason" placeholder="Укажите причину изменения баланса" required>Корректировка администратором</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Статус пользователя</label>
+                    <select id="userStatus">
+                        <option value="false">Активен</option>
+                        <option value="true">Заблокирован</option>
+                    </select>
+                </div>
+                <div class="form-group" id="banReasonGroup" style="display: none;">
+                    <label>Причина блокировки</label>
+                    <textarea id="banReason" placeholder="Укажите причину блокировки"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editUserModal')">Отмена</button>
+                    <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно отправки сообщения -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">💬 Отправить сообщение пользователю</h3>
+                <button class="close-btn" onclick="closeModal('messageModal')">&times;</button>
+            </div>
+            <form id="messageForm">
+                <div class="form-group">
+                    <label>Получатель</label>
+                    <input type="text" id="messageUserId" readonly style="background: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>Сообщение *</label>
+                    <textarea id="messageText" placeholder="Введите текст сообщения" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Медиа файл (необязательно)</label>
+                    <div class="file-upload-area" onclick="document.getElementById('messageFile').click()">
+                        <p>📎 Нажмите или перетащите файл сюда</p>
+                        <small>Поддерживаются: изображения, видео, документы</small>
+                    </div>
+                    <input type="file" id="messageFile" style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.txt">
+                    <div class="file-preview" id="messageFilePreview"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('messageModal')">Отмена</button>
+                    <button type="submit" class="btn btn-success">📤 Отправить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно поиска пользователя -->
+    <div id="searchModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🔍 Поиск пользователя во всех ботах</h3>
+                <button class="close-btn" onclick="closeModal('searchModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label>User ID для поиска</label>
+                <input type="number" id="searchUserId" placeholder="Введите User ID">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('searchModal')">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="performSearch()">🔍 Найти</button>
+            </div>
+            <div id="searchResults" style="margin-top: 20px; display: none;">
+                <!-- Результаты поиска будут здесь -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подробной информации о пользователе -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content details-modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">👤 Подробная информация о пользователе</h3>
+                <button class="close-btn" onclick="closeModal('userDetailsModal')">&times;</button>
+            </div>
+            <div id="userDetailsContent">
+                <div class="loading">Загрузка данных пользователя...</div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('userDetailsModal')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+    <script>
+        async function exportCsv(type) {
+            const token = localStorage.getItem('token');
+            if (!token) { alert('Login required'); return; }
+            const r = await fetch('/api/export/' + type, { headers: { 'Authorization': 'Bearer ' + token } });
+            if (!r.ok) { alert('Export failed'); return; }
+            const blob = await r.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = type + '.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatCurrency(value) {
+            if (value === null || value === undefined || value === '') return '—';
+            const amount = Number(value || 0);
+            return `$${amount.toFixed(2)}`;
+        }
+
+        function formatSignedCurrency(value) {
+            const amount = Number(value || 0);
+            const sign = amount > 0 ? '+' : '';
+            return `${sign}$${amount.toFixed(2)}`;
+        }
+
+        function formatDateTime(value) {
+            if (!value) return '—';
+            return new Date(value).toLocaleString('ru-RU');
+        }
+
+        function renderDetailsTable(headers, rowsHtml) {
+            if (!rowsHtml.length) {
+                return '<div class="empty-state">Нет данных</div>';
+            }
+
+            return `
+                <div class="details-table-wrapper">
+                    <table class="details-table">
+                        <thead>
+                            <tr>${headers.map(header => `<th>${header}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>${rowsHtml.join('')}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        // ========== ЗАГРУЗКА ДАННЫХ ==========
+
+        let usersCurrentOffset = 0;
+        let usersCurrentLimit = 50;
+        let usersTotalRecords = 0;
+        let canEditUsers = false;
+        let canBanUsers = false;
+        let canViewUserFinances = false;
+        let canMessageUsers = false;
+
+        document.addEventListener('admin-context-ready', function(event) {
+            const caps = (event.detail && event.detail.capabilities) || {};
+            canEditUsers = !!caps.crm_edit;
+            canBanUsers = !!caps.ban_users;
+            canViewUserFinances = !!caps.finance;
+            canMessageUsers = !!caps.crm_edit;
+        });
+        if (window.ADMIN_CONTEXT && window.ADMIN_CONTEXT.capabilities) {
+            canEditUsers = !!window.ADMIN_CONTEXT.capabilities.crm_edit;
+            canBanUsers = !!window.ADMIN_CONTEXT.capabilities.ban_users;
+            canViewUserFinances = !!window.ADMIN_CONTEXT.capabilities.finance;
+            canMessageUsers = !!window.ADMIN_CONTEXT.capabilities.crm_edit;
+        }
+
+        async function loadUsers() {
+            try {
+                const botFilter = document.getElementById('userBotFilter')?.value || '';
+                const searchFilter = document.getElementById('userSearch')?.value || '';
+
+                // Получаем лимит из селектора
+                usersCurrentLimit = parseInt(document.getElementById('usersPerPage')?.value || '50');
+
+                let url = `/api/users/?limit=${usersCurrentLimit}&offset=${usersCurrentOffset}`;
+                if (botFilter) url += `&mirror_bot_id=${botFilter}`;
+                if (searchFilter) url += `&search=${encodeURIComponent(searchFilter)}`;
+
+                const response = await authFetch(url);
+                if (!response) return;
+                const data = await response.json();
+
+                // Извлекаем массив пользователей и общее количество из ответа
+                const users = data.items || data;
+                usersTotalRecords = data.total || users.length;
+
+                // Получаем информацию о ботах для отображения (only for roles with bots access)
+                const botsMap = {};
+                try {
+                    const botsResponse = await authFetch('/api/bots/?limit=1000');
+                    if (botsResponse.ok) {
+                        const botsData = await botsResponse.json();
+                        const bots = Array.isArray(botsData) ? botsData : (botsData.items || []);
+                        bots.forEach(bot => { botsMap[bot.id] = bot; });
+                    }
+                } catch (e) { /* bots not accessible for this role */ }
+                
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Username</th>
+                                <th>Бот</th>
+                                <th>Баланс</th>
+                                <th>Заказов</th>
+                                <th>Статус</th>
+                                <th>Регистрация</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => {
+                                const bot = botsMap[user.mirror_bot_id] || {};
+                                return `
+                                    <tr>
+                                        <td><strong>${user.user_id}</strong></td>
+                                        <td>@${user.username || 'N/A'}</td>
+                                        <td>
+                                            <span class="badge badge-info">
+                                                Bot ${user.mirror_bot_id} (@${bot.bot_username || 'Unknown'})
+                                            </span>
+                                        </td>
+                                        <td><strong>${formatCurrency(user.balance)}</strong></td>
+                                        <td><span class="badge badge-info">${user.order_count || 0}</span></td>
+                                        <td>
+                                            <span class="badge ${user.is_banned ? 'badge-danger' : 'badge-success'}">
+                                                ${user.is_banned ? 'Заблокирован' : 'Активен'}
+                                            </span>
+                                        </td>
+                                        <td>${new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
+                                         <td>
+                                             ${(canEditUsers || canBanUsers) ? `<button class="btn btn-primary" onclick="editUser(${user.user_id})">✏️ Изменить</button>` : ''}
+                                             <button class="btn btn-secondary" onclick="openUserDetails(${user.user_id})">👁 Детали</button>
+                                             ${canMessageUsers ? `<button class="btn btn-success" onclick="showMessageModal(${user.user_id})">💬 Сообщение</button>` : ''}
+                                         </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('usersTable').innerHTML = tableHtml;
+
+                // Обновляем пагинацию
+                updateUsersPagination();
+
+            } catch (error) {
+                document.getElementById('usersTable').innerHTML = `
+                    <div class="section">
+                        <p>Ошибка загрузки пользователей: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Обновление пагинации
+        function updateUsersPagination() {
+            const paginationDiv = document.getElementById('usersPagination');
+            const totalPages = Math.ceil(usersTotalRecords / usersCurrentLimit);
+            const currentPage = Math.floor(usersCurrentOffset / usersCurrentLimit) + 1;
+            const showingFrom = usersCurrentOffset + 1;
+            const showingTo = Math.min(usersCurrentOffset + usersCurrentLimit, usersTotalRecords);
+
+            // Показываем пагинацию только если есть записи
+            if (usersTotalRecords > 0) {
+                paginationDiv.style.display = 'block';
+
+                document.getElementById('usersShowingFrom').textContent = showingFrom;
+                document.getElementById('usersShowingTo').textContent = showingTo;
+                document.getElementById('usersTotalCount').textContent = usersTotalRecords;
+                document.getElementById('usersCurrentPage').textContent = currentPage;
+                document.getElementById('usersTotalPages').textContent = totalPages;
+
+                // Управление кнопками навигации
+                document.getElementById('usersFirstPage').disabled = currentPage === 1;
+                document.getElementById('usersPrevPage').disabled = currentPage === 1;
+                document.getElementById('usersNextPage').disabled = currentPage >= totalPages;
+                document.getElementById('usersLastPage').disabled = currentPage >= totalPages;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+        }
+
+        // Навигация по страницам
+        function goToUsersPage(action) {
+            const totalPages = Math.ceil(usersTotalRecords / usersCurrentLimit);
+            const currentPage = Math.floor(usersCurrentOffset / usersCurrentLimit) + 1;
+
+            switch(action) {
+                case 'first':
+                    usersCurrentOffset = 0;
+                    break;
+                case 'prev':
+                    if (currentPage > 1) {
+                        usersCurrentOffset -= usersCurrentLimit;
+                    }
+                    break;
+                case 'next':
+                    if (currentPage < totalPages) {
+                        usersCurrentOffset += usersCurrentLimit;
+                    }
+                    break;
+                case 'last':
+                    usersCurrentOffset = (totalPages - 1) * usersCurrentLimit;
+                    break;
+            }
+
+            loadUsers();
+        }
+
+        // Изменение лимита записей на странице
+        function changeUsersLimit() {
+            usersCurrentOffset = 0; // Сброс на первую страницу
+            loadUsers();
+        }
+        
+        // Загрузка ботов для фильтра
+        async function loadBotsForFilter() {
+            try {
+                // Загружаем все боты для фильтра (без пагинации)
+                const response = await authFetch('/api/bots/?limit=1000');
+                if (!response) return;
+                const data = await response.json();
+                const bots = data.items || data;
+
+                const select = document.getElementById('userBotFilter');
+                if (select) {
+                    select.innerHTML = '<option value="">Все боты</option>' +
+                        bots.map(bot => `<option value="${bot.id}">Bot ${bot.id} (${bot.bot_username || 'Unknown'})</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки ботов для фильтра:', error);
+            }
+        }
+        
+        // Редактирование пользователя
+        async function editUser(userId) {
+            if (!canEditUsers && !canBanUsers) {
+                alert('⛔ Недостаточно прав для изменения пользователя');
+                return;
+            }
+            try {
+                const response = await authFetch(`/api/users/${userId}`);
+                if (!response) return;
+                const user = await response.json();
+                
+                // Заполняем форму
+                document.getElementById('editUserId').value = `User ID: ${user.user_id}`;
+                document.getElementById('currentBalance').value = formatCurrency(user.balance);
+                document.getElementById('newBalance').value = user.balance == null ? '' : Number(user.balance).toFixed(2);
+                document.getElementById('userStatus').value = user.is_banned.toString();
+                document.getElementById('banReason').value = user.ban_reason || '';
+                
+                // Показываем/скрываем поле причины бана
+                toggleBanReasonField();
+                
+                // Показываем модальное окно
+                showModal('editUserModal');
+                
+                // Сохраняем userId для отправки
+                window.currentEditUserId = userId;
+                
+            } catch (error) {
+                alert('❌ Ошибка загрузки данных пользователя: ' + error.message);
+            }
+        }
+
+        async function openUserDetails(userId) {
+            const content = document.getElementById('userDetailsContent');
+            content.innerHTML = '<div class="loading">Загрузка полной истории пользователя...</div>';
+            showModal('userDetailsModal');
+
+            try {
+                const response = await authFetch(`/api/users/${userId}/details`);
+                if (!response) return;
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || 'Не удалось загрузить данные пользователя');
+                }
+
+                const data = await response.json();
+                const user = data.user || {};
+                const summary = data.summary || {};
+                const balanceHistory = data.balance_history || [];
+                const orders = data.orders || [];
+                const productPurchases = data.product_purchases || [];
+                const marketplacePurchases = data.marketplace_purchases || [];
+                const sellerSales = data.seller_sales || [];
+                const supportTickets = data.support_tickets || [];
+                const balanceRows = balanceHistory.map(item => {
+                    const signedAmount = Number(item.signed_amount || 0);
+                    const amountClass = signedAmount >= 0 ? 'text-positive' : 'text-negative';
+
+                    return `
+                        <tr>
+                            <td>${formatDateTime(item.created_at)}</td>
+                            <td><span class="badge badge-info">${escapeHtml(item.type || 'unknown')}</span></td>
+                            <td class="${amountClass}">${formatSignedCurrency(signedAmount)}</td>
+                            <td>${formatCurrency(item.balance_before)}</td>
+                            <td>${formatCurrency(item.balance_after)}</td>
+                            <td>${escapeHtml(item.description || '—')}</td>
+                        </tr>
+                    `;
+                });
+
+                const orderRows = orders.map(order => `
+                    <tr>
+                        <td class="mono">#${order.id}</td>
+                        <td>${escapeHtml(order.category || '—')}</td>
+                        <td>${escapeHtml(order.service_name || '—')}</td>
+                        <td>${order.price === null || order.price === undefined ? '—' : formatCurrency(order.price)}</td>
+                        <td><span class="badge badge-info">${escapeHtml(order.status || '—')}</span></td>
+                        <td>${order.is_bulk ? `Bulk x${order.bulk_count || 1}` : 'Single'}</td>
+                        <td>${order.worker_id || '—'}</td>
+                        <td>${formatDateTime(order.created_at)}</td>
+                        <td>${formatDateTime(order.completed_at)}</td>
+                    </tr>
+                `);
+
+                const productRows = productPurchases.map(item => `
+                    <tr>
+                        <td class="mono">#${item.purchase_id}</td>
+                        <td>${escapeHtml(item.name || '—')}</td>
+                        <td>${escapeHtml(item.category || '—')}</td>
+                        <td>${escapeHtml(item.service || '—')}</td>
+                        <td>${escapeHtml(item.state || '—')}</td>
+                        <td>${item.price === null || item.price === undefined ? '—' : formatCurrency(item.price)}</td>
+                        <td>${escapeHtml(item.file_type || '—')}</td>
+                        <td>${formatDateTime(item.purchased_at)}</td>
+                        <td>${formatDateTime(item.delivered_at)}</td>
+                    </tr>
+                `);
+
+                const marketplaceLabels = {
+                    seller_bank: 'Seller Bank',
+                    seller_cc: 'Seller CC',
+                    brute_bank: 'Brute Bank'
+                };
+
+                const marketplaceRows = marketplacePurchases.map(item => `
+                    <tr>
+                        <td><span class="badge badge-warning">${escapeHtml(marketplaceLabels[item.source] || item.source || 'Unknown')}</span></td>
+                        <td class="mono">#${item.purchase_id}</td>
+                        <td>${escapeHtml(item.title || '—')}</td>
+                        <td>${escapeHtml(item.subtitle || '—')}</td>
+                        <td>${item.price_for_buyer === null || item.price_for_buyer === undefined ? '—' : formatCurrency(item.price_for_buyer)}</td>
+                        <td>${item.quantity || 1}</td>
+                        <td><span class="badge badge-info">${escapeHtml(item.status || '—')}</span></td>
+                        <td>${item.seller_id || '—'}</td>
+                        <td>${formatDateTime(item.created_at)}</td>
+                        <td>${formatDateTime(item.completed_at)}</td>
+                    </tr>
+                `);
+
+                const sellerSalesRows = sellerSales.map(item => `
+                    <tr>
+                        <td><span class="badge badge-warning">${escapeHtml(item.source || 'seller')}</span></td>
+                        <td class="mono">#${item.sale_id}</td>
+                        <td>${escapeHtml(item.title || '—')}</td>
+                        <td>${escapeHtml(item.subtitle || '—')}</td>
+                        <td>${item.amount === null || item.amount === undefined ? '—' : formatCurrency(item.amount)}</td>
+                        <td>${item.buyer_user_id || '—'}</td>
+                        <td><span class="badge badge-info">${escapeHtml(item.status || '—')}</span></td>
+                        <td>${formatDateTime(item.created_at)}</td>
+                        <td>${formatDateTime(item.completed_at)}</td>
+                    </tr>
+                `);
+
+                const supportTicketRows = supportTickets.map(item => `
+                    <tr>
+                        <td class="mono">#${item.id}</td>
+                        <td>${escapeHtml(item.category || '—')}</td>
+                        <td>${escapeHtml(item.subject || '—')}</td>
+                        <td><span class="badge badge-info">${escapeHtml(item.status || '—')}</span></td>
+                        <td>${formatDateTime(item.created_at)}</td>
+                        <td>${formatDateTime(item.updated_at)}</td>
+                        <td>${formatDateTime(item.closed_at)}</td>
+                    </tr>
+                `);
+
+                content.innerHTML = `
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+                        <button class="btn btn-secondary user-details-tab active" data-tab="overview" onclick="switchUserDetailsTab('overview', this)">Overview</button>
+                        <button class="btn btn-secondary user-details-tab" data-tab="purchases" onclick="switchUserDetailsTab('purchases', this)">Purchase History</button>
+                        <button class="btn btn-secondary user-details-tab" data-tab="sales" onclick="switchUserDetailsTab('sales', this)">Sales</button>
+                        <button class="btn btn-secondary user-details-tab" data-tab="transactions" onclick="switchUserDetailsTab('transactions', this)">Transactions</button>
+                        <button class="btn btn-secondary user-details-tab" data-tab="tickets" onclick="switchUserDetailsTab('tickets', this)">Support Tickets</button>
+                    </div>
+
+                    <div class="user-details-pane" data-tab-pane="overview">
+                    <div class="details-grid">
+                        <div class="details-card">
+                            <div class="details-card-label">Текущий баланс</div>
+                            <div class="details-card-value">${formatCurrency(user.balance)}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Транзакций</div>
+                            <div class="details-card-value">${summary.transactions_total || 0}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Заказов</div>
+                            <div class="details-card-value">${summary.orders_total || 0}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Потрачено на заказы</div>
+                            <div class="details-card-value">${formatCurrency(summary.order_spent_total)}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Куплено товаров</div>
+                            <div class="details-card-value">${summary.product_purchases_total || 0}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Маркетплейс покупок</div>
+                            <div class="details-card-value">${summary.marketplace_purchases_total || 0}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Seller sales</div>
+                            <div class="details-card-value">${summary.seller_sales_total || 0}</div>
+                        </div>
+                        <div class="details-card">
+                            <div class="details-card-label">Support tickets</div>
+                            <div class="details-card-value">${summary.support_tickets_total || 0}</div>
+                        </div>
+                    </div>
+
+                    <div class="details-meta">
+                        <div class="details-meta-item"><strong>User ID:</strong> <span class="mono">${user.user_id || '—'}</span></div>
+                        <div class="details-meta-item"><strong>Username:</strong> ${user.username ? '@' + escapeHtml(user.username) : '—'}</div>
+                        <div class="details-meta-item"><strong>Бот:</strong> ${user.mirror_bot_id ? `#${user.mirror_bot_id}` : '—'} ${user.bot_username ? `(@${escapeHtml(user.bot_username)})` : ''}</div>
+                        <div class="details-meta-item"><strong>Владелец бота:</strong> ${user.bot_owner_user_id || '—'}</div>
+                        <div class="details-meta-item"><strong>Язык:</strong> ${escapeHtml(user.language || '—')}</div>
+                        <div class="details-meta-item"><strong>Статус:</strong> ${user.is_banned ? '<span class="badge badge-danger">Заблокирован</span>' : '<span class="badge badge-success">Активен</span>'}</div>
+                        <div class="details-meta-item"><strong>Причина бана:</strong> ${escapeHtml(user.ban_reason || '—')}</div>
+                        <div class="details-meta-item"><strong>Реферер:</strong> ${user.referrer_id || '—'}</div>
+                        <div class="details-meta-item"><strong>Referral link:</strong> <span class="mono">${escapeHtml(user.referral_link || '—')}</span></div>
+                        <div class="details-meta-item"><strong>Правила приняты:</strong> ${user.rules_accepted ? 'Да' : 'Нет'}</div>
+                        <div class="details-meta-item"><strong>Регистрация:</strong> ${formatDateTime(user.created_at)}</div>
+                        <div class="details-meta-item"><strong>Потрачено на товары:</strong> ${formatCurrency(summary.product_spent_total)}</div>
+                    </div>
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="transactions">
+                        <h4>История изменения баланса</h4>
+                        ${renderDetailsTable(
+                            ['Дата', 'Тип', 'Изменение', 'Баланс до', 'Баланс после', 'Описание'],
+                            balanceRows
+                        )}
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="purchases">
+                        <h4>Обычные заказы</h4>
+                        ${renderDetailsTable(
+                            ['ID', 'Категория', 'Сервис', 'Цена', 'Статус', 'Тип', 'Воркер', 'Создан', 'Завершён'],
+                            orderRows
+                        )}
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="purchases">
+                        <h4>Покупки товаров</h4>
+                        ${renderDetailsTable(
+                            ['Покупка', 'Товар', 'Категория', 'Сервис', 'Штат', 'Цена', 'Файл', 'Куплен', 'Доставлен'],
+                            productRows
+                        )}
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="purchases">
+                        <h4>Покупки у селлеров / marketplace</h4>
+                        ${renderDetailsTable(
+                            ['Источник', 'ID', 'Название', 'Код', 'Цена', 'Кол-во', 'Статус', 'Seller ID', 'Создано', 'Завершено'],
+                            marketplaceRows
+                        )}
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="sales">
+                        <h4>Sales</h4>
+                        ${renderDetailsTable(
+                            ['Источник', 'ID', 'Название', 'Код', 'Сумма', 'Buyer', 'Статус', 'Создано', 'Завершено'],
+                            sellerSalesRows
+                        )}
+                    </div>
+
+                    <div class="details-section user-details-pane hidden" data-tab-pane="tickets">
+                        <h4>Support Tickets</h4>
+                        ${renderDetailsTable(
+                            ['ID', 'Категория', 'Тема', 'Статус', 'Создан', 'Обновлен', 'Закрыт'],
+                            supportTicketRows
+                        )}
+                    </div>
+
+                `;
+            } catch (error) {
+                content.innerHTML = `<div class="empty-state">❌ ${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        function switchUserDetailsTab(tab, button) {
+            document.querySelectorAll('#userDetailsContent .user-details-pane').forEach((pane) => {
+                pane.classList.toggle('hidden', pane.dataset.tabPane !== tab);
+            });
+            document.querySelectorAll('#userDetailsContent .user-details-tab').forEach((node) => {
+                node.classList.toggle('active', node === button);
+            });
+        }
+        
+        // Отправка сообщения пользователю
+        function showMessageModal(userId) {
+            document.getElementById('messageUserId').value = `User ID: ${userId}`;
+            document.getElementById('messageText').value = '';
+            document.getElementById('messageFile').value = '';
+            document.getElementById('messageFilePreview').style.display = 'none';
+            
+            window.currentMessageUserId = userId;
+            showModal('messageModal');
+        }
+        
+        // Поиск пользователя во всех ботах
+        async function searchUserInAllBots(userId) {
+            try {
+                console.log('Searching user:', userId);
+                const response = await authFetch(`/api/users/search/${userId}`);
+                if (!response) return;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                console.log('Search result:', result);
+                
+                let info = `🔍 Пользователь ${userId} найден в ${result.found_in_bots.length} ботах:\n\n`;
+                
+                result.found_in_bots.forEach((userBot, index) => {
+                    info += `${index + 1}. Бот ${userBot.mirror_bot_id} (@${userBot.bot_username})\n`;
+                    info += `   Username: @${userBot.username || 'Unknown'}\n`;
+                    info += `   Баланс: ${formatCurrency(userBot.balance)}\n`;
+                    info += `   Статус: ${userBot.is_banned ? 'Заблокирован' : 'Активен'}\n`;
+                    if (userBot.ban_reason) info += `   Причина бана: ${userBot.ban_reason}\n`;
+                    info += `   Регистрация: ${new Date(userBot.created_at).toLocaleDateString('ru-RU')}\n\n`;
+                });
+                
+                info += `📊 Статистика заказов:\n`;
+                info += `Всего заказов: ${result.total_orders}\n`;
+                info += `Завершено: ${result.completed_orders}\n`;
+                info += `Потрачено: ${formatCurrency(result.total_spent)}`;
+                
+                alert(info);
+            } catch (error) {
+                console.error('Search error:', error);
+                alert('❌ Ошибка поиска: ' + error.message);
+            }
+        }
+        
+        // Расширенный поиск
+        function showAdvancedUserSearch() {
+            document.getElementById('searchUserId').value = '';
+            document.getElementById('searchResults').style.display = 'none';
+            showModal('searchModal');
+        }
+        
+        // ========== МОДАЛЬНЫЕ ОКНА ==========
+        
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+        
+        function toggleBanReasonField() {
+            const status = document.getElementById('userStatus').value;
+            const banReasonGroup = document.getElementById('banReasonGroup');
+            banReasonGroup.style.display = status === 'true' ? 'block' : 'none';
+        }
+        
+        // Обработчик изменения статуса пользователя
+        document.getElementById('userStatus').addEventListener('change', toggleBanReasonField);
+        
+        // Обработчик формы редактирования пользователя
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userId = window.currentEditUserId;
+            const newBalanceRaw = document.getElementById('newBalance').value;
+            const newBalance = newBalanceRaw === '' ? null : parseFloat(newBalanceRaw);
+            const reason = document.getElementById('balanceReason').value;
+            const isBanned = document.getElementById('userStatus').value === 'true';
+            const banReason = document.getElementById('banReason').value;
+            
+            try {
+                // Получаем текущий баланс
+                const userResponse = await authFetch(`/api/users/${userId}`);
+                const user = await userResponse.json();
+                
+                // Обновляем баланс если изменился
+                if (canViewUserFinances && newBalance !== null && newBalance !== user.balance) {
+                    const balanceResponse = await authFetch(`/api/users/${userId}/balance`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            amount: newBalance - user.balance,
+                            reason: reason
+                        })
+                    });
+                    
+                    if (!balanceResponse.ok) {
+                        throw new Error('Ошибка обновления баланса');
+                    }
+                }
+                
+                // Обновляем статус бана если изменился
+                if (canBanUsers && isBanned !== user.is_banned) {
+                    const banResponse = await authFetch(`/api/users/${userId}/ban`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            is_banned: isBanned,
+                            reason: isBanned ? banReason : null
+                        })
+                    });
+                    
+                    if (!banResponse.ok) {
+                        throw new Error('Ошибка обновления статуса');
+                    }
+                }
+                
+                alert('✅ Пользователь успешно обновлен!');
+                closeModal('editUserModal');
+                loadUsers();
+                
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        });
+        
+        // Обработчик формы отправки сообщения
+        document.getElementById('messageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userId = window.currentMessageUserId;
+            const message = document.getElementById('messageText').value;
+            const fileInput = document.getElementById('messageFile');
+            
+            if (!message.trim()) {
+                alert('Введите сообщение');
+                return;
+            }
+            
+            try {
+                // Всегда используем FormData для единообразия API
+                const formData = new FormData();
+                formData.append('message', message);
+                
+                // Добавляем файл если есть
+                if (fileInput.files.length > 0) {
+                    formData.append('file', fileInput.files[0]);
+                }
+                
+                const response = await authFetch(`/api/users/${userId}/send-message`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    const mediaText = result.has_file ? ' с медиа' : '';
+                    alert(`✅ Сообщение${mediaText} отправлено через бот @${result.bot_username}!`);
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Ошибка отправки сообщения');
+                }
+                
+                closeModal('messageModal');
+                
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        });
+        
+        // Функция поиска из модального окна
+        async function performSearch() {
+            const userId = document.getElementById('searchUserId').value;
+            if (!userId) {
+                alert('Введите User ID для поиска');
+                return;
+            }
+            
+            try {
+                const response = await authFetch(`/api/users/search/${userId}`);
+                if (!response) return;
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                let resultsHtml = `<h4>🔍 Результаты поиска для User ID: ${userId}</h4>`;
+                resultsHtml += `<p><strong>Найден в ${result.found_in_bots.length} ботах:</strong></p>`;
+                
+                result.found_in_bots.forEach((userBot, index) => {
+                    resultsHtml += `
+                        <div style="border: 1px solid #eee; padding: 15px; margin: 10px 0; border-radius: 6px;">
+                            <strong>${index + 1}. Бот ${userBot.mirror_bot_id} (@${userBot.bot_username})</strong><br>
+                            Username: @${userBot.username || 'Unknown'}<br>
+                            Баланс: ${formatCurrency(userBot.balance)}<br>
+                            Статус: ${userBot.is_banned ? '🚫 Заблокирован' : '✅ Активен'}<br>
+                            ${userBot.ban_reason ? `Причина бана: ${userBot.ban_reason}<br>` : ''}
+                            Регистрация: ${new Date(userBot.created_at).toLocaleDateString('ru-RU')}
+                        </div>
+                    `;
+                });
+                
+                resultsHtml += `
+                    <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px;">
+                        <strong>📊 Статистика заказов:</strong><br>
+                        Всего заказов: ${result.total_orders}<br>
+                        Завершено: ${result.completed_orders}<br>
+                        Потрачено: ${formatCurrency(result.total_spent)}
+                    </div>
+                `;
+                
+                document.getElementById('searchResults').innerHTML = resultsHtml;
+                document.getElementById('searchResults').style.display = 'block';
+                
+            } catch (error) {
+                alert('❌ Ошибка поиска: ' + error.message);
+            }
+        }
+        
+        // Обработчик загрузки файлов
+        document.getElementById('messageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('messageFilePreview');
+            
+            if (file) {
+                preview.innerHTML = `
+                    <p><strong>Выбран файл:</strong> ${file.name}</p>
+                    <p><strong>Размер:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p><strong>Тип:</strong> ${file.type}</p>
+                `;
+                preview.style.display = 'block';
+                
+                // Показываем превью для изображений
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML += `<br><img src="${e.target.result}" style="max-width: 200px; max-height: 200px; border-radius: 4px;">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        // Закрытие модальных окон по клику вне их
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('show');
+            }
+        });
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        loadBotsForFilter();
+        loadUsers();
+    </script>
+{% endblock %}

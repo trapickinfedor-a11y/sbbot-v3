@@ -1,0 +1,152 @@
+# Metabase Dashboard: Finances & Ledger
+# Dashboard ID: 006
+# Description: Financial metrics, transactions, and ledger analytics
+
+dashboard:
+  name: "💰 Finances & Ledger"
+  description: "Financial analytics, transactions, and balance metrics"
+  position: 6
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Transaction Type"
+      type: "string"
+      required: false
+      values: ["deposit", "purchase", "withdrawal", "commission", "refund", "payout_worker"]
+
+  cards:
+    - name: "Total Revenue"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(amount), 0) as total_revenue
+        FROM transactions
+        WHERE type IN ('deposit', 'purchase')
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          AND status = 'completed'
+
+    - name: "Total Withdrawals"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(amount), 0) as total_withdrawals
+        FROM transactions
+        WHERE type = 'withdrawal'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+          AND status = 'completed'
+
+    - name: "Pending Withdrawals"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(amount), 0) as pending_withdrawals
+        FROM seller_withdrawals
+        WHERE status = 'pending'
+
+    - name: "Platform Fees (Commission)"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(amount), 0) as total_commission
+        FROM transactions
+        WHERE type = 'commission'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Revenue Trend"
+      type: "line"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          SUM(CASE WHEN type = 'purchase' THEN amount ELSE 0 END) as purchase_revenue,
+          SUM(CASE WHEN type = 'commission' THEN amount ELSE 0 END) as commissions,
+          SUM(CASE WHEN type = 'withdrawal' THEN amount ELSE 0 END) as withdrawals
+        FROM transactions
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Transactions by Type"
+      type: "pie"
+      position: { row: 3, col: 1, size: 4 }
+      query: |
+        SELECT 
+          type,
+          COUNT(*) as count,
+          SUM(amount) as total_amount
+        FROM transactions
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY type
+        ORDER BY total_amount DESC
+
+    - name: "Top Users by Spending"
+      type: "bar"
+      position: { row: 3, col: 5, size: 8 }
+      query: |
+        SELECT 
+          u.user_id,
+          COUNT(t.id) as transactions_count,
+          SUM(t.amount) as total_spent
+        FROM users u
+        JOIN transactions t ON u.user_id = t.user_id
+        WHERE t.type IN ('purchase', 'deposit')
+          AND t.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY u.id, u.user_id
+        ORDER BY total_spent DESC
+        LIMIT 15
+
+    - name: "User Balance Distribution"
+      type: "histogram"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          CASE 
+            WHEN balance = 0 THEN '$0'
+            WHEN balance < 10 THEN '$0-10'
+            WHEN balance < 50 THEN '$10-50'
+            WHEN balance < 100 THEN '$50-100'
+            WHEN balance < 500 THEN '$100-500'
+            WHEN balance < 1000 THEN '$500-1000'
+            ELSE '$1000+'
+          END as balance_range,
+          COUNT(*) as users_count,
+          SUM(balance) as total_balance
+        FROM users
+        GROUP BY balance_range
+        ORDER BY balance_range
+
+    - name: "Recent Transactions"
+      type: "table"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          t.id,
+          t.account_type,
+          t.account_id,
+          t.type,
+          t.amount,
+          t.currency,
+          t.status,
+          t.description,
+          t.created_at
+        FROM transactions t
+        WHERE t.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY t.created_at DESC
+        LIMIT 50
+
+    - name: "Withdrawals by Status"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          sw.status,
+          COUNT(*) as count,
+          SUM(sw.amount) as total_amount,
+          AVG(sw.amount) as avg_amount,
+          MIN(sw.created_at) as oldest,
+          MAX(sw.created_at) as newest
+        FROM seller_withdrawals sw
+        GROUP BY sw.status
+        ORDER BY total_amount DESC

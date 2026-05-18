@@ -1,0 +1,35 @@
+[Unit]
+Description=NewLookup Bot Platform
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/newlookup
+User=newlookup
+Group=newlookup
+
+# Environment
+EnvironmentFile=/opt/newlookup/.env
+
+# Start command
+ExecStart=/usr/local/bin/docker-compose -f /opt/newlookup/docker-compose.production.yml up -d
+
+# Stop command
+ExecStop=/usr/local/bin/docker-compose -f /opt/newlookup/docker-compose.production.yml down
+
+# Reload command
+ExecReload=/usr/local/bin/docker-compose -f /opt/newlookup/docker-compose.production.yml restart
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+# Limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Another Services — Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f8;color:#111}
+.adm-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 14px rgba(0,0,0,.15)}
+.adm-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+.adm-header h1{font-size:22px;font-weight:700}
+.adm-header-actions{display:flex;align-items:center;gap:10px}
+.adm-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;border:none}
+.adm-btn-ghost{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.adm-btn-ghost:hover{background:rgba(255,255,255,.28)}
+.adm-nav{background:rgba(0,0,0,.1);border-top:1px solid rgba(255,255,255,.12)}
+.adm-nav-inner{display:flex;max-width:1600px;margin:0 auto;overflow-x:auto}
+.adm-nav-item{display:flex;align-items:center;padding:13px 18px;color:rgba(255,255,255,.85);text-decoration:none;font-size:13px;font-weight:500;border-bottom:3px solid transparent;white-space:nowrap}
+.adm-nav-item:hover{background:rgba(255,255,255,.12)}
+.adm-nav-item.active{background:rgba(255,255,255,.22);border-bottom-color:#fff;color:#fff}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 32px}
+.section{background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px}
+.section-head{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #f3f4f6}
+.section-head h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-body{padding:20px 24px}
+.hint{color:#6b7280;font-size:13px;margin-bottom:16px;line-height:1.5}
+/* cards */
+.card-list{display:flex;flex-direction:column;gap:10px}
+.btn-card{background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;transition:.15s;cursor:default}
+.btn-card:hover{border-color:#a5b4fc;box-shadow:0 2px 10px rgba(102,126,234,.12)}
+.btn-card.inactive{opacity:.5}
+.drag-handle{cursor:grab;color:#d1d5db;font-size:20px;user-select:none;flex-shrink:0;padding:0 4px}
+.drag-handle:hover{color:#667eea}
+.card-body{flex:1;min-width:0}
+.card-title{font-weight:700;font-size:15px;color:#111;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card-langs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.lang-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+.lang-en{background:#dbeafe;color:#1d4ed8}
+.lang-ru{background:#dcfce7;color:#15803d}
+.lang-zh{background:#fef9c3;color:#92400e}
+.lang-es{background:#fce7f3;color:#be185d}
+.card-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.type-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:700}
+.type-url{background:#e0f2fe;color:#0369a1}
+.type-callback{background:#fef3c7;color:#92400e}
+.type-info{background:#ede9fe;color:#6d28d9}
+.card-link{font-size:12px;color:#667eea;text-decoration:none;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-actions{display:flex;gap:6px;flex-shrink:0}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dot-on{background:#10b981}
+.dot-off{background:#d1d5db}
+/* Buttons */
+.btn{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#667eea;color:#fff}
+.btn-primary:hover{background:#5a67d8}
+.btn-success{background:#10b981;color:#fff}
+.btn-success:hover{background:#059669}
+.btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb}
+.btn-secondary:hover{background:#e9ebef}
+.btn-danger{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-warning{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:5px 8px;font-size:14px;border-radius:7px}
+/* Order bar */
+.order-bar{display:none;padding:12px 24px;background:#eef2ff;border-top:1px solid #c7d2fe;align-items:center;gap:12px;justify-content:flex-end}
+.order-bar.visible{display:flex}
+/* Preview section */
+.bot-preview{background:#2b2d31;border-radius:14px;padding:20px;position:relative}
+.bot-preview-title{color:#96989d;font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;font-weight:600}
+.msg-bubble{background:#313338;border-radius:12px 12px 12px 2px;padding:14px 16px;color:#dbdee1;font-size:14px;line-height:1.6;max-width:400px;margin-bottom:12px;white-space:pre-wrap}
+.bot-keyboard{display:flex;flex-direction:column;gap:6px;max-width:400px}
+.bot-btn-row{display:flex;gap:6px}
+.bot-btn{flex:1;background:#3b3d45;color:#dbdee1;border:none;border-radius:8px;padding:10px 12px;font-size:13px;text-align:center;cursor:default}
+.bot-btn.url-btn{color:#80b4f7}
+.bot-btn.info-btn{color:#b5cef7}
+.lang-selector{display:flex;gap:6px;margin-bottom:12px}
+.lang-btn{padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-size:12px;font-weight:600;background:#3b3d45;color:#96989d}
+.lang-btn.active{background:#5865f2;color:#fff}
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;padding:20px;overflow-y:auto;align-items:flex-start;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:580px;margin:auto;box-shadow:0 24px 64px rgba(0,0,0,.22)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+.modal-head h3{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:#f3f4f6}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;background:#fafafa;transition:.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12);background:#fff}
+.lang-tabs{display:flex;border:1.5px solid #e5e7eb;border-radius:9px;overflow:hidden;margin-bottom:18px}
+.lang-tab{flex:1;padding:9px 6px;border:none;background:#f9fafb;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;transition:.15s}
+.lang-tab:hover{background:#f0f2ff}
+.lang-tab.active{background:#667eea;color:#fff}
+.check-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#374151}
+.check-label input[type=checkbox]{width:16px;height:16px;accent-color:#667eea}
+/* Sortable */
+.sortable-ghost{opacity:.3;background:#eef2ff!important;border-color:#c7d2fe!important}
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#111;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;max-width:340px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#10b981}
+.toast.err{background:#ef4444}
+.empty{text-align:center;padding:50px 20px;color:#9ca3af}
+@media(max-width:768px){.wrap{padding:16px}.adm-header-top{padding:12px 16px}}
+</style>
+</head>
+<body>
+
+<header class="adm-header">
+  <div class="adm-header-top">
+    <h1>📞 Another Services</h1>
+    <div class="adm-header-actions">
+      <span id="adminName" style="opacity:.8;font-size:13px"></span>
+      <a href="/dashboard" class="adm-btn adm-btn-ghost">← Dashboard</a>
+      <button class="adm-btn adm-btn-ghost" onclick="logout()">🚪 Выход</button>
+    </div>
+  </div>
+  {% include '_nav.html' %}
+</header>
+
+<div class="wrap">
+  <div class="section">
+    <div class="section-head">
+      <h2>📞 Кнопки Another Services</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="loadButtons()">🔄 Обновить</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal(null)">+ Добавить кнопку</button>
+      </div>
+    </div>
+    <div class="section-body">
+      <p class="hint">
+        Кнопки отображаются пользователям в разделе «📞 Other Services». <br>
+        <b>Перетащите карточку</b> за значок ⠿ чтобы изменить порядок, затем нажмите «Сохранить порядок».
+        Три типа: <b>URL</b> (открывает ссылку), <b>Callback</b> (отправляет боту команду), <b>Info</b> (показывает текст как popup).
+      </p>
+      <div id="btn-list" class="card-list"></div>
+    </div>
+    <div class="order-bar" id="order-bar">
+      <span style="font-size:13px;color:#6366f1;font-weight:500">⠿ Порядок изменён</span>
+      <button class="btn btn-primary btn-sm" onclick="saveOrder()">💾 Сохранить порядок</button>
+      <button class="btn btn-secondary btn-sm" onclick="loadButtons()">✕ Отмена</button>
+    </div>
+  </div>
+
+  <!-- Bot Preview -->
+  <div class="section">
+    <div class="section-head">
+      <h2>👁️ Предпросмотр в боте</h2>
+      <div id="preview-count" style="font-size:13px;color:#6b7280"></div>
+    </div>
+    <div class="section-body">
+      <div class="bot-preview">
+        <div class="bot-preview-title">📱 Как видят пользователи</div>
+        <div class="lang-selector">
+          <button class="lang-btn active" onclick="switchPreviewLang('en',this)">🇺🇸 EN</button>
+          <button class="lang-btn" onclick="switchPreviewLang('ru',this)">🇷🇺 RU</button>
+          <button class="lang-btn" onclick="switchPreviewLang('zh',this)">🇨🇳 ZH</button>
+          <button class="lang-btn" onclick="switchPreviewLang('es',this)">🇪🇸 ES</button>
+        </div>
+        <div class="msg-bubble" id="preview-text">📞 Other Services
+
+Additional services and tools.
+For questions contact Support.</div>
+        <div class="bot-keyboard" id="preview-keyboard"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL ════ -->
+<div class="modal" id="btnModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalTitle">Кнопка</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="btnId">
+
+      <!-- Language tabs -->
+      <div class="lang-tabs">
+        <button class="lang-tab active" onclick="showLang('en',this)">🇺🇸 English *</button>
+        <button class="lang-tab" onclick="showLang('ru',this)">🇷🇺 Русский</button>
+        <button class="lang-tab" onclick="showLang('zh',this)">🇨🇳 中文</button>
+        <button class="lang-tab" onclick="showLang('es',this)">🇪🇸 Español</button>
+      </div>
+
+      <div id="lang-panel-en">
+        <div class="form-group">
+          <label>Текст кнопки (EN) *</label>
+          <input id="textEn" placeholder="📞 Call Service">
+        </div>
+      </div>
+      <div id="lang-panel-ru" style="display:none">
+        <div class="form-group">
+          <label>Текст кнопки (RU)</label>
+          <input id="textRu" placeholder="📞 Связь с сервисом">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Если пусто — используется EN текст</div>
+        </div>
+      </div>
+      <div id="lang-panel-zh" style="display:none">
+        <div class="form-group">
+          <label>Текст кнопки (ZH)</label>
+          <input id="textZh" placeholder="📞 服务联系">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Если пусто — используется EN текст</div>
+        </div>
+      </div>
+      <div id="lang-panel-es" style="display:none">
+        <div class="form-group">
+          <label>Текст кнопки (ES)</label>
+          <input id="textEs" placeholder="📞 Servicio de llamadas">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Если пусто — используется EN текст</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Тип кнопки</label>
+        <select id="btnType" onchange="onTypeChange()">
+          <option value="url">🔗 URL — открывает ссылку</option>
+          <option value="callback">⚡ Callback — отправляет команду боту</option>
+          <option value="info">ℹ️ Info — показывает текст popup</option>
+        </select>
+      </div>
+
+      <div id="field-url" class="form-group">
+        <label>URL</label>
+        <input id="btnUrl" placeholder="https://t.me/yourchannel или https://example.com">
+      </div>
+      <div id="field-callback" class="form-group" style="display:none">
+        <label>Callback data</label>
+        <input id="btnCallback" placeholder="support_category_general">
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">Бот получит это значение как callback_data</div>
+      </div>
+      <div id="field-info" class="form-group" style="display:none">
+        <label>Текст popup (Info)</label>
+        <textarea id="btnInfoText" rows="3" placeholder="Здесь будет показан текст пользователю..." style="resize:vertical"></textarea>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">Для type=info поле callback_data хранит текст popup</div>
+      </div>
+
+      <div class="form-group">
+        <label>Позиция</label>
+        <input type="number" id="btnPos" value="0" min="0">
+      </div>
+      <div class="form-group">
+        <label class="check-label"><input type="checkbox" id="btnActive" checked> Активна (видна пользователям)</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveBtn()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = '/';
+
+async function api(url, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(url, opts);
+  if (r.status === 401) { localStorage.removeItem('token'); location.href = '/'; return null; }
+  return r;
+}
+async function apiJSON(url, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Content-Type'] = 'application/json';
+  return api(url, opts);
+}
+function logout() { localStorage.removeItem('token'); location.href = '/'; }
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+let _buttons = [];
+let _sortable;
+let _previewLang = 'en';
+
+const TYPE_ICON = { url: '🔗', callback: '⚡', info: 'ℹ️' };
+const TYPE_CLS  = { url: 'type-url', callback: 'type-callback', info: 'type-info' };
+const TYPE_LBL  = { url: 'URL', callback: 'Callback', info: 'Info' };
+const FLAG = { en: '🇺🇸', ru: '🇷🇺', zh: '🇨🇳', es: '🇪🇸' };
+
+// ── Load & Render ─────────────────────────────────────────────────────────
+async function loadButtons() {
+  document.getElementById('order-bar').classList.remove('visible');
+  const el = document.getElementById('btn-list');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">⏳ Загрузка...</div>';
+  const r = await api('/api/another-services/buttons');
+  if (!r) return;
+  _buttons = await r.json();
+  renderButtons();
+  renderPreview();
+}
+
+function getBtnText(btn, lang) {
+  if (lang === 'ru' && btn.text_ru) return btn.text_ru;
+  if (lang === 'zh' && btn.text_zh) return btn.text_zh;
+  if (lang === 'es' && btn.text_es) return btn.text_es;
+  return btn.text_en;
+}
+
+function renderButtons() {
+  const el = document.getElementById('btn-list');
+  if (!_buttons.length) {
+    el.innerHTML = '<div class="empty"><div style="font-size:40px">📭</div><div>Кнопок нет. Добавьте первую.</div></div>';
+    return;
+  }
+  el.innerHTML = _buttons.map(b => {
+    const langs = [
+      b.text_en ? `<span class="lang-pill lang-en">${FLAG.en} ${escH(b.text_en)}</span>` : '',
+      b.text_ru ? `<span class="lang-pill lang-ru">${FLAG.ru} ${escH(b.text_ru)}</span>` : '',
+      b.text_zh ? `<span class="lang-pill lang-zh">${FLAG.zh} ${escH(b.text_zh)}</span>` : '',
+      b.text_es ? `<span class="lang-pill lang-es">${FLAG.es} ${escH(b.text_es)}</span>` : '',
+    ].filter(Boolean).join('');
+    const target = b.url
+      ? `<a href="${escH(b.url)}" target="_blank" class="card-link">${escH(b.url.length > 45 ? b.url.slice(0,45)+'…' : b.url)}</a>`
+      : b.callback_data
+      ? `<span style="font-family:monospace;font-size:12px;color:#6b7280">${escH(b.callback_data.slice(0,60))}</span>`
+      : '';
+    return `<div class="btn-card ${b.is_active ? '' : 'inactive'}" id="bcard-${b.id}" data-id="${b.id}">
+      <span class="drag-handle" title="Перетащить">⠿</span>
+      <div class="status-dot ${b.is_active ? 'dot-on' : 'dot-off'}" title="${b.is_active ? 'Активна' : 'Неактивна'}"></div>
+      <div class="card-body">
+        <div class="card-langs">${langs || `<span class="lang-pill lang-en">${FLAG.en} (no text)</span>`}</div>
+        <div class="card-meta">
+          <span class="type-badge ${TYPE_CLS[b.button_type]||''}">${TYPE_ICON[b.button_type]||''} ${TYPE_LBL[b.button_type]||b.button_type}</span>
+          ${target}
+          <span style="font-size:11px;color:#d1d5db">pos: ${b.position}</span>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-secondary btn-icon" onclick='openModal(${JSON.stringify(b)})' title="Редактировать">✏️</button>
+        <button class="btn btn-sm ${b.is_active ? 'btn-warning' : 'btn-success'}" onclick="toggleBtn(${b.id},${b.is_active})">
+          ${b.is_active ? 'Выкл' : 'Вкл'}
+        </button>
+        <button class="btn btn-danger btn-icon" onclick="deleteBtn(${b.id})" title="Удалить">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (_sortable) _sortable.destroy();
+  _sortable = Sortable.create(el, {
+    handle: '.drag-handle',
+    animation: 200,
+    ghostClass: 'sortable-ghost',
+    onEnd: () => document.getElementById('order-bar').classList.add('visible')
+  });
+}
+
+async function saveOrder() {
+  const cards = [...document.getElementById('btn-list').querySelectorAll('[data-id]')];
+  const ids = cards.map(c => parseInt(c.dataset.id));
+  const r = await apiJSON('/api/another-services/buttons/reorder', { method: 'POST', body: JSON.stringify(ids) });
+  if (r && r.ok) { toast('Порядок сохранён ✅'); loadButtons(); }
+  else toast('Ошибка сохранения', 'err');
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────
+function switchPreviewLang(lang, btn) {
+  _previewLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderPreview();
+}
+
+function renderPreview() {
+  const active = _buttons.filter(b => b.is_active);
+  document.getElementById('preview-count').textContent = `${active.length} активных кнопок`;
+
+  const kb = document.getElementById('preview-keyboard');
+  if (!active.length) { kb.innerHTML = '<div style="color:#96989d;font-size:13px;padding:8px">Нет активных кнопок</div>'; return; }
+  kb.innerHTML = active.map(b => {
+    const txt = getBtnText(b, _previewLang);
+    const cls = b.button_type === 'url' ? 'url-btn' : b.button_type === 'info' ? 'info-btn' : '';
+    return `<div class="bot-btn-row"><div class="bot-btn ${cls}">${escH(txt)}</div></div>`;
+  }).join('');
+}
+
+// ── Toggle / Delete ────────────────────────────────────────────────────────
+async function toggleBtn(id, cur) {
+  const r = await apiJSON(`/api/another-services/buttons/${id}/toggle`, { method: 'POST', body: '{}' });
+  if (r && r.ok) { toast(cur ? 'Кнопка выключена' : 'Кнопка включена'); loadButtons(); }
+}
+
+async function deleteBtn(id) {
+  if (!confirm('Удалить кнопку?')) return;
+  const r = await api(`/api/another-services/buttons/${id}`, { method: 'DELETE' });
+  if (r && r.ok) { toast('Удалено'); loadButtons(); }
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+function openModal(btn) {
+  document.getElementById('modalTitle').textContent = btn ? 'Редактировать кнопку' : 'Новая кнопка';
+  document.getElementById('btnId').value = btn?.id || '';
+  document.getElementById('textEn').value = btn?.text_en || '';
+  document.getElementById('textRu').value = btn?.text_ru || '';
+  document.getElementById('textZh').value = btn?.text_zh || '';
+  document.getElementById('textEs').value = btn?.text_es || '';
+  const type = btn?.button_type || 'url';
+  document.getElementById('btnType').value = type;
+  document.getElementById('btnUrl').value = btn?.url || '';
+  document.getElementById('btnCallback').value = (type !== 'info' && btn?.callback_data) ? btn.callback_data : '';
+  document.getElementById('btnInfoText').value = (type === 'info' && btn?.callback_data) ? btn.callback_data : '';
+  document.getElementById('btnPos').value = btn?.position ?? _buttons.length;
+  document.getElementById('btnActive').checked = btn ? btn.is_active : true;
+  onTypeChange();
+  showLang('en');
+  document.getElementById('btnModal').classList.add('open');
+}
+
+function onTypeChange() {
+  const t = document.getElementById('btnType').value;
+  document.getElementById('field-url').style.display      = t === 'url'      ? '' : 'none';
+  document.getElementById('field-callback').style.display = t === 'callback' ? '' : 'none';
+  document.getElementById('field-info').style.display     = t === 'info'     ? '' : 'none';
+}
+
+function showLang(lang, btn) {
+  ['en','ru','zh','es'].forEach(l => {
+    document.getElementById('lang-panel-' + l).style.display = l === lang ? '' : 'none';
+  });
+  document.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  else document.querySelector('.lang-tab').classList.add('active');
+}
+
+async function saveBtn() {
+  const id = document.getElementById('btnId').value;
+  const type = document.getElementById('btnType').value;
+  const cbValue = type === 'info'
+    ? document.getElementById('btnInfoText').value.trim()
+    : type === 'callback'
+    ? document.getElementById('btnCallback').value.trim()
+    : null;
+  const body = {
+    text_en:       document.getElementById('textEn').value.trim(),
+    text_ru:       document.getElementById('textRu').value.trim() || null,
+    text_zh:       document.getElementById('textZh').value.trim() || null,
+    text_es:       document.getElementById('textEs').value.trim() || null,
+    button_type:   type,
+    url:           type === 'url' ? document.getElementById('btnUrl').value.trim() : null,
+    callback_data: cbValue || null,
+    position:      parseInt(document.getElementById('btnPos').value) || 0,
+    is_active:     document.getElementById('btnActive').checked,
+  };
+  if (!body.text_en) { toast('Введите текст (EN)', 'err'); return; }
+  const url = id ? `/api/another-services/buttons/${id}` : '/api/another-services/buttons';
+  const r = await apiJSON(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+  if (r && r.ok) { closeModal(); toast('Сохранено ✅'); loadButtons(); }
+  else { const e = await r?.json(); toast('Ошибка: ' + (e?.detail || '?'), 'err'); }
+}
+
+function closeModal() { document.getElementById('btnModal').classList.remove('open'); }
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Init
+loadButtons();
+</script>
+</body>
+</html>

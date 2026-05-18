@@ -1,0 +1,163 @@
+# Metabase Dashboard: Bots Monitoring
+# Dashboard ID: 008
+# Description: Bot instances, activity, and performance metrics
+# Note: Uses orders table instead of non-existent bot_messages/bot_commands
+
+dashboard:
+  name: "🤖 Bots Monitoring"
+  description: "Bot instances health, activity, and performance metrics"
+  position: 8
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last7days"
+    - name: "Bot Type"
+      type: "string"
+      required: false
+      values: ["user", "admin", "marketer"]
+
+  cards:
+    - name: "Total Bots"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_bots
+        FROM mirror_bots
+
+    - name: "Active Bots"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_bots
+        FROM mirror_bots
+        WHERE is_active = true
+
+    - name: "Inactive Bots"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as inactive_bots
+        FROM mirror_bots
+        WHERE is_active = false
+
+    - name: "Total Orders (24h)"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as orders_24h
+        FROM orders
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+
+    - name: "Bots by Status"
+      type: "pie"
+      position: { row: 2, col: 1, size: 4 }
+      query: |
+        SELECT 
+          CASE WHEN is_active THEN 'Active' ELSE 'Inactive' END as status,
+          COUNT(*) as count
+        FROM mirror_bots
+        GROUP BY is_active
+
+    - name: "Bots by Type"
+      type: "bar"
+      position: { row: 2, col: 5, size: 8 }
+      query: |
+        SELECT 
+          bot_type,
+          COUNT(*) as count,
+          SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active_count
+        FROM mirror_bots
+        GROUP BY bot_type
+        ORDER BY count DESC
+
+    - name: "Order Activity Trend"
+      type: "line"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as orders_count,
+          COUNT(DISTINCT user_id) as unique_users,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed_orders
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Orders by Bot"
+      type: "bar"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          mb.id as bot_id,
+          mb.bot_username,
+          COUNT(o.id) as orders_count,
+          COUNT(DISTINCT o.user_id) as unique_users,
+          SUM(CASE WHEN o.status = 'completed' THEN 1 ELSE 0 END) as completed_orders
+        FROM mirror_bots mb
+        LEFT JOIN orders o ON mb.id = o.mirror_bot_id
+        WHERE o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY mb.id, mb.bot_username
+        ORDER BY orders_count DESC
+        LIMIT 15
+
+    - name: "Bot Revenue by Type"
+      type: "pie"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          mb.bot_type,
+          COUNT(o.id) as orders_count,
+          COALESCE(SUM(o.price), 0) as total_revenue
+        FROM mirror_bots mb
+        LEFT JOIN orders o ON mb.id = o.mirror_bot_id
+        WHERE o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY mb.bot_type
+        ORDER BY total_revenue DESC
+
+    - name: "User Activity by Hour"
+      type: "heatmap"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          EXTRACT(DOW FROM created_at) as day_of_week,
+          EXTRACT(HOUR FROM created_at) as hour_of_day,
+          COUNT(*) as orders,
+          COUNT(DISTINCT user_id) as unique_users
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY day_of_week, hour_of_day
+        ORDER BY day_of_week, hour_of_day
+
+    - name: "Bot Instances Table"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          mb.id,
+          mb.bot_username,
+          mb.bot_type,
+          mb.is_active,
+          mb.created_at,
+          COUNT(o.id) as orders_count,
+          COUNT(DISTINCT o.user_id) as unique_users,
+          COALESCE(SUM(o.price), 0) as total_revenue
+        FROM mirror_bots mb
+        LEFT JOIN orders o ON mb.id = o.mirror_bot_id
+          AND o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY mb.id, mb.bot_username, mb.bot_type, mb.is_active, mb.created_at
+        ORDER BY orders_count DESC
+
+    - name: "New Bots Trend"
+      type: "line"
+      position: { row: 7, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as new_bots,
+          SUM(CASE WHEN is_active THEN 1 ELSE 0 END) as active_bots
+        FROM mirror_bots
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date

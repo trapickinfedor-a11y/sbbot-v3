@@ -1,0 +1,203 @@
+{% extends "_base.html" %}
+{% block title %}Структура админки{% endblock %}
+{% block header_title %}🧭 Структура и статус админки{% endblock %}
+{% block extra_css %}
+<style>
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{font-size:20px;color:#111827;margin-bottom:14px}
+.section p{color:#6b7280;line-height:1.5}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);border-top:4px solid #667eea}
+.stat-card .label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:8px}
+.stat-card .value{font-size:30px;font-weight:700;color:#111827}
+.stat-card .sub{font-size:13px;color:#6b7280;margin-top:6px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge-done{background:#dcfce7;color:#166534}
+.badge-partial{background:#fef3c7;color:#92400e}
+.badge-hidden{background:#e5e7eb;color:#374151}
+.badge-legacy{background:#fee2e2;color:#991b1b}
+.table-wrap{overflow:auto}
+.status-table{width:100%;border-collapse:collapse;font-size:14px}
+.status-table th{background:#f9fafb;padding:12px;text-align:left;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;border-bottom:1px solid #e5e7eb}
+.status-table td{padding:12px;border-bottom:1px solid #f3f4f6;vertical-align:top;color:#111827}
+.status-table tr:hover td{background:#fafbff}
+.muted{color:#6b7280}
+.code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:#f3f4f6;padding:2px 6px;border-radius:6px}
+.todo-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.todo-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px}
+.todo-card h3{font-size:15px;color:#111827;margin-bottom:8px}
+.todo-card p{font-size:14px;color:#6b7280}
+@media(max-width:768px){.section,.stat-card{padding:18px}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="section">
+    <h2>Что здесь показано</h2>
+    <p>Это живая карта текущей админки по коду проекта: какие страницы выведены в меню, что реально подключено к API, что частично доделано, а что пока скрыто или осталось как legacy.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="label">Полностью или почти готово</div>
+        <div class="value">22</div>
+        <div class="sub">Рабочие экраны с подключённым API и полезным UI</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#f59e0b">
+        <div class="label">Частично доделано</div>
+        <div class="value">7</div>
+        <div class="sub">Есть маршрут и логика, но интерфейс или права не доведены</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#6b7280">
+        <div class="label">Скрыто</div>
+        <div class="value">3</div>
+        <div class="sub">Есть в проекте, но сейчас не выведено в основное меню</div>
+    </div>
+    <div class="stat-card" style="border-top-color:#ef4444">
+        <div class="label">Legacy / старые</div>
+        <div class="value">4</div>
+        <div class="sub">Старые или альтернативные экраны, не основной путь</div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Легенда статусов</h2>
+    <p>
+        <span class="badge badge-done">Готово</span>
+        <span class="badge badge-partial">Частично</span>
+        <span class="badge badge-hidden">Скрыто</span>
+        <span class="badge badge-legacy">Legacy</span>
+    </p>
+</div>
+
+<div class="section">
+    <h2>Основные разделы в меню</h2>
+    <div class="table-wrap">
+        <table class="status-table">
+            <thead>
+                <tr>
+                    <th>Группа</th>
+                    <th>Раздел</th>
+                    <th>URL</th>
+                    <th>Статус</th>
+                    <th>Что подключено</th>
+                    <th>Что ещё нужно</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Аналитика</td><td>Обзор</td><td><span class="code">/dashboard</span></td><td><span class="badge badge-partial">Частично</span></td><td>Сводка, действия по юзерам, блоки с аналитикой</td><td>Убрать старые заглушки по категориям и сервисам</td></tr>
+                <tr><td>Аналитика</td><td>Аналитика</td><td><span class="code">/analytics</span></td><td><span class="badge badge-done">Готово</span></td><td>Summary, orders, users, revenue</td><td>Унифицировать layout со всеми новыми страницами</td></tr>
+                <tr><td>Аналитика</td><td>Отчёты</td><td><span class="code">/reports</span></td><td><span class="badge badge-done">Готово</span></td><td>Отчёты по revenue, ботам и пользователям</td><td>Можно добавить экспорт и сохранённые фильтры</td></tr>
+
+                <tr><td>Юзеры</td><td>Пользователи</td><td><span class="code">/users</span></td><td><span class="badge badge-done">Готово</span></td><td>Поиск, баланс, бан, сообщения, история</td><td>Опционально массовые действия</td></tr>
+                <tr><td>Юзеры</td><td>Боты</td><td><span class="code">/bots</span></td><td><span class="badge badge-done">Готово</span></td><td>Список ботов, статус, рассылки</td><td>Опционально bulk-операции по ботам</td></tr>
+                <tr><td>Юзеры</td><td>Депозиты</td><td><span class="code">/deposits</span></td><td><span class="badge badge-done">Готово</span></td><td>Статистика, фильтры, таблица транзакций</td><td>Опционально экспорт CSV/XLSX</td></tr>
+
+                <tr><td>Команда</td><td>Воркеры</td><td><span class="code">/workers</span></td><td><span class="badge badge-done">Готово</span></td><td>CRUD, баланс, комиссии, настройки</td><td>Опционально журнал изменений</td></tr>
+                <tr><td>Команда</td><td>Worker CRM</td><td><span class="code">/worker-crm</span></td><td><span class="badge badge-done">Готово</span></td><td>Выводы, расходы, HR-метрики</td><td>Опционально комментарии к approve/reject</td></tr>
+                <tr><td>Команда</td><td>Селлеры</td><td><span class="code">/sellers</span></td><td><span class="badge badge-done">Готово</span></td><td>Список и управление селлерами</td><td>Опционально расширенная карточка селлера</td></tr>
+                <tr><td>Команда</td><td>Seller CRM</td><td><span class="code">/seller-crm</span></td><td><span class="badge badge-done">Готово</span></td><td>Kanban заказов, выводы, NocoDB sync</td><td>Опционально фильтры по типам/статусам</td></tr>
+                <tr><td>Команда</td><td>Маркетологи</td><td><span class="code">/marketers</span></td><td><span class="badge badge-done">Готово</span></td><td>Обзор, выводы, аналитика, логи</td><td>Опционально экспорт аналитики</td></tr>
+
+                <tr><td>Заказы</td><td>Заказы</td><td><span class="code">/orders</span></td><td><span class="badge badge-done">Готово</span></td><td>Список, фильтры, операции по заказам</td><td>Опционально сохранённые фильтры</td></tr>
+                <tr><td>Заказы</td><td>Жалобы</td><td><span class="code">/complaints</span></td><td><span class="badge badge-done">Готово</span></td><td>Просмотр и обработка жалоб</td><td>Опционально SLA и автоэскалация</td></tr>
+                <tr><td>Заказы</td><td>Чат</td><td><span class="code">/support</span></td><td><span class="badge badge-done">Готово</span></td><td>Тикеты и переписка в новом интерфейсе</td><td>Опционально шаблоны ответов</td></tr>
+
+                <tr><td>Каталог</td><td>Товары</td><td><span class="code">/products</span></td><td><span class="badge badge-done">Готово</span></td><td>Основной каталог товаров и модалки управления</td><td>Унифицировать под общий base-layout</td></tr>
+                <tr><td>Каталог</td><td>Банки</td><td><span class="code">/banks</span></td><td><span class="badge badge-done">Готово</span></td><td>Bank Items, сортировка и управление позициями</td><td>Чётче развести с legacy-экраном `banks.html`</td></tr>
+                <tr><td>Каталог</td><td>Brute Bank</td><td><span class="code">/brute-bank</span></td><td><span class="badge badge-done">Готово</span></td><td>Отдельный рабочий экран brute-bank</td><td>Опционально bulk import/export</td></tr>
+                <tr><td>Каталог</td><td>Аккаунты</td><td><span class="code">/accounts</span></td><td><span class="badge badge-done">Готово</span></td><td>Категории и items для account-каталога</td><td>Опционально drag-and-drop сортировка</td></tr>
+                <tr><td>Каталог</td><td>eSIM</td><td><span class="code">/esim</span></td><td><span class="badge badge-done">Готово</span></td><td>Категории и items eSIM</td><td>Опционально преднастроенные тарифы</td></tr>
+                <tr><td>Каталог</td><td>CC</td><td><span class="code">/cc</span></td><td><span class="badge badge-done">Готово</span></td><td>Категории и items CC</td><td>Опционально модерационные статусы прямо в таблице</td></tr>
+                <tr><td>Каталог</td><td>Education</td><td><span class="code">/education</span></td><td><span class="badge badge-done">Готово</span></td><td>Manuals, subscriptions, categories</td><td>Опционально preview файлов</td></tr>
+                <tr><td>Каталог</td><td>Another</td><td><span class="code">/another-services</span></td><td><span class="badge badge-done">Готово</span></td><td>Кнопки, URL/callback, мультиязычные тексты</td><td>Опционально live preview</td></tr>
+
+                <tr><td>Настройки</td><td>Automation</td><td><span class="code">/automation</span></td><td><span class="badge badge-done">Готово</span></td><td>Config, proxies, API keys, jobs, finance</td><td>Опционально health-check по automation worker</td></tr>
+                <tr><td>Настройки</td><td>Цены</td><td><span class="code">/service-prices</span></td><td><span class="badge badge-done">Готово</span></td><td>Сервисные цены и ключи</td><td>Опционально импорт/экспорт цен</td></tr>
+                <tr><td>Настройки</td><td>Категории</td><td><span class="code">/categories</span></td><td><span class="badge badge-done">Готово</span></td><td>Новая страница категорий `categories_new.html`</td><td>Удалить старую `categories.html` или явно пометить legacy</td></tr>
+                <tr><td>Настройки</td><td>Рассылки</td><td><span class="code">/broadcasts</span></td><td><span class="badge badge-done">Готово</span></td><td>Мультиязычные рассылки, планирование, отмена</td><td>Опционально шаблоны сообщений</td></tr>
+                <tr><td>Настройки</td><td>Инструкции</td><td><span class="code">/instructions</span></td><td><span class="badge badge-partial">Частично</span></td><td>Статический каталог ссылок из env</td><td>Нужен полноценный CRUD инструкций из админки</td></tr>
+                <tr><td>Настройки</td><td>Структура</td><td><span class="code">/admin-structure</span></td><td><span class="badge badge-done">Готово</span></td><td>Статусная карта всей админки</td><td>Поддерживать в актуальном состоянии при изменениях</td></tr>
+
+                <tr><td>Система</td><td>Админы</td><td><span class="code">/admins</span></td><td><span class="badge badge-done">Готово</span></td><td>CRUD админов, активация и роли</td><td>Опционально история изменений админов</td></tr>
+                <tr><td>Система</td><td>Роли</td><td><span class="code">/admin-roles</span></td><td><span class="badge badge-partial">Частично</span></td><td>Backend CRUD есть, UI показывает список</td><td>Добавить создание, редактирование и удаление ролей в интерфейсе</td></tr>
+                <tr><td>Система</td><td>Audit</td><td><span class="code">/audit</span></td><td><span class="badge badge-partial">Частично</span></td><td>Журнал действий и product audit</td><td>Синхронизировать роли меню и реальные права доступа</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Скрытые и невыведенные страницы</h2>
+    <div class="table-wrap">
+        <table class="status-table">
+            <thead>
+                <tr>
+                    <th>Раздел</th>
+                    <th>URL</th>
+                    <th>Статус</th>
+                    <th>Что есть сейчас</th>
+                    <th>Что решить</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Проверки уведомлений</td><td><span class="code">/checks</span></td><td><span class="badge badge-hidden">Скрыто</span></td><td>Живой экран статистики, логов и cleanup по уведомлениям</td><td>Если модуль нужен в работе, вернуть его в меню</td></tr>
+                <tr><td>Seller Moderation</td><td><span class="code">/seller-moderation</span></td><td><span class="badge badge-hidden">Скрыто</span></td><td>Есть API approve/reject для banks и cc-items</td><td>Починить auth в UI и вернуть в меню при необходимости</td></tr>
+                <tr><td>Seller Mini App</td><td><span class="code">/seller-mini-app</span></td><td><span class="badge badge-hidden">Скрыто</span></td><td>Отдельный интерфейс для seller flow</td><td>Решить: это часть админки или отдельный инструмент</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Legacy и старые альтернативные экраны</h2>
+    <div class="table-wrap">
+        <table class="status-table">
+            <thead>
+                <tr>
+                    <th>Раздел</th>
+                    <th>Файл / URL</th>
+                    <th>Статус</th>
+                    <th>Почему это legacy</th>
+                    <th>Что сделать</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Support Old</td><td><span class="code">/support-old</span></td><td><span class="badge badge-legacy">Legacy</span></td><td>Старая страница тикетов, при этом основной экран уже `support_chat.html`</td><td>Оставить только для миграции или удалить</td></tr>
+                <tr><td>Old Categories</td><td><span class="code">categories.html</span></td><td><span class="badge badge-legacy">Legacy</span></td><td>Основной маршрут уже использует `categories_new.html`</td><td>Удалить или явно скрыть из поддержки</td></tr>
+                <tr><td>Old Banks Screen</td><td><span class="code">banks.html</span></td><td><span class="badge badge-legacy">Legacy</span></td><td>Параллельно живёт другой экран банков `bank_items.html`</td><td>Свести два потока в один или развести названия</td></tr>
+                <tr><td>Services Screen</td><td><span class="code">services.html</span></td><td><span class="badge badge-legacy">Legacy</span></td><td>Файл есть, но не встроен как основной экран текущей админки</td><td>Или вернуть в маршруты, или убрать как устаревший</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Что ещё добавить в первую очередь</h2>
+    <div class="todo-list">
+        <div class="todo-card">
+            <h3>1. Доделать роли</h3>
+            <p>На `admin-roles` нужен полноценный UI для create, edit, delete и назначения прав без ручной работы через API.</p>
+        </div>
+        <div class="todo-card">
+            <h3>2. Починить hidden-модули</h3>
+            <p>Минимум `seller-moderation` и `checks` надо либо вернуть в рабочий поток, либо официально убрать из поддержки.</p>
+        </div>
+        <div class="todo-card">
+            <h3>3. Убрать legacy-дубли</h3>
+            <p>Сейчас несколько экранов дублируют друг друга. Это путает и пользователей, и дальнейшую разработку.</p>
+        </div>
+        <div class="todo-card">
+            <h3>4. Свести права</h3>
+            <p>Матрица доступа в меню и реальный backend-access должны совпадать, особенно для `audit` и системных экранов.</p>
+        </div>
+        <div class="todo-card">
+            <h3>5. Унифицировать layout</h3>
+            <p>Часть старых страниц всё ещё живёт на собственных header/nav, а не на `_base.html`, из-за чего сложнее поддержка.</p>
+        </div>
+        <div class="todo-card">
+            <h3>6. Добавить статус-маркеры в навигацию</h3>
+            <p>Если хочешь, следующим шагом можно прямо в меню показать маленькие метки `beta`, `legacy`, `hidden` для проблемных модулей.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

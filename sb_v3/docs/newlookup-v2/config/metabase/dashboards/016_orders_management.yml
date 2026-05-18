@@ -1,0 +1,231 @@
+# Metabase Dashboard: Orders Management (как в web_panel/api/orders.py)
+# Dashboard ID: 016
+# Description: Управление заказами - все заказы с фильтрами и действиями
+
+dashboard:
+  name: "📦 Orders Management"
+  description: "Управление заказами - просмотр, фильтрация, поиск как в web_panel/orders.py"
+  position: 16
+
+  parameters:
+    - name: "Order ID"
+      type: "number"
+      required: false
+      description: "Поиск по ID заказа"
+    - name: "User ID"
+      type: "number"
+      required: false
+      description: "Поиск по User ID"
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "pending", "processing", "completed", "cancelled"]
+    - name: "Category Filter"
+      type: "string"
+      required: false
+      values: ["SSN", "DL", "MVR", "PEP", "CR", "BANKS", "CC", "FULLZ", "DOCUMENTS", "eSIM", "OTHER"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "📦 Total Orders"
+      type: "number"
+      position: { row: 1, col: 1, size: 2 }
+      query: |
+        SELECT COUNT(*) as total_orders
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "⏳ Pending"
+      type: "number"
+      position: { row: 1, col: 3, size: 2 }
+      query: |
+        SELECT COUNT(*) as pending_orders
+        FROM orders
+        WHERE status = 'pending'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "⚙️ Processing"
+      type: "number"
+      position: { row: 1, col: 5, size: 2 }
+      query: |
+        SELECT COUNT(*) as processing_orders
+        FROM orders
+        WHERE status = 'processing'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "✅ Completed"
+      type: "number"
+      position: { row: 1, col: 7, size: 2 }
+      query: |
+        SELECT COUNT(*) as completed_orders
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "❌ Cancelled"
+      type: "number"
+      position: { row: 1, col: 9, size: 2 }
+      query: |
+        SELECT COUNT(*) as cancelled_orders
+        FROM orders
+        WHERE status = 'cancelled'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "💰 Revenue"
+      type: "number"
+      position: { row: 1, col: 11, size: 2 }
+      query: |
+        SELECT COALESCE(SUM(price), 0) as revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    # ========== ALL ORDERS TABLE ==========
+    - name: "📦 All Orders"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          u.username,
+          o.category,
+          o.service_name,
+          o.price,
+          o.status,
+          o.worker_id,
+          o.is_bulk,
+          o.bulk_count,
+          o.created_at,
+          o.taken_at,
+          o.completed_at,
+          o.feedback_status,
+          o.report_status,
+          'View / Assign / Edit' as actions
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.user_id
+        WHERE ({{order_id}} IS NULL OR o.id = {{order_id}})
+          AND ({{user_id}} IS NULL OR o.user_id = {{user_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            o.status = {{status_filter}}
+          )
+          AND (
+            {{category_filter}} IS NULL OR
+            o.category = {{category_filter}}
+          )
+          AND o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY o.created_at DESC
+        LIMIT 200
+
+    # ========== PENDING ORDERS ==========
+    - name: "⏳ Pending Orders"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          u.username,
+          o.category,
+          o.service_name,
+          o.input_data,
+          o.price,
+          o.is_bulk,
+          o.bulk_count,
+          o.created_at,
+          'Assign Worker / View Details' as actions
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.user_id
+        WHERE o.status = 'pending'
+        ORDER BY o.created_at ASC
+        LIMIT 100
+
+    # ========== PROCESSING ORDERS ==========
+    - name: "⚙️ Processing Orders"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          u.username,
+          o.worker_id,
+          w.username as worker_username,
+          o.category,
+          o.service_name,
+          o.price,
+          o.created_at,
+          o.taken_at,
+          EXTRACT(EPOCH FROM (NOW() - o.taken_at)) / 3600 as hours_in_progress,
+          'View / Reassign' as actions
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.user_id
+        LEFT JOIN workers w ON o.worker_id = w.id
+        WHERE o.status = 'processing'
+        ORDER BY o.taken_at ASC
+        LIMIT 100
+
+    # ========== COMPLETED ORDERS ==========
+    - name: "✅ Completed Orders"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          u.username,
+          o.worker_id,
+          w.username as worker_username,
+          o.category,
+          o.service_name,
+          o.price,
+          o.created_at,
+          o.completed_at,
+          EXTRACT(EPOCH FROM (o.completed_at - o.created_at)) / 60 as processing_minutes,
+          o.feedback_status,
+          o.report_status,
+          'View Details' as actions
+        FROM orders o
+        LEFT JOIN users u ON o.user_id = u.user_id
+        LEFT JOIN workers w ON o.worker_id = w.id
+        WHERE o.status = 'completed'
+        ORDER BY o.completed_at DESC
+        LIMIT 100
+
+    # ========== ORDERS BY WORKER ==========
+    - name: "👷 Orders by Worker"
+      type: "bar"
+      position: { row: 6, col: 1, size: 6 }
+      query: |
+        SELECT 
+          w.username as worker,
+          COUNT(o.id) as orders_count,
+          SUM(o.price) as total_revenue
+        FROM workers w
+        LEFT JOIN orders o ON w.id = o.worker_id
+        WHERE o.status = 'completed'
+          AND o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY w.username
+        ORDER BY orders_count DESC
+        LIMIT 15
+
+    # ========== ORDER PROCESSING TIME ==========
+    - name: "⏱️ Processing Time by Category"
+      type: "bar"
+      position: { row: 6, col: 7, size: 6 }
+      query: |
+        SELECT 
+          o.category,
+          COUNT(*) as orders_count,
+          AVG(EXTRACT(EPOCH FROM (o.completed_at - o.created_at)) / 60) as avg_minutes
+        FROM orders o
+        WHERE o.status = 'completed'
+          AND o.completed_at IS NOT NULL
+          AND o.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY o.category
+        ORDER BY avg_minutes DESC
+        LIMIT 10

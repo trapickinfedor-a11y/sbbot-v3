@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Аккаунты - NewLookup Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f5f7fa}
+        .admin-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+        .admin-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+        .admin-header h1{font-size:22px;font-weight:600}
+        .admin-header-actions{display:flex;align-items:center;gap:12px}
+        .admin-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;border:none}
+        .admin-btn-outline{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+        .admin-btn-outline:hover{background:rgba(255,255,255,.3)}
+        .admin-nav{background:rgba(0,0,0,.08);border-top:1px solid rgba(255,255,255,.15)}
+        .admin-nav-inner{display:grid;grid-template-columns:repeat(10,1fr);gap:0;max-width:1600px;margin:0 auto}
+        .admin-nav-item{display:flex;align-items:center;justify-content:center;padding:14px 12px;color:rgba(255,255,255,.9);text-decoration:none;font-size:13px;font-weight:500;border-bottom:3px solid transparent}
+        .admin-nav-item:hover{background:rgba(255,255,255,.15)}
+        .admin-nav-item.active{background:rgba(255,255,255,.25);border-bottom-color:#fff}
+        .container{max-width:1600px;margin:0 auto;padding:24px 32px}
+        .tabs{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;flex-wrap:wrap}
+        .tab-btn{padding:14px 20px;border:none;background:0 0;cursor:pointer;font-size:14px;font-weight:500;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+        .tab-btn:hover{color:#667eea}
+        .tab-btn.active{color:#667eea;border-bottom-color:#667eea}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:20px}
+        .section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+        .section h2{font-size:18px;font-weight:600}
+        .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+        .btn-primary{background:#667eea;color:#fff}
+        .btn-primary:hover{background:#5a67d8}
+        .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
+        .btn-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+        .btn-sm{padding:5px 10px;font-size:12px}
+        .btn-success{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        th{background:#f9fafb;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;white-space:nowrap}
+        td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+        tr:hover td{background:#fafbff}
+        .badge-active{background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+        .badge-inactive{background:#f3f4f6;color:#6b7280;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+        .badge-type{background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:20px;font-size:11px}
+        .drag-handle{cursor:grab;color:#9ca3af;font-size:16px;padding:0 6px;user-select:none}
+        .drag-handle:active{cursor:grabbing}
+        .sortable-ghost{opacity:.3;background:#e0e7ff}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;padding:20px;overflow-y:auto}
+        .modal.open{display:flex;align-items:flex-start;justify-content:center}
+        .modal-box{background:#fff;border-radius:12px;width:100%;max-width:520px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+        .modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+        .modal-head h3{font-size:17px;font-weight:600}
+        .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280}
+        .modal-body{padding:24px}
+        .modal-foot{padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px}
+        .form-group{margin-bottom:16px}
+        .form-group label{display:block;font-size:13px;font-weight:500;color:#374151;margin-bottom:6px}
+        .form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+        .form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
+        @media(max-width:768px){.container{padding:16px}}
+    </style>
+</head>
+<body>
+<header class="admin-header">
+    <div class="admin-header-top">
+        <h1>🧾 Аккаунты / Подписки</h1>
+        <div class="admin-header-actions">
+            <span id="adminName">Admin</span>
+            <a href="/dashboard" class="admin-btn admin-btn-outline">← Dashboard</a>
+            <button class="admin-btn admin-btn-outline" onclick="logout()">🚪 Выход</button>
+        </div>
+    </div>
+    {% include '_nav.html' %}
+</header>
+
+<div class="tabs" id="tabBar">
+    <button class="tab-btn" onclick="showTab('inventory', this)">📦 Инвентарь</button>
+    <button class="tab-btn" onclick="showTab('categories', this)">🗂️ Категории</button>
+</div>
+
+<div class="container" id="mainContainer">
+    <!-- Category tabs are generated dynamically -->
+
+    <!-- Categories (view-only: reorder, rename, toggle) -->
+    <div class="tab-content" id="tab-categories">
+        <div class="section">
+            <div class="section-head">
+                <h2>🗂️ Категории</h2>
+                <span style="color:#6b7280;font-size:13px">Категории зафиксированы. Можно менять порядок, название и вкл/выкл.</span>
+            </div>
+            <div id="cats-list"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+        </div>
+    </div>
+
+    <!-- Inventory -->
+    <div class="tab-content" id="tab-inventory">
+        <div class="section">
+            <div class="section-head">
+                <h2>📦 Инвентарь (загруженные товары)</h2>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-primary btn-sm" onclick="openUploadModal()">📤 Загрузить товар</button>
+                    <button class="btn btn-secondary btn-sm" onclick="openIssueModal()">🤲 Выдать вручную</button>
+                </div>
+            </div>
+            <div id="inv-stats" style="margin-bottom:16px"></div>
+            <div style="margin-bottom:12px">
+                <select id="invFilterItem" onchange="loadInventory()" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px">
+                    <option value="">Все товары</option>
+                </select>
+                <label style="margin-left:12px;font-size:13px;cursor:pointer">
+                    <input type="checkbox" id="invFilterAvail" onchange="loadInventory()"> Только доступные
+                </label>
+            </div>
+            <div id="inv-list"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Item Modal -->
+<div class="modal" id="itemModal">
+    <div class="modal-box">
+        <div class="modal-head"><h3 id="itemModalTitle">Аккаунт</h3><button class="modal-close" onclick="closeModal('itemModal')">×</button></div>
+        <div class="modal-body">
+            <input type="hidden" id="itemId">
+            <input type="hidden" id="itemDefCat">
+            <div class="form-group"><label>Код (уникальный)</label><input id="itemCode" placeholder="beenverified_1m"></div>
+            <div class="form-group"><label>Название</label><input id="itemName" placeholder="BeenVerified"></div>
+            <div class="form-group"><label>Категория</label><select id="itemCat"></select></div>
+            <div class="form-group"><label>Цена ($)</label><input type="number" id="itemPrice" step="0.01" min="0" placeholder="45.00"></div>
+            <div class="form-group"><label>Срок (мес, 0 = бессрочно)</label><input type="number" id="itemDuration" min="0" placeholder="1"></div>
+            <div class="form-group"><label>Описание</label><textarea id="itemDesc" rows="3" style="resize:vertical"></textarea></div>
+            <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="itemActive" checked> Активен
+                </label>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal('itemModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="saveItem()">💾 Сохранить</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- Upload Modal -->
+<div class="modal" id="uploadModal">
+    <div class="modal-box">
+        <div class="modal-head"><h3>📤 Загрузить товар</h3><button class="modal-close" onclick="closeModal('uploadModal')">×</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>Товар</label><select id="uploadItem"></select></div>
+            <div class="form-group">
+                <label>Данные (одна строка = один товар)</label>
+                <textarea id="uploadText" rows="8" style="resize:vertical;font-family:monospace;font-size:12px" placeholder="login:password&#10;login2:password2:extra_info"></textarea>
+            </div>
+            <div class="form-group"><label>Разделитель</label><input id="uploadSep" value=":" style="width:60px"></div>
+            <div class="form-group"><label>Заметка</label><input id="uploadNotes" placeholder="Партия от 18.03"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal('uploadModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="doUpload()">📤 Загрузить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Issue Modal -->
+<div class="modal" id="issueModal">
+    <div class="modal-box">
+        <div class="modal-head"><h3>🤲 Выдать вручную</h3><button class="modal-close" onclick="closeModal('issueModal')">×</button></div>
+        <div class="modal-body">
+            <div class="form-group"><label>ID инвентаря</label><input type="number" id="issueInvId" placeholder="123"></div>
+            <div class="form-group"><label>Telegram User ID</label><input type="number" id="issueUserId" placeholder="123456789"></div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal('issueModal')">Отмена</button>
+            <button class="btn btn-primary" onclick="doIssue()">🤲 Выдать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) window.location.href = '/';
+async function authFetch(url, o = {}) {
+    if (!o.headers) o.headers = {};
+    o.headers['Authorization'] = 'Bearer ' + token;
+    const r = await fetch(url, o);
+    if (r.status === 401) { localStorage.removeItem('token'); window.location.href = '/'; return null; }
+    return r;
+}
+function logout() { localStorage.removeItem('token'); window.location.href = '/'; }
+
+let allCategories = [];
+let allItems = [];
+let activeTab = null;
+
+function esc(s) {
+    if (s == null) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+async function loadCategories() {
+    const r = await authFetch('/api/accounts/categories');
+    if (!r) return [];
+    allCategories = await r.json();
+    return allCategories;
+}
+
+function buildCategoryTabs() {
+    const bar = document.getElementById('tabBar');
+    const container = document.getElementById('mainContainer');
+
+    bar.querySelectorAll('.tab-btn-cat').forEach(b => b.remove());
+    container.querySelectorAll('.tab-content-cat').forEach(el => el.remove());
+
+    const fixedBtns = bar.querySelectorAll('.tab-btn');
+
+    allCategories.forEach((cat) => {
+        const btn = document.createElement('button');
+        btn.className = 'tab-btn tab-btn-cat';
+        btn.textContent = cat.name;
+        btn.onclick = () => showTab('cat_' + cat.code, btn);
+        bar.insertBefore(btn, fixedBtns[0]);
+
+        const div = document.createElement('div');
+        div.className = 'tab-content tab-content-cat';
+        div.id = 'tab-cat_' + esc(cat.code);
+        div.innerHTML = `<div class="section">
+            <div class="section-head">
+                <h2>${esc(cat.name)}</h2>
+                <button class="btn btn-primary btn-sm" onclick="openItemModal(null, '${esc(cat.code)}')">+ Добавить</button>
+            </div>
+            <div id="items-${esc(cat.code)}"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+        </div>`;
+        container.insertBefore(div, container.querySelector('#tab-inventory'));
+    });
+
+    const prevTab = activeTab;
+    const prevBtn = prevTab ? bar.querySelector(`.tab-btn-cat[onclick*="'${prevTab}'"]`) : null;
+    if (prevBtn) {
+        showTab(prevTab, prevBtn);
+    } else {
+        const firstCatBtn = bar.querySelector('.tab-btn-cat');
+        if (firstCatBtn && allCategories.length) {
+            showTab('cat_' + allCategories[0].code, firstCatBtn);
+        }
+    }
+}
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    const tabEl = document.getElementById('tab-' + name);
+    if (tabEl) tabEl.classList.add('active');
+    if (btn) btn.classList.add('active');
+    activeTab = name;
+
+    if (name.startsWith('cat_')) {
+        const catCode = name.replace('cat_', '');
+        loadItemsForCategory(catCode);
+    } else if (name === 'inventory') {
+        loadInvStats(); loadInventory();
+    } else if (name === 'categories') {
+        loadCatsView();
+    }
+}
+
+async function loadItemsForCategory(catCode) {
+    const el = document.getElementById('items-' + catCode);
+    if (!el) return;
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/accounts/items?category_code=${catCode}`);
+        const items = r ? await r.json() : [];
+        if (!items.length) {
+            el.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Нет товаров</div>';
+            return;
+        }
+        const rows = items.map(i => `<tr data-id="${i.id}">
+            <td class="drag-handle">⠿</td>
+            <td>${i.id}</td><td><b>${esc(i.name)}</b></td><td>$${(i.price||0).toFixed(2)}</td>
+            <td>${i.duration_months ? i.duration_months+'м' : '∞'}</td>
+            <td>${i.description ? '<span title="'+esc(i.description)+'">📝</span>' : '—'}</td>
+            <td><span class="${i.is_active ? 'badge-active' : 'badge-inactive'}">${i.is_active ? 'Активен' : 'Выкл'}</span></td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick='openItemModal(${esc(JSON.stringify(i))}, "${esc(catCode)}")'>✏️</button>
+                <button class="btn btn-sm ${i.is_active ? 'badge-inactive' : 'badge-active'}" style="border:none;cursor:pointer" onclick="toggleItem(${i.id}, '${esc(catCode)}')">
+                    ${i.is_active ? 'Выкл' : 'Вкл'}
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteItem(${i.id}, '${esc(catCode)}')">🗑️</button>
+            </td>
+        </tr>`).join('');
+
+        el.innerHTML = `<table><thead><tr><th></th><th>ID</th><th>Название</th><th>Цена</th><th>Срок</th><th>Описание</th><th>Статус</th><th>Действия</th></tr></thead>
+            <tbody id="sortable-items-${catCode}">${rows}</tbody></table>`;
+
+        new Sortable(document.getElementById('sortable-items-' + catCode), {
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            animation: 150,
+            onEnd: () => saveItemsOrder(catCode)
+        });
+    } catch (e) {
+        el.innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function saveItemsOrder(catCode) {
+    const tbody = document.getElementById('sortable-items-' + catCode);
+    if (!tbody) return;
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(tr => parseInt(tr.dataset.id));
+    await authFetch('/api/accounts/items/reorder', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids})
+    });
+}
+
+
+function openItemModal(item, catCode) {
+    document.getElementById('itemModalTitle').textContent = item ? 'Редактировать аккаунт' : 'Новый аккаунт';
+    document.getElementById('itemId').value = item ? item.id : '';
+    document.getElementById('itemDefCat').value = catCode;
+    document.getElementById('itemCode').value = item ? item.code : '';
+    document.getElementById('itemName').value = item ? item.name : '';
+    document.getElementById('itemPrice').value = item ? item.price : '';
+    document.getElementById('itemDuration').value = item ? (item.duration_months || 0) : 1;
+    document.getElementById('itemDesc').value = item ? (item.description || '') : '';
+    document.getElementById('itemActive').checked = item ? item.is_active : true;
+    document.getElementById('itemCode').disabled = !!item;
+    const sel = document.getElementById('itemCat');
+    sel.innerHTML = '';
+    allCategories.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.code;
+        o.textContent = c.name;
+        if (item && item.category_code === c.code) o.selected = true;
+        else if (!item && c.code === catCode) o.selected = true;
+        sel.appendChild(o);
+    });
+    document.getElementById('itemModal').classList.add('open');
+}
+
+async function saveItem() {
+    const id = document.getElementById('itemId').value;
+    const origCatCode = document.getElementById('itemDefCat').value;
+    const newCatCode = document.getElementById('itemCat').value;
+    const dur = parseInt(document.getElementById('itemDuration').value) || null;
+    const body = {
+        name: document.getElementById('itemName').value,
+        category_code: newCatCode,
+        price: parseFloat(document.getElementById('itemPrice').value),
+        duration_months: dur || null,
+        description: document.getElementById('itemDesc').value || null,
+        is_active: document.getElementById('itemActive').checked,
+    };
+    if (!id) body.code = document.getElementById('itemCode').value;
+    const url = id ? `/api/accounts/items/${id}` : '/api/accounts/items';
+    const method = id ? 'PUT' : 'POST';
+    const r = await authFetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (r && r.ok) {
+        closeModal('itemModal');
+        loadItemsForCategory(newCatCode);
+        if (origCatCode !== newCatCode) loadItemsForCategory(origCatCode);
+    }
+    else { const e = await r?.json(); alert('Ошибка: ' + (e?.detail || 'unknown')); }
+}
+
+async function toggleItem(id, catCode) {
+    const r = await authFetch(`/api/accounts/items/${id}/toggle`, { method: 'POST' });
+    if (r && r.ok) loadItemsForCategory(catCode);
+}
+
+async function deleteItem(id, catCode) {
+    if (!confirm('Удалить товар?')) return;
+    const r = await authFetch(`/api/accounts/items/${id}`, { method: 'DELETE' });
+    if (r && r.ok) loadItemsForCategory(catCode);
+}
+
+
+async function loadCatsView() {
+    const el = document.getElementById('cats-list');
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    const cats = await loadCategories();
+    if (!cats || !cats.length) {
+        el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Нет категорий. Нажмите Seed defaults.</div>';
+        return;
+    }
+    const rows = cats.map(c => `<tr data-id="${c.id}">
+        <td class="drag-handle">⠿</td>
+        <td>${c.id}</td>
+        <td><input value="${esc(c.name)}" style="border:1px solid #d1d5db;border-radius:6px;padding:4px 8px;width:200px" onchange="renameCat(${c.id}, this.value)"></td>
+        <td><code>${esc(c.code)}</code></td>
+        <td><span class="badge-type">${esc(c.category_type)}</span></td>
+        <td>
+            <button class="btn btn-sm ${c.is_active ? 'badge-active' : 'badge-inactive'}" style="border:none;cursor:pointer" onclick="toggleCat(${c.id}, ${!c.is_active})">
+                ${c.is_active ? '✅ Активна' : '❌ Выкл'}
+            </button>
+        </td>
+    </tr>`).join('');
+    el.innerHTML = `<table><thead><tr><th></th><th>ID</th><th>Название</th><th>Код</th><th>Тип</th><th>Статус</th></tr></thead>
+        <tbody id="sortable-cats">${rows}</tbody></table>`;
+
+    new Sortable(document.getElementById('sortable-cats'), {
+        handle: '.drag-handle',
+        ghostClass: 'sortable-ghost',
+        animation: 150,
+        onEnd: saveCatsOrder
+    });
+}
+
+async function saveCatsOrder() {
+    const tbody = document.getElementById('sortable-cats');
+    if (!tbody) return;
+    const ids = [...tbody.querySelectorAll('tr[data-id]')].map(tr => parseInt(tr.dataset.id));
+    await authFetch('/api/accounts/categories/reorder', {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ids})
+    });
+    await loadCategories();
+    buildCategoryTabs();
+}
+
+async function renameCat(id, newName) {
+    await authFetch(`/api/accounts/categories/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: newName})
+    });
+    await loadCategories();
+    buildCategoryTabs();
+}
+
+async function toggleCat(id, newActive) {
+    await authFetch(`/api/accounts/categories/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({is_active: newActive})
+    });
+    await loadCategories();
+    buildCategoryTabs();
+    loadCatsView();
+}
+
+async function seedAccounts() {
+    const r = await authFetch('/api/accounts/seed', { method: 'POST' });
+    if (r && r.ok) {
+        const d = await r.json();
+        alert(`Создано: ${d.created} записей`);
+        await loadCategories();
+        buildCategoryTabs();
+        await loadAllItems();
+        loadCatsView();
+    }
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Inventory ──────────────────────────────────────────────────────────────
+
+async function loadInvStats() {
+    const r = await authFetch('/api/accounts/inventory/stats');
+    if (!r) return;
+    const stats = await r.json();
+    const el = document.getElementById('inv-stats');
+    if (!stats.length) { el.innerHTML = '<div style="color:#888;font-size:13px">Нет загруженных товаров</div>'; return; }
+    el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:12px">' + stats.map(s =>
+        `<div style="background:#f9fafb;padding:8px 14px;border-radius:8px;font-size:13px;border:1px solid #e5e7eb">
+            <b>${esc(s.name)}</b>: <span style="color:#059669">${s.available} доступно</span> / ${s.sold} продано / ${s.total} всего
+        </div>`
+    ).join('') + '</div>';
+}
+
+async function loadInventory() {
+    const el = document.getElementById('inv-list');
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        let url = '/api/accounts/inventory?';
+        const itemId = document.getElementById('invFilterItem').value;
+        const onlyAvail = document.getElementById('invFilterAvail').checked;
+        if (itemId) url += `item_id=${itemId}&`;
+        if (onlyAvail) url += 'only_available=true&';
+        const r = await authFetch(url);
+        if (!r) return;
+        const rows = await r.json();
+        if (!rows.length) { el.innerHTML = '<div style="text-align:center;padding:20px;color:#888">Пусто</div>'; return; }
+        const html = `<table><thead><tr><th>ID</th><th>Товар</th><th>Данные</th><th>Статус</th><th>Кому</th><th>Загружено</th><th>Действия</th></tr></thead>
+            <tbody>${rows.map(r => {
+                const creds = typeof r.credentials === 'object' ? Object.values(r.credentials).join(' : ') : String(r.credentials);
+                const itemName = allItems.find(i => i.id === r.item_id)?.name || `#${r.item_id}`;
+                return `<tr>
+                    <td>${r.id}</td>
+                    <td>${esc(itemName)}</td>
+                    <td style="font-family:monospace;font-size:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(creds)}">${esc(creds)}</td>
+                    <td><span class="${r.is_sold ? 'badge-inactive' : 'badge-active'}">${r.is_sold ? 'Продан' : 'Доступен'}</span></td>
+                    <td>${r.sold_to_user_id || '—'}</td>
+                    <td style="font-size:12px;color:#888">${r.created_at?.slice(0,16).replace('T',' ')}</td>
+                    <td>
+                        ${!r.is_sold ? `<button class="btn btn-success btn-sm" onclick="quickIssue(${r.id})">🤲</button>` : ''}
+                        <button class="btn btn-danger btn-sm" onclick="deleteInv(${r.id})">🗑️</button>
+                    </td>
+                </tr>`;
+            }).join('')}</tbody></table>`;
+        el.innerHTML = html;
+    } catch (e) { el.innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadAllItems() {
+    const r = await authFetch('/api/accounts/items');
+    if (!r) return;
+    allItems = await r.json();
+    const sel = document.getElementById('invFilterItem');
+    const uploadSel = document.getElementById('uploadItem');
+    sel.innerHTML = '<option value="">Все товары</option>';
+    uploadSel.innerHTML = '';
+    allItems.forEach(i => {
+        sel.innerHTML += `<option value="${i.id}">${esc(i.name)} (${esc(i.category_code)})</option>`;
+        uploadSel.innerHTML += `<option value="${i.id}">${esc(i.name)} (${esc(i.category_code)})</option>`;
+    });
+}
+
+function openUploadModal() {
+    document.getElementById('uploadText').value = '';
+    document.getElementById('uploadSep').value = ':';
+    document.getElementById('uploadNotes').value = '';
+    document.getElementById('uploadModal').classList.add('open');
+}
+
+async function doUpload() {
+    const itemId = parseInt(document.getElementById('uploadItem').value);
+    const text = document.getElementById('uploadText').value.trim();
+    const sep = document.getElementById('uploadSep').value || ':';
+    const notes = document.getElementById('uploadNotes').value || null;
+    if (!text) { alert('Введите данные'); return; }
+
+    const lines = text.split('\n').filter(l => l.trim());
+    const entries = lines.map(line => {
+        const parts = line.split(sep);
+        const creds = {login: parts[0].trim()};
+        if (parts.length > 1) creds.password = parts[1].trim();
+        if (parts.length > 2) creds.extra = parts.slice(2).join(sep).trim();
+        return creds;
+    });
+
+    const r = await authFetch('/api/accounts/inventory/upload', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({item_id: itemId, entries, notes})
+    });
+    if (r && r.ok) {
+        const d = await r.json();
+        alert(`Загружено: ${d.added} единиц`);
+        closeModal('uploadModal');
+        loadInvStats();
+        loadInventory();
+    } else {
+        const e = await r?.json();
+        alert('Ошибка: ' + (e?.detail || 'unknown'));
+    }
+}
+
+function openIssueModal() {
+    document.getElementById('issueInvId').value = '';
+    document.getElementById('issueUserId').value = '';
+    document.getElementById('issueModal').classList.add('open');
+}
+
+async function quickIssue(invId) {
+    const userId = prompt('Введите Telegram User ID для выдачи:');
+    if (!userId) return;
+    const r = await authFetch('/api/accounts/inventory/issue', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({inventory_id: invId, user_id: parseInt(userId)})
+    });
+    if (r && r.ok) { alert('Выдано!'); loadInvStats(); loadInventory(); }
+    else { const e = await r?.json(); alert('Ошибка: ' + (e?.detail || 'unknown')); }
+}
+
+async function doIssue() {
+    const invId = parseInt(document.getElementById('issueInvId').value);
+    const userId = parseInt(document.getElementById('issueUserId').value);
+    if (!invId || !userId) { alert('Заполните оба поля'); return; }
+    const r = await authFetch('/api/accounts/inventory/issue', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({inventory_id: invId, user_id: userId})
+    });
+    if (r && r.ok) { alert('Выдано!'); closeModal('issueModal'); loadInvStats(); loadInventory(); }
+    else { const e = await r?.json(); alert('Ошибка: ' + (e?.detail || 'unknown')); }
+}
+
+async function deleteInv(id) {
+    if (!confirm('Удалить запись инвентаря?')) return;
+    const r = await authFetch(`/api/accounts/inventory/${id}`, { method: 'DELETE' });
+    if (r && r.ok) { loadInvStats(); loadInventory(); }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+async function init() {
+    await loadCategories();
+    buildCategoryTabs();
+    await loadAllItems();
+    const firstCatBtn = document.querySelector('.tab-btn-cat');
+    if (firstCatBtn) {
+        showTab('cat_' + allCategories[0].code, firstCatBtn);
+    } else {
+        showTab('categories', document.querySelectorAll('.tab-btn')[1]);
+    }
+}
+init();
+</script>
+</body>
+</html>

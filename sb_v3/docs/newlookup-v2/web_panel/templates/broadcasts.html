@@ -1,0 +1,1502 @@
+{% extends "_base.html" %}
+{% block title %}Broadcasts{% endblock %}
+{% block header_title %}📢 Broadcasts{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --bc-primary: #667eea;
+    --bc-primary-dark: #5a6fd6;
+    --bc-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --bc-radius: 10px;
+    --bc-shadow: 0 2px 10px rgba(0,0,0,.07);
+    --bc-border: #e2e5ea;
+    --bc-bg-card: #fff;
+    --bc-bg-muted: #f7f8fb;
+    --bc-text: #1e2330;
+    --bc-text-secondary: #6b7280;
+    --bc-danger: #ef4444;
+    --bc-success: #10b981;
+}
+
+.bc-section {
+    background: var(--bc-bg-card);
+    padding: 28px;
+    border-radius: 14px;
+    box-shadow: var(--bc-shadow);
+    margin-bottom: 24px;
+}
+.bc-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.bc-section-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--bc-text);
+    margin: 0;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .18s ease;
+    white-space: nowrap;
+}
+.btn-primary {
+    background: var(--bc-gradient);
+    color: #fff;
+}
+.btn-primary:hover { opacity: .92; transform: translateY(-1px); }
+.btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+.btn-secondary:hover { background: #d1d5db; }
+.btn-danger {
+    background: var(--bc-danger);
+    color: #fff;
+}
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 6px 12px; font-size: 12.5px; }
+.btn-ghost {
+    background: transparent;
+    color: var(--bc-primary);
+    padding: 6px 10px;
+}
+.btn-ghost:hover { background: rgba(102,126,234,.08); }
+
+/* Messages */
+.bc-toast {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 2000;
+    padding: 14px 22px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 6px 24px rgba(0,0,0,.15);
+    transform: translateX(120%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    max-width: 420px;
+}
+.bc-toast.show { transform: translateX(0); }
+.bc-toast-success { background: #ecfdf5; color: #065f46; border-left: 4px solid var(--bc-success); }
+.bc-toast-error { background: #fef2f2; color: #991b1b; border-left: 4px solid var(--bc-danger); }
+
+/* Table */
+.bc-table-wrap { overflow-x: auto; margin: 0 -8px; padding: 0 8px; }
+.bc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13.5px;
+}
+.bc-table th {
+    padding: 11px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--bc-text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: var(--bc-bg-muted);
+    border-bottom: 1px solid var(--bc-border);
+}
+.bc-table th:first-child { border-radius: 8px 0 0 0; }
+.bc-table th:last-child { border-radius: 0 8px 0 0; }
+.bc-table td {
+    padding: 12px 14px;
+    color: var(--bc-text);
+    border-bottom: 1px solid #f0f1f4;
+    vertical-align: middle;
+}
+.bc-table tr:hover td { background: #fafbfd; }
+.bc-table .preview-cell {
+    max-width: 260px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    line-height: 1.45;
+}
+
+/* Badges */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .01em;
+}
+.badge-pending   { background: #fef3c7; color: #92400e; }
+.badge-scheduled { background: #dbeafe; color: #1e40af; }
+.badge-in_progress { background: #e0e7ff; color: #3730a3; }
+.badge-completed { background: #d1fae5; color: #065f46; }
+.badge-failed    { background: #fee2e2; color: #991b1b; }
+.badge-cancelled { background: #f3f4f6; color: #6b7280; }
+
+.lang-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.lang-badge {
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: #eef2ff;
+    color: #4338ca;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.bc-empty {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--bc-text-secondary);
+}
+.bc-empty-icon { font-size: 40px; margin-bottom: 12px; }
+.bc-empty-text { font-size: 15px; }
+
+.bc-loading {
+    text-align: center;
+    padding: 48px;
+    color: var(--bc-text-secondary);
+}
+.bc-spinner {
+    width: 32px; height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top-color: var(--bc-primary);
+    border-radius: 50%;
+    animation: bc-spin .7s linear infinite;
+    margin: 0 auto 12px;
+}
+@keyframes bc-spin { to { transform: rotate(360deg); } }
+
+/* Modal */
+.bc-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.45);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+    overflow-y: auto;
+}
+.bc-overlay.open { display: flex; }
+.bc-modal {
+    background: var(--bc-bg-card);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 680px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    animation: bc-modal-in .25s ease;
+}
+@keyframes bc-modal-in {
+    from { opacity: 0; transform: translateY(16px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.bc-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--bc-border);
+}
+.bc-modal-head h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--bc-text);
+    margin: 0;
+}
+.bc-modal-close {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: var(--bc-bg-muted);
+    border-radius: 8px; cursor: pointer;
+    font-size: 18px; color: var(--bc-text-secondary);
+    transition: background .15s;
+}
+.bc-modal-close:hover { background: #e5e7eb; }
+.bc-modal-body { padding: 24px 28px; }
+.bc-modal-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 18px 28px;
+    border-top: 1px solid var(--bc-border);
+}
+
+/* Form */
+.fg { margin-bottom: 20px; }
+.fg-label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--bc-text);
+}
+.fg-hint {
+    font-size: 12px;
+    color: var(--bc-text-secondary);
+    margin-top: 4px;
+}
+.fg-input, .fg-select, .fg-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--bc-border);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--bc-text);
+    background: #fff;
+    transition: border-color .15s;
+    font-family: inherit;
+}
+.fg-input:focus, .fg-select:focus, .fg-textarea:focus {
+    outline: none;
+    border-color: var(--bc-primary);
+    box-shadow: 0 0 0 3px rgba(102,126,234,.12);
+}
+.fg-textarea { min-height: 100px; resize: vertical; }
+.fg-select { cursor: pointer; }
+
+/* Language grid */
+.lang-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+@media (max-width: 600px) { .lang-grid { grid-template-columns: 1fr; } }
+.lang-card {
+    border: 1.5px solid var(--bc-border);
+    border-radius: 10px;
+    padding: 14px;
+    background: var(--bc-bg-muted);
+    transition: border-color .15s;
+}
+.lang-card:focus-within { border-color: var(--bc-primary); }
+.lang-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.lang-card-title { font-size: 14px; font-weight: 700; color: var(--bc-text); }
+.lang-card-sub { font-size: 11.5px; color: var(--bc-text-secondary); }
+.lang-card textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 8px 10px;
+    border: 1px solid #dde0e6;
+    border-radius: 6px;
+    font-size: 13px;
+    resize: vertical;
+    font-family: inherit;
+    color: var(--bc-text);
+    background: #fff;
+    transition: border-color .15s;
+}
+.lang-card textarea:focus {
+    outline: none;
+    border-color: var(--bc-primary);
+    box-shadow: 0 0 0 2px rgba(102,126,234,.1);
+}
+
+/* Inline Buttons Builder */
+.btn-builder {
+    border: 1.5px dashed var(--bc-border);
+    border-radius: 10px;
+    padding: 16px;
+    background: var(--bc-bg-muted);
+}
+.btn-builder-rows { display: flex; flex-direction: column; gap: 10px; }
+.btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 40px auto;
+    gap: 8px;
+    align-items: start;
+}
+.btn-color-picker {
+    width: 40px;
+    height: 32px;
+    border: 1px solid #dde0e6;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+}
+.btn-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.btn-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+}
+.btn-row-url-group { display: flex; flex-direction: column; gap: 6px; }
+.btn-row input, .btn-row select {
+    padding: 8px 10px;
+    border: 1px solid #dde0e6;
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    color: var(--bc-text);
+    background: #fff;
+}
+.btn-row input:focus, .btn-row select:focus {
+    outline: none;
+    border-color: var(--bc-primary);
+    box-shadow: 0 0 0 2px rgba(102,126,234,.1);
+}
+.btn-row-remove {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border: none; background: #fee2e2;
+    color: var(--bc-danger);
+    border-radius: 6px; cursor: pointer;
+    font-size: 16px; font-weight: 700;
+    transition: background .15s;
+}
+.btn-row-remove:hover { background: #fecaca; }
+.btn-builder-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 10px;
+    padding: 7px 14px;
+    border: 1.5px dashed var(--bc-primary);
+    background: rgba(102,126,234,.06);
+    color: var(--bc-primary);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s;
+}
+.btn-builder-add:hover { background: rgba(102,126,234,.12); }
+.btn-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+.btn-preview-pill {
+    padding: 6px 14px;
+    background: var(--bc-primary);
+    color: #fff;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+/* Row layout helpers */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px) { .row-2 { grid-template-columns: 1fr; } }
+
+/* Wide compose layout */
+.bc-modal.wide { max-width: 1060px; }
+.compose-layout { display: grid; grid-template-columns: 1fr 340px; gap: 0; }
+.compose-form { padding: 24px 28px; overflow-y: auto; max-height: 70vh; }
+.compose-preview-pane {
+    background: #f0f3ff;
+    border-left: 1px solid var(--bc-border);
+    border-radius: 0 0 16px 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    max-height: 70vh;
+}
+.preview-pane-title { font-size: 12px; font-weight: 700; color: #6366f1; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.tg-bubble {
+    background: #fff;
+    border-radius: 12px 12px 12px 4px;
+    padding: 12px 14px;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    max-width: 100%;
+    min-height: 48px;
+    color: #1e2330;
+}
+.tg-bubble.empty { color: #9ca3af; font-style: italic; }
+.tg-bubble-lang { font-size: 10px; font-weight: 700; color: #6366f1; text-transform: uppercase; margin-bottom: 6px; }
+.tg-buttons { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.tg-btn-pill {
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    text-align: center;
+    background: #6366f1;
+    word-break: break-all;
+}
+.tg-schedule-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+}
+@media (max-width: 800px) {
+    .bc-modal.wide { max-width: 98vw; }
+    .compose-layout { grid-template-columns: 1fr; }
+    .compose-preview-pane { border-left: none; border-top: 1px solid var(--bc-border); border-radius: 0; max-height: 260px; }
+}
+
+/* Language selector */
+.lang-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.lang-toggle {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 2px solid #e5e7eb;
+    background: #fff;
+    cursor: pointer;
+    transition: all .15s;
+    color: #6b7280;
+}
+.lang-toggle.active { border-color: #6366f1; background: #eef2ff; color: #4338ca; }
+.lang-toggle.all-toggle { border-color: #6366f1; background: #6366f1; color: #fff; }
+.lang-card { display: none; }
+.lang-card.visible { display: block; }
+
+/* Buttons cell in table */
+.bc-buttons-cell { display: flex; flex-wrap: wrap; gap: 3px; }
+.bc-btn-tag {
+    padding: 2px 7px;
+    background: #eef2ff;
+    color: #4338ca;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bc-toast bc-toast-success" id="toastSuccess"></div>
+<div class="bc-toast bc-toast-error" id="toastError"></div>
+
+<div class="bc-section">
+    <div class="bc-section-header">
+        <h2>Broadcast History</h2>
+        <button class="btn btn-primary" id="btnNewBroadcast" onclick="openModal()">
+            <span>+</span> New Broadcast
+        </button>
+    </div>
+    <div id="tableWrap">
+        <div class="bc-loading">
+            <div class="bc-spinner"></div>
+            Loading broadcasts…
+        </div>
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="bc-overlay" id="modal">
+    <div class="bc-modal wide">
+        <div class="bc-modal-head">
+            <h3>New Broadcast</h3>
+            <button class="bc-modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="compose-layout">
+        <div class="compose-form" id="composeForm">
+            <!-- Section 1: WHO (Audience - Main) -->
+            <div class="fg">
+                <label class="fg-label">📢 Audience (Who receives)</label>
+                <select class="fg-select" id="fAudience" onchange="updateAudienceOptions()">
+                    <option value="users">👥 Users</option>
+                    <option value="workers">👷 Workers</option>
+                    <option value="sellers">🏪 Sellers</option>
+                    <option value="marketers">📢 Marketers</option>
+                    <option value="all">🌍 All Users</option>
+                </select>
+                <div class="fg-hint">Select which user group to send the broadcast to</div>
+            </div>
+
+            <!-- Section 2: WHERE (Target Bot Type) -->
+            <div class="fg">
+                <label class="fg-label">🤖 Target Bot Type (Where to send)</label>
+                <select class="fg-select" id="fBotType" onchange="updateBotTypeSuggestions()">
+                    <option value="">All Bot Types</option>
+                    <option value="admin">🔧 Admin Bots (My bots)</option>
+                    <option value="marketer">📈 Marketer Bots</option>
+                    <option value="user">👤 User Bots</option>
+                </select>
+                <div class="fg-hint" id="botTypeHint">Select bot type or leave as "All Bot Types" to send through all bots</div>
+            </div>
+
+            <!-- Section 3: Specific Bot (Optional - shown when bot type selected or for fine-tuning) -->
+            <div class="fg" id="specificBotSection" style="display:none">
+                <label class="fg-label">🎯 Specific Bot (Optional)</label>
+                <select class="fg-select" id="fBot" onchange="onSpecificBotChange()">
+                    <option value="">All bots of selected type</option>
+                </select>
+                <div class="fg-hint" id="specificBotHint">Leave empty to send through all bots of the selected type</div>
+            </div>
+
+            <!-- Seller Type Filter (shown only when audience=sellers) -->
+            <div class="fg" id="sellerTypeFilter" style="display:none">
+                <label class="fg-label">Seller Type</label>
+                <select class="fg-select" id="fSellerType">
+                    <option value="">All Sellers</option>
+                    <option value="internal">Internal Only (Team)</option>
+                    <option value="external">External Only (Marketplace)</option>
+                </select>
+                <div class="fg-hint">Filter sellers by type: internal (team) or external (marketplace)</div>
+            </div>
+
+            <!-- Language Selector -->
+            <div class="fg">
+                <label class="fg-label">🌍 Languages</label>
+                <div class="lang-selector">
+                    <button type="button" class="lang-toggle all-toggle" id="toggleAll" onclick="toggleAllLangs(this)">All 4</button>
+                    <button type="button" class="lang-toggle active" id="toggle-en" onclick="toggleLang('en', this)">🇬🇧 EN</button>
+                    <button type="button" class="lang-toggle active" id="toggle-ru" onclick="toggleLang('ru', this)">🇷🇺 RU</button>
+                    <button type="button" class="lang-toggle active" id="toggle-zh" onclick="toggleLang('zh', this)">🇨🇳 ZH</button>
+                    <button type="button" class="lang-toggle active" id="toggle-es" onclick="toggleLang('es', this)">🇪🇸 ES</button>
+                </div>
+                <div class="fg-hint">Toggle which language cards are shown. At least one text required.</div>
+            </div>
+
+            <div class="fg">
+                <label class="fg-label">Message Translations</label>
+                <div class="lang-grid">
+                    <div class="lang-card visible" id="card-en">
+                        <div class="lang-card-head">
+                            <span class="lang-card-title">🇬🇧 English</span>
+                            <span class="lang-card-sub">Default fallback</span>
+                        </div>
+                        <textarea id="fMsgEn" placeholder="Broadcast text in English…" oninput="updateLivePreview()"></textarea>
+                    </div>
+                    <div class="lang-card visible" id="card-ru">
+                        <div class="lang-card-head">
+                            <span class="lang-card-title">🇷🇺 Русский</span>
+                            <span class="lang-card-sub">lang = ru</span>
+                        </div>
+                        <textarea id="fMsgRu" placeholder="Текст рассылки на русском…" oninput="updateLivePreview()"></textarea>
+                    </div>
+                    <div class="lang-card visible" id="card-zh">
+                        <div class="lang-card-head">
+                            <span class="lang-card-title">🇨🇳 中文</span>
+                            <span class="lang-card-sub">lang = zh</span>
+                        </div>
+                        <textarea id="fMsgZh" placeholder="中文广播内容…" oninput="updateLivePreview()"></textarea>
+                    </div>
+                    <div class="lang-card visible" id="card-es">
+                        <div class="lang-card-head">
+                            <span class="lang-card-title">🇪🇸 Español</span>
+                            <span class="lang-card-sub">lang = es</span>
+                        </div>
+                        <textarea id="fMsgEs" placeholder="Texto del mensaje en español…" oninput="updateLivePreview()"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fg">
+                <label class="fg-label">Inline Buttons</label>
+                <div class="btn-builder" id="btnBuilder">
+                    <div class="btn-builder-rows" id="btnRows"></div>
+                    <button type="button" class="btn-builder-add" onclick="addButtonRow()">
+                        <span>+</span> Add Button
+                    </button>
+                    <div class="btn-preview" id="btnPreview"></div>
+                </div>
+                <div class="fg-hint">Each button will appear as an inline keyboard button under the message.</div>
+            </div>
+
+            <div class="fg">
+                <label class="fg-label">📅 Schedule (optional)</label>
+                <input type="datetime-local" class="fg-input" id="fSchedule" oninput="updateLivePreview()">
+                <div class="fg-hint">Leave empty to send immediately. Uses your local browser time.</div>
+            </div>
+
+            <div class="fg">
+                <label class="fg-label">
+                    <input type="checkbox" id="fNotifyTeam" style="width:auto;margin-right:8px">
+                    📢 Send notification to team (admins)
+                </label>
+                <div class="fg-hint">If checked, admins will receive a notification about this broadcast</div>
+            </div>
+
+            <div class="fg">
+                <label class="fg-label">File Attachments</label>
+                <input type="file" class="fg-input" id="fFileUpload" accept="image/*,video/*,.pdf,.doc,.docx" multiple>
+                <div class="fg-hint">Upload photos, videos, or documents. Multiple files supported.</div>
+                <div id="filePreview" style="margin-top:10px;display:none">
+                    <div style="font-size:12px;color:#6b7280;margin-bottom:6px">Uploaded files:</div>
+                    <div id="fileList" style="display:flex;flex-direction:column;gap:4px"></div>
+                </div>
+                <details style="margin-top:10px">
+                    <summary style="cursor:pointer;font-size:12px;color:#6b7280">Advanced: Use file_id directly</summary>
+                    <textarea class="fg-textarea" id="fFiles" rows="3" style="margin-top:8px"
+                        placeholder="photo:FILE_ID&#10;document:FILE_ID&#10;video:FILE_ID"></textarea>
+                    <div class="fg-hint">One per line: <code>type:file_id</code> where type is photo, video, or document.</div>
+                </details>
+            </div>
+        </div>
+
+        <!-- Live Preview Pane -->
+        <div class="compose-preview-pane" id="livePreviewPane">
+            <div class="preview-pane-title">👁️ Live Preview</div>
+            <div id="livePreviewContent">
+                <div class="tg-bubble empty">Start typing to see preview…</div>
+            </div>
+        </div>
+        </div><!-- /compose-layout -->
+
+        <div class="bc-modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="btnSubmit" onclick="submitBroadcast()">Create Broadcast</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    let categories = [];
+    let botsCache = [];
+
+    /* ── Toast ─────────────────────────────────────────── */
+    function toast(type, text) {
+        const el = document.getElementById(type === 'success' ? 'toastSuccess' : 'toastError');
+        el.textContent = text;
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    /* ── Helpers ────────────────────────────────────────── */
+    function fmtDate(s) {
+        if (!s) return '—';
+        return new Date(s).toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    const STATUS_MAP = {
+        pending:     { label: 'Pending',     cls: 'badge-pending',     icon: '⏳' },
+        scheduled:   { label: 'Scheduled',   cls: 'badge-scheduled',   icon: '📅' },
+        in_progress: { label: 'In Progress', cls: 'badge-in_progress', icon: '🔄' },
+        completed:   { label: 'Completed',   cls: 'badge-completed',   icon: '✅' },
+        failed:      { label: 'Failed',      cls: 'badge-failed',      icon: '❌' },
+        cancelled:   { label: 'Cancelled',   cls: 'badge-cancelled',   icon: '🚫' }
+    };
+
+    function statusBadge(s) {
+        const info = STATUS_MAP[s] || { label: s, cls: 'badge-pending', icon: '❓' };
+        return `<span class="badge ${info.cls}">${info.icon} ${info.label}</span>`;
+    }
+
+    function langBadges(langs) {
+        if (!langs || !langs.length) return '—';
+        return '<div class="lang-badges">' +
+            langs.map(l => `<span class="lang-badge">${l}</span>`).join('') +
+            '</div>';
+    }
+
+    function buttonsTags(buttons) {
+        if (!buttons || !buttons.length) return '—';
+        return '<div class="bc-buttons-cell">' +
+            buttons.map(b => `<span class="bc-btn-tag" title="${escHtml(b.url)}">${escHtml(b.text)}</span>`).join('') +
+            '</div>';
+    }
+
+    function escHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function truncate(s, n) {
+        if (!s) return '';
+        return s.length > n ? escHtml(s.slice(0, n)) + '…' : escHtml(s);
+    }
+
+    /* ── Data loading ──────────────────────────────────── */
+    async function loadBots() {
+        try {
+            const r = await authFetch('/api/bots');
+            if (!r || !r.ok) return [];
+            const data = await r.json();
+            botsCache = data.items || [];
+            return botsCache;
+        } catch { return []; }
+    }
+
+    async function loadCategories() {
+        try {
+            // Fetch from products categories API
+            const r = await authFetch('/api/products/categories');
+            if (!r || !r.ok) return [];
+            const data = await r.json();
+            // Handle different response formats
+            categories = Array.isArray(data) ? data : (data.items || data.categories || data.data || []);
+            return categories;
+        } catch { return []; }
+    }
+
+    async function loadBroadcasts() {
+        const wrap = document.getElementById('tableWrap');
+        wrap.innerHTML = '<div class="bc-loading"><div class="bc-spinner"></div>Loading broadcasts…</div>';
+        try {
+            const r = await authFetch('/api/broadcasts');
+            if (!r) return;
+            if (!r.ok) { toast('error', 'Failed to load broadcasts'); return; }
+            const list = await r.json();
+            if (!list.length) {
+                wrap.innerHTML = '<div class="bc-empty"><div class="bc-empty-icon">📭</div><div class="bc-empty-text">No broadcasts yet</div></div>';
+                return;
+            }
+            wrap.innerHTML = `
+                <div class="bc-table-wrap">
+                <table class="bc-table">
+                    <thead><tr>
+                        <th>ID</th>
+                        <th>Status</th>
+                        <th>Languages</th>
+                        <th>Preview</th>
+                        <th>Buttons</th>
+                        <th>Scheduled</th>
+                        <th>Recipients</th>
+                        <th>Sent</th>
+                        <th>Failed</th>
+                        <th>Actions</th>
+                    </tr></thead>
+                    <tbody>${list.map(b => `<tr>
+                        <td><strong>#${b.id}</strong></td>
+                        <td>${statusBadge(b.status)}</td>
+                        <td>${langBadges(b.languages)}</td>
+                        <td class="preview-cell">${truncate(b.message_text, 120)}</td>
+                        <td>${buttonsTags(b.buttons)}</td>
+                        <td>${fmtDate(b.scheduled_at)}</td>
+                        <td>${b.total_users ?? '—'}</td>
+                        <td>${b.sent_count ?? '—'}</td>
+                        <td>${b.failed_count ?? '—'}</td>
+                        <td>${b.status === 'scheduled'
+                            ? `<button class="btn btn-danger btn-sm" onclick="cancelBroadcast(${b.id})">Cancel</button>`
+                            : '—'}</td>
+                    </tr>`).join('')}</tbody>
+                </table>
+                </div>`;
+        } catch (e) {
+            wrap.innerHTML = '<div class="bc-empty"><div class="bc-empty-icon">⚠️</div><div class="bc-empty-text">Error loading broadcasts</div></div>';
+        }
+    }
+
+    /* ── Modal ─────────────────────────────────────────── */
+    async function openModal() {
+        const modal = document.getElementById('modal');
+        modal.classList.add('open');
+
+        document.getElementById('fMsgEn').value = '';
+        document.getElementById('fMsgRu').value = '';
+        document.getElementById('fMsgZh').value = '';
+        document.getElementById('fMsgEs').value = '';
+        document.getElementById('fSchedule').value = '';
+        document.getElementById('fAudience').value = 'users';
+        document.getElementById('fFiles').value = '';
+        document.getElementById('fFileUpload').value = '';
+        document.getElementById('filePreview').style.display = 'none';
+        document.getElementById('fileList').innerHTML = '';
+        document.getElementById('btnRows').innerHTML = '';
+        document.getElementById('btnPreview').innerHTML = '';
+
+        // Reset language toggles to all 4 active
+        activeLangs = new Set(['en','ru','zh','es']);
+        ['en','ru','zh','es'].forEach(function(l) {
+            var tb = document.getElementById('toggle-'+l);
+            if (tb) tb.classList.add('active');
+            var card = document.getElementById('card-'+l);
+            if (card) card.classList.add('visible');
+        });
+        var allBtn = document.getElementById('toggleAll');
+        if (allBtn) allBtn.className = 'lang-toggle all-toggle';
+
+        // Reset preview
+        var pane = document.getElementById('livePreviewContent');
+        if (pane) pane.innerHTML = '<div class="tg-bubble empty">Start typing to see preview…</div>';
+
+        const [bots] = await Promise.all([loadBots(), loadCategories()]);
+        
+        // Populate bot type selector (for filtering)
+        const botTypeSel = document.getElementById('fBotType');
+        botTypeSel.innerHTML = '<option value="">All Bot Types</option>' +
+            '<option value="admin">🔧 Admin Bots (My bots)</option>' +
+            '<option value="marketer">📈 Marketer Bots</option>' +
+            '<option value="user">👤 User Bots</option>';
+        
+        // Populate specific bot selector
+        const botSel = document.getElementById('fBot');
+        botSel.innerHTML = '<option value="">All bots of selected type</option>' +
+            bots.map(b => {
+                const username = b.bot_username || 'Bot ' + b.id;
+                const type = b.bot_type || 'unknown';
+                return `<option value="${b.id}" data-type="${type}">${escHtml(username)} (${type})</option>`;
+            }).join('');
+    }
+    
+    // New function: Update bot type suggestions based on audience
+    function updateBotTypeSuggestions() {
+        const botTypeSel = document.getElementById('fBotType');
+        const specificBotSection = document.getElementById('specificBotSection');
+        const botTypeHint = document.getElementById('botTypeHint');
+        
+        const selectedBotType = botTypeSel.value;
+        
+        if (!selectedBotType) {
+            // All bot types - hide specific bot selector
+            specificBotSection.style.display = 'none';
+            botTypeHint.textContent = 'Select bot type or leave as "All Bot Types" to send through all bots';
+        } else {
+            // Specific bot type selected - show specific bot selector
+            specificBotSection.style.display = 'block';
+            botTypeHint.textContent = `Selected: ${selectedBotType} bots. You can further filter by specific bot below.`;
+            
+            // Filter bots by type
+            const botSel = document.getElementById('fBot');
+            const typeToLabel = {
+                'admin': 'Admin',
+                'marketer': 'Marketer',
+                'user': 'User'
+            };
+            
+            botSel.innerHTML = '<option value="">All ' + typeToLabel[selectedBotType] + ' Bots</option>' +
+                botsCache.filter(b => b.bot_type === selectedBotType).map(b => {
+                    const username = b.bot_username || 'Bot ' + b.id;
+                    return `<option value="${b.id}">${escHtml(username)}</option>`;
+                }).join('');
+        }
+    }
+    
+    // Handler for specific bot selection
+    function onSpecificBotChange() {
+        const botSel = document.getElementById('fBot');
+        const specificBotHint = document.getElementById('specificBotHint');
+        
+        if (botSel.value) {
+            const bot = botsCache.find(b => String(b.id) === String(botSel.value));
+            if (bot) {
+                specificBotHint.textContent = `✓ Selected: ${bot.bot_username || 'Bot ' + bot.id} (${bot.bot_type})`;
+            }
+        } else {
+            specificBotHint.textContent = 'Leave empty to send through all bots of the selected type';
+        }
+    }
+    
+    // Updated function: Handle audience changes
+    function updateAudienceOptions() {
+        const audienceSel = document.getElementById('fAudience');
+        const sellerTypeFilter = document.getElementById('sellerTypeFilter');
+        const audience = audienceSel.value;
+        
+        // Show/hide seller type filter
+        if (audience === 'sellers') {
+            sellerTypeFilter.style.display = 'block';
+        } else {
+            sellerTypeFilter.style.display = 'none';
+        }
+        
+        // Suggest bot type based on audience
+        const botTypeSel = document.getElementById('fBotType');
+        const audienceToBotType = {
+            'users': 'admin',
+            'workers': 'admin',
+            'sellers': 'admin',
+            'marketers': 'marketer',
+            'all': ''
+        };
+        
+        const suggestedBotType = audienceToBotType[audience] || '';
+        if (suggestedBotType && !botTypeSel.value) {
+            botTypeSel.value = suggestedBotType;
+            updateBotTypeSuggestions();
+        }
+    }
+    
+    // File upload handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('fFileUpload');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(e) {
+                const files = e.target.files;
+                const preview = document.getElementById('filePreview');
+                const list = document.getElementById('fileList');
+                
+                if (files.length > 0) {
+                    preview.style.display = 'block';
+                    list.innerHTML = '';
+                    Array.from(files).forEach((file, idx) => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'padding:6px 10px;background:#f3f4f6;border-radius:6px;font-size:12px;display:flex;justify-content:space-between;align-items:center';
+                        item.innerHTML = `
+                            <span>${escHtml(file.name)} <span style="color:#9ca3af">(${(file.size/1024).toFixed(1)}KB)</span></span>
+                            <span style="color:#10b981">✓</span>
+                        `;
+                        list.appendChild(item);
+                    });
+                } else {
+                    preview.style.display = 'none';
+                }
+            });
+        }
+    });
+
+    function closeModal() {
+        document.getElementById('modal').classList.remove('open');
+    }
+
+    document.getElementById('modal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    /* ── Language Toggle ─────────────────────────────────── */
+    var activeLangs = new Set(['en','ru','zh','es']);
+
+    function toggleLang(lang, btn) {
+        if (activeLangs.has(lang) && activeLangs.size === 1) return; // keep at least 1
+        if (activeLangs.has(lang)) {
+            activeLangs.delete(lang);
+            btn.classList.remove('active');
+        } else {
+            activeLangs.add(lang);
+            btn.classList.add('active');
+        }
+        // Update "All" button appearance
+        var allBtn = document.getElementById('toggleAll');
+        allBtn.className = activeLangs.size === 4 ? 'lang-toggle all-toggle' : 'lang-toggle';
+        // Show/hide lang cards
+        ['en','ru','zh','es'].forEach(function(l) {
+            var card = document.getElementById('card-'+l);
+            if (card) card.classList.toggle('visible', activeLangs.has(l));
+        });
+        updateLivePreview();
+    }
+
+    function toggleAllLangs(btn) {
+        var allActive = activeLangs.size === 4;
+        if (allActive) {
+            // Keep only EN
+            activeLangs = new Set(['en']);
+            ['ru','zh','es'].forEach(function(l) {
+                var tb = document.getElementById('toggle-'+l);
+                if (tb) tb.classList.remove('active');
+                var card = document.getElementById('card-'+l);
+                if (card) card.classList.remove('visible');
+            });
+            document.getElementById('toggle-en').classList.add('active');
+            document.getElementById('card-en').classList.add('visible');
+            btn.className = 'lang-toggle';
+        } else {
+            activeLangs = new Set(['en','ru','zh','es']);
+            ['en','ru','zh','es'].forEach(function(l) {
+                var tb = document.getElementById('toggle-'+l);
+                if (tb) tb.classList.add('active');
+                var card = document.getElementById('card-'+l);
+                if (card) card.classList.add('visible');
+            });
+            btn.className = 'lang-toggle all-toggle';
+        }
+        updateLivePreview();
+    }
+
+    /* ── Live Preview ────────────────────────────────────── */
+    var LANG_FLAGS = {en:'🇬🇧',ru:'🇷🇺',zh:'🇨🇳',es:'🇪🇸'};
+
+    function updateLivePreview() {
+        var pane = document.getElementById('livePreviewContent');
+        if (!pane) return;
+        var langMap = {en: document.getElementById('fMsgEn'), ru: document.getElementById('fMsgRu'), zh: document.getElementById('fMsgZh'), es: document.getElementById('fMsgEs')};
+        var hasAny = false;
+        var html = '';
+        ['en','ru','zh','es'].forEach(function(l) {
+            if (!activeLangs.has(l)) return;
+            var val = (langMap[l] ? langMap[l].value : '').trim();
+            if (!val) return;
+            hasAny = true;
+            html += '<div style="margin-bottom:12px">';
+            html += '<div class="tg-bubble-lang">' + (LANG_FLAGS[l]||'') + ' ' + l.toUpperCase() + '</div>';
+            html += '<div class="tg-bubble">' + escHtmlPreview(val) + '</div>';
+            html += '</div>';
+        });
+
+        // Buttons preview
+        var rows = document.querySelectorAll('.btn-row');
+        var btns = [];
+        rows.forEach(function(row) {
+            var text = (row.querySelector('.btn-text') ? row.querySelector('.btn-text').value : '').trim();
+            var color = (row.querySelector('.btn-color-picker') ? row.querySelector('.btn-color-picker').value : '#6366f1') || '#6366f1';
+            if (text) btns.push({text:text, color:color});
+        });
+        if (btns.length) {
+            html += '<div class="tg-buttons">';
+            btns.forEach(function(b){
+                html += '<div class="tg-btn-pill" style="background:'+b.color+'">'+escHtmlPreview(b.text)+'</div>';
+            });
+            html += '</div>';
+        }
+
+        // Schedule
+        var schedVal = document.getElementById('fSchedule') ? document.getElementById('fSchedule').value : '';
+        if (schedVal) {
+            html += '<div class="tg-schedule-badge" style="margin-top:10px">📅 Scheduled: ' + new Date(schedVal).toLocaleString() + '</div>';
+        }
+
+        if (!hasAny && !btns.length) {
+            html = '<div class="tg-bubble empty">Start typing to see preview…</div>';
+        }
+        pane.innerHTML = html;
+    }
+
+    function escHtmlPreview(s) {
+        var d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML.replace(/\n/g, '<br>');
+    }
+
+    /* ── Inline Buttons Builder ────────────────────────── */
+    let btnCounter = 0;
+
+    async function addButtonRow(text, url) {
+        btnCounter++;
+        const id = btnCounter;
+        const container = document.getElementById('btnRows');
+
+        // Ensure categories are loaded
+        if (categories.length === 0) {
+            await loadCategories();
+        }
+
+        const row = document.createElement('div');
+        row.className = 'btn-row';
+        row.dataset.id = id;
+
+        // Build category options with "All Categories" option
+        let catOptions = '<option value="all_categories">🌟 All Categories</option>';
+        catOptions += categories.map(c => {
+            const name = c.category_name || c.name || c.category || 'Unknown';
+            const catId = c.category_id || c.id || '';
+            return `<option value="${catId}">${escHtml(name)}</option>`;
+        }).join('');
+
+        row.innerHTML = `
+            <input type="text" placeholder="Button text" class="btn-text" value="${escHtml(text || '')}">
+            <div class="btn-row-url-group">
+                <input type="url" placeholder="https://… or select category below" class="btn-url" value="${escHtml(url || '')}">
+                <select class="btn-cat" onchange="onCatSelect(this, ${id})">
+                    <option value="">— Link to category —</option>
+                    ${catOptions}
+                </select>
+            </div>
+            <input type="color" class="btn-color-picker" value="#667eea" title="Button color">
+            <button type="button" class="btn-row-remove" onclick="removeButtonRow(${id})" title="Remove">&times;</button>
+        `;
+        container.appendChild(row);
+
+        row.querySelector('.btn-text').addEventListener('input', updateBtnPreview);
+        row.querySelector('.btn-url').addEventListener('input', updateBtnPreview);
+        row.querySelector('.btn-color-picker').addEventListener('input', updateBtnPreview);
+        row.querySelector('.btn-text').addEventListener('input', updateLivePreview);
+        row.querySelector('.btn-color-picker').addEventListener('input', updateLivePreview);
+        updateBtnPreview();
+        updateLivePreview();
+    }
+
+    function removeButtonRow(id) {
+        const row = document.querySelector(`.btn-row[data-id="${id}"]`);
+        if (row) row.remove();
+        updateBtnPreview();
+        updateLivePreview();
+    }
+
+    function onCatSelect(sel, rowId) {
+        const row = document.querySelector(`.btn-row[data-id="${rowId}"]`);
+        if (!row || !sel.value) return;
+        const catId = sel.value;
+        const botSel = document.getElementById('fBot');
+        const botId = botSel.value;
+
+        // Get bot username - try to find from cache or use placeholder
+        let botUsername = 'BOT';
+        if (botId) {
+            const bot = botsCache.find(b => String(b.id) === String(botId));
+            if (bot && bot.bot_username) {
+                botUsername = bot.bot_username;
+            }
+        }
+
+        let deepLink;
+        if (catId === 'all_categories') {
+            // Link to main catalog/categories view
+            deepLink = `https://t.me/${botUsername}?start=catalog`;
+        } else {
+            // Link to specific category
+            deepLink = `https://t.me/${botUsername}?start=cat_${catId}`;
+        }
+        row.querySelector('.btn-url').value = deepLink;
+
+        // Auto-fill button text with category name if empty
+        const catName = sel.options[sel.selectedIndex].text;
+        const textInput = row.querySelector('.btn-text');
+        if (!textInput.value.trim()) {
+            textInput.value = catName;
+        }
+        updateBtnPreview();
+    }
+
+    function updateBtnPreview() {
+        const rows = document.querySelectorAll('.btn-row');
+        const preview = document.getElementById('btnPreview');
+        if (!rows.length) { preview.innerHTML = ''; return; }
+        let html = '';
+        rows.forEach(row => {
+            const text = row.querySelector('.btn-text').value.trim() || 'Button';
+            const color = row.querySelector('.btn-color-picker').value || '#667eea';
+            html += `<span class="btn-preview-pill" style="background:${color}">${escHtml(text)}</span>`;
+        });
+        preview.innerHTML = html;
+    }
+
+    function collectButtons() {
+        const rows = document.querySelectorAll('.btn-row');
+        const buttons = [];
+        rows.forEach(row => {
+            const text = row.querySelector('.btn-text').value.trim();
+            const url = row.querySelector('.btn-url').value.trim();
+            const color = row.querySelector('.btn-color-picker').value;
+            if (text && url) {
+                const btn = { text, url };
+                if (color && color !== '#667eea') btn.color = color;
+                buttons.push(btn);
+            }
+        });
+        return buttons;
+    }
+
+    /* ── Submit ─────────────────────────────────────────── */
+    async function submitBroadcast() {
+        const translations = {
+            en: document.getElementById('fMsgEn').value.trim(),
+            ru: document.getElementById('fMsgRu').value.trim(),
+            zh: document.getElementById('fMsgZh').value.trim(),
+            es: document.getElementById('fMsgEs').value.trim()
+        };
+        const filled = Object.fromEntries(Object.entries(translations).filter(([, v]) => v));
+        if (!Object.keys(filled).length) {
+            toast('error', 'Fill in at least one language');
+            return;
+        }
+
+        const botId = document.getElementById('fBot').value;
+        const botType = document.getElementById('fBotType').value;
+        const audience = document.getElementById('fAudience').value;
+        const sellerType = document.getElementById('fSellerType').value;
+        const scheduleVal = document.getElementById('fSchedule').value;
+        const scheduled_at = scheduleVal ? new Date(scheduleVal).toISOString() : null;
+
+        // Handle file uploads or file_id input
+        const fileInput = document.getElementById('fFileUpload');
+        const filesRaw = document.getElementById('fFiles').value.trim();
+        
+        let files = [];
+        if (fileInput.files.length > 0) {
+            // Note: Actual file upload would require multipart/form-data and backend support
+            // For now, show a warning that files need to be uploaded to Telegram first
+            toast('error', 'File upload feature requires backend implementation. Please use file_id for now.');
+            return;
+        } else if (filesRaw) {
+            files = filesRaw.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+                const idx = line.indexOf(':');
+                if (idx === -1) return null;
+                return { type: line.slice(0, idx).trim(), file_id: line.slice(idx + 1).trim() };
+            }).filter(Boolean);
+        }
+
+        const buttons = collectButtons();
+
+        const body = {
+            message_text: filled.en || Object.values(filled)[0],
+            translations: filled,
+            mirror_bot_id: botId ? parseInt(botId) : null,
+            bot_type: botType || null,  // New field: bot_type filter
+            audience: audience,
+            seller_type: (audience === 'sellers' && sellerType) ? sellerType : null,
+            files: files.length ? files : null,
+            scheduled_at,
+            buttons: buttons.length ? buttons : null,
+            notify_team: document.getElementById('fNotifyTeam')?.checked || false
+        };
+
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.textContent = 'Creating…';
+
+        try {
+            const r = await authFetch('/api/broadcasts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!r) return;
+            if (!r.ok) {
+                const d = await r.json().catch(() => ({}));
+                toast('error', d.detail || 'Failed to create broadcast');
+                return;
+            }
+            closeModal();
+            toast('success', scheduled_at ? 'Broadcast scheduled successfully' : 'Broadcast started');
+            loadBroadcasts();
+        } catch (e) {
+            toast('error', 'Network error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Create Broadcast';
+        }
+    }
+
+    /* ── Cancel ─────────────────────────────────────────── */
+    async function cancelBroadcast(id) {
+        if (!confirm('Cancel this scheduled broadcast?')) return;
+        try {
+            const r = await authFetch(`/api/broadcasts/${id}/cancel`, { method: 'POST' });
+            if (!r) return;
+            if (!r.ok) {
+                const d = await r.json().catch(() => ({}));
+                toast('error', d.detail || 'Failed to cancel');
+                return;
+            }
+            toast('success', 'Broadcast cancelled');
+            loadBroadcasts();
+        } catch { toast('error', 'Network error'); }
+    }
+    
+    /* ── Init ──────────────────────────────────────────── */
+    async function init() {
+        const r = await authFetch('/api/auth/me');
+        if (r && r.ok) {
+            const u = await r.json();
+            const btn = document.getElementById('btnNewBroadcast');
+            if (btn && u.role === 'viewer') btn.style.display = 'none';
+        }
+        loadBroadcasts();
+    }
+
+    /* Expose to global scope for onclick handlers */
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.addButtonRow = addButtonRow;
+    window.removeButtonRow = removeButtonRow;
+    window.onCatSelect = onCatSelect;
+    window.submitBroadcast = submitBroadcast;
+    window.cancelBroadcast = cancelBroadcast;
+    window.showHistorySection = showHistorySection;
+    window.hideHistorySection = hideHistorySection;
+    window.loadBroadcastHistory = loadBroadcastHistory;
+    window.viewBroadcastDetails = viewBroadcastDetails;
+    window.updateLivePreview = updateLivePreview;
+    window.toggleLang = toggleLang;
+    window.toggleAllLangs = toggleAllLangs;
+    window.updateAudienceOptions = updateAudienceOptions;
+    window.updateBotTypeSuggestions = updateBotTypeSuggestions;
+    window.onSpecificBotChange = onSpecificBotChange;
+
+    init();
+})();
+
+function showHistorySection() {
+  document.getElementById('mainSection').style.display = 'none';
+  document.getElementById('historySection').style.display = 'block';
+  loadBroadcastHistory();
+}
+
+function hideHistorySection() {
+  document.getElementById('historySection').style.display = 'none';
+  document.getElementById('mainSection').style.display = 'block';
+}
+
+async function loadBroadcastHistory() {
+  const el = document.getElementById('historyContent');
+  const status = document.getElementById('historyStatusFilter').value;
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">Loading...</div>';
+  
+  try {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    params.set('limit', '100');
+    
+    const r = await authFetch('/api/broadcasts?' + params.toString());
+    if (!r || !r.ok) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444">Error loading</div>';
+      return;
+    }
+    
+    const broadcasts = await r.json();
+    
+    if (!broadcasts || broadcasts.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:20px;color:#9ca3af">No broadcasts found</div>';
+      return;
+    }
+    
+    const statusColors = {
+      'sent': '#10b981',
+      'sending': '#3b82f6',
+      'scheduled': '#f59e0b',
+      'cancelled': '#6b7280',
+      'failed': '#ef4444'
+    };
+    
+    const rows = broadcasts.map(b => {
+      const statusColor = statusColors[b.status] || '#6b7280';
+      const createdDate = new Date(b.created_at).toLocaleString();
+      const scheduledDate = b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : '—';
+      
+      return `<tr style="border-bottom:1px solid #e5e7eb">
+        <td style="padding:12px"><strong>#${b.id}</strong></td>
+        <td style="padding:12px">${createdDate}</td>
+        <td style="padding:12px">${scheduledDate}</td>
+        <td style="padding:12px">${b.audience || 'all'}</td>
+        <td style="padding:12px">${b.mirror_bot_id || 'All Bots'}</td>
+        <td style="padding:12px"><span style="display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;background:${statusColor}20;color:${statusColor}">${b.status}</span></td>
+        <td style="padding:12px">${b.sent_count || 0} / ${b.target_count || 0}</td>
+        <td style="padding:12px">
+          <button class="btn btn-ghost btn-sm" onclick="viewBroadcastDetails(${b.id})">👁️ View</button>
+          ${b.status === 'scheduled' ? `<button class="btn btn-danger btn-sm" onclick="cancelBroadcast(${b.id})">✕ Cancel</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    
+    el.innerHTML = `
+      <table style="width:100%;border-collapse:collapse">
+        <thead>
+          <tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb">
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">ID</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Created</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Scheduled</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Audience</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Bot</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Status</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Sent</th>
+            <th style="padding:12px;text-align:left;font-weight:600;color:#374151;font-size:13px">Actions</th>
+          </tr>
+        </thead>
+        <tbody style="background:#fff">
+          ${rows}
+        </tbody>
+      </table>
+    `;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444">Error: ' + e.message + '</div>';
+  }
+}
+
+async function viewBroadcastDetails(id) {
+  try {
+    const r = await authFetch('/api/broadcasts/' + id);
+    if (!r || !r.ok) {
+      alert('Failed to load broadcast details');
+      return;
+    }
+    
+    const b = await r.json();
+    
+    let detailsHtml = `
+      <div style="padding:20px">
+        <h3 style="margin:0 0 16px 0;font-size:18px;color:#374151">Broadcast #${b.id}</h3>
+        
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px">
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Status</div>
+            <div style="font-weight:600">${b.status}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Audience</div>
+            <div style="font-weight:600">${b.audience || 'all'}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Created</div>
+            <div>${new Date(b.created_at).toLocaleString()}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Scheduled</div>
+            <div>${b.scheduled_at ? new Date(b.scheduled_at).toLocaleString() : 'Immediate'}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Sent / Target</div>
+            <div>${b.sent_count || 0} / ${b.target_count || 0}</div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:4px">Bot</div>
+            <div>${b.mirror_bot_id || 'All Bots'}</div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom:16px">
+          <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Translations</div>
+          <div style="background:#f9fafb;padding:12px;border-radius:8px">
+            ${b.translations ? b.translations.map(t => `
+              <div style="margin-bottom:8px">
+                <strong>${t.language_code}:</strong> ${escHtml(t.text)}
+              </div>
+            `).join('') : 'No translations'}
+          </div>
+        </div>
+        
+        ${b.buttons && b.buttons.length > 0 ? `
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;color:#6b7280;margin-bottom:8px">Buttons</div>
+            <div style="background:#f9fafb;padding:12px;border-radius:8px">
+              ${b.buttons.map(btn => `
+                <div style="margin-bottom:4px">
+                  <span style="display:inline-block;padding:4px 8px;background:${btn.color || '#667eea'};color:#fff;border-radius:4px;font-size:12px">${escHtml(btn.text)}</span>
+                  <span style="color:#6b7280;font-size:12px;margin-left:8px">${btn.url || btn.callback_data || ''}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;justify-content:center;align-items:center';
+    modal.innerHTML = `
+      <div style="background:#fff;border-radius:12px;max-width:700px;width:90%;max-height:80vh;overflow-y:auto">
+        ${detailsHtml}
+        <div style="padding:0 20px 20px;display:flex;justify-content:flex-end">
+          <button class="btn btn-secondary" onclick="this.closest('[style*=fixed]').remove()">Close</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+</script>
+{% endblock %}

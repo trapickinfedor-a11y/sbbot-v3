@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEWLOOKUP — Full Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --card: #111827;
+    --card2: #1a2235;
+    --border: #1f2d47;
+    --accent: #3b82f6;
+    --accent2: #8b5cf6;
+    --accent3: #10b981;
+    --accent4: #f59e0b;
+    --accent5: #ef4444;
+    --accent6: #06b6d4;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --bright: #f8fafc;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ─────────────────────────────── */
+  .header {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--bright);
+  }
+  .header h1 span { color: var(--accent); }
+  .header p { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .tabs {
+    display: flex;
+    gap: 6px;
+  }
+  .tab {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.15s;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .tab:hover { border-color: var(--accent); color: var(--accent); }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* ── LAYOUT ─────────────────────────────── */
+  .page { display: none; padding: 32px 40px; }
+  .page.active { display: block; }
+
+  /* ── BOTS OVERVIEW ───────────────────────── */
+  .bots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .bot-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .bot-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .bot-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .bot-card.blue::before { background: var(--accent); }
+  .bot-card.purple::before { background: var(--accent2); }
+  .bot-card.green::before { background: var(--accent3); }
+  .bot-card.yellow::before { background: var(--accent4); }
+  .bot-card.red::before { background: var(--accent5); }
+  .bot-card.cyan::before { background: var(--accent6); }
+
+  .bot-icon { font-size: 28px; margin-bottom: 10px; }
+  .bot-name { font-size: 15px; font-weight: 700; color: var(--bright); margin-bottom: 4px; }
+  .bot-handle { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .bot-desc { font-size: 12px; color: var(--text); line-height: 1.6; margin-bottom: 14px; }
+  .bot-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+  }
+  .tag.blue { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .tag.green { background: rgba(16,185,129,0.15); color: #34d399; }
+  .tag.purple { background: rgba(139,92,246,0.15); color: #a78bfa; }
+  .tag.yellow { background: rgba(245,158,11,0.15); color: #fbbf24; }
+
+  /* ── SECTION TITLES ─────────────────────── */
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--bright);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin-left: 8px;
+  }
+
+  /* ── SERVICES CATALOG ────────────────────── */
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .cat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .cat-card:hover { border-color: #334155; }
+  .cat-header {
+    padding: 14px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card2);
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-emoji { font-size: 20px; }
+  .cat-name { font-size: 14px; font-weight: 700; color: var(--bright); }
+  .cat-count {
+    margin-left: auto;
+    background: rgba(255,255,255,0.08);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .cat-items { padding: 12px 16px; }
+  .cat-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 12px;
+  }
+  .cat-item:last-child { border-bottom: none; }
+  .cat-item-name { color: var(--text); }
+  .cat-item-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent3);
+    white-space: nowrap;
+  }
+  .cat-item-price.range { color: var(--accent4); }
+  .cat-item-price.dynamic { color: var(--accent2); }
+
+  /* ── FLOW DIAGRAM ───────────────────────── */
+  .flow-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .flow-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+  .flow-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--bright);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .flow-steps { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    position: relative;
+  }
+  .flow-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 30px;
+    bottom: -8px;
+    width: 1px;
+    background: var(--border);
+  }
+  .step-num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step-num.blue { background: rgba(59,130,246,0.2); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
+  .step-num.green { background: rgba(16,185,129,0.2); color: var(--accent3); border: 1px solid rgba(16,185,129,0.3); }
+  .step-num.purple { background: rgba(139,92,246,0.2); color: var(--accent2); border: 1px solid rgba(139,92,246,0.3); }
+  .step-num.yellow { background: rgba(245,158,11,0.2); color: var(--accent4); border: 1px solid rgba(245,158,11,0.3); }
+  .step-body { padding-top: 4px; }
+  .step-label { font-size: 12px; font-weight: 600; color: var(--bright); margin-bottom: 2px; }
+  .step-sub { font-size: 11px; color: var(--muted); line-height: 1.5; }
+
+  /* ── DATABASE TABLE ─────────────────────── */
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .db-group {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .db-group-header {
+    padding: 10px 14px;
+    background: var(--card2);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bright);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .db-table-list { padding: 8px 14px 10px; }
+  .db-table {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .db-table::before {
+    content: '▸';
+    color: var(--accent);
+    font-size: 9px;
+  }
+  .db-table span {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 10px;
+    color: #475569;
+    font-style: italic;
+  }
+
+  /* ── ADMIN PANEL MAP ─────────────────────── */
+  .admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+  }
+  .admin-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: border-color 0.15s;
+  }
+  .admin-section:hover { border-color: var(--accent); }
+  .admin-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .admin-info {}
+  .admin-name { font-size: 12px; font-weight: 700; color: var(--bright); margin-bottom: 2px; }
+  .admin-path {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .admin-desc { font-size: 11px; color: var(--muted); line-height: 1.4; }
+
+  /* ── REFERRAL CHART ─────────────────────── */
+  .ref-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 600px;
+  }
+  .ref-level {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .ref-badge {
+    width: 70px;
+    text-align: center;
+    padding: 6px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ref-bar-wrap {
+    flex: 1;
+    background: var(--card2);
+    border-radius: 6px;
+    height: 32px;
+    overflow: hidden;
+    position: relative;
+  }
+  .ref-bar {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    transition: width 1s ease;
+  }
+  .ref-pct {
+    width: 50px;
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  /* ── MONEY FLOW ─────────────────────────── */
+  .money-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .money-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .money-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+  .money-val {
+    font-size: 26px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .money-desc { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+  /* ── SCROLL ─────────────────────────────── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+
+  .badge-new {
+    background: rgba(16,185,129,0.2);
+    color: #34d399;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>NEW<span>LOOKUP</span> — Full Architecture</h1>
+    <p>Services, bots, catalog, database & admin panel</p>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="show('bots')">🤖 Bots</button>
+    <button class="tab" onclick="show('catalog')">🛒 Catalog</button>
+    <button class="tab" onclick="show('flows')">🔄 Flows</button>
+    <button class="tab" onclick="show('database')">🗄️ Database</button>
+    <button class="tab" onclick="show('admin')">⚙️ Admin</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 1 — BOTS
+══════════════════════════════════════════ -->
+<div id="page-bots" class="page active">
+
+  <div class="section-title">🤖 Bot Ecosystem — 7 services</div>
+
+  <div class="bots-grid">
+
+    <div class="bot-card blue">
+      <div class="bot-icon">🏗️</div>
+      <div class="bot-name">main_bot — Orchestrator</div>
+      <div class="bot-handle">@mainbodabot · port 8081</div>
+      <div class="bot-desc">
+        Entry point for bot owners. Registers Telegram tokens, validates them, and launches mirror bot instances. Manages the lifecycle of all customer-facing bots. Runs HTTP API server for internal communication with web panel.
+      </div>
+      <div class="bot-tags">
+        <span class="tag blue">Token registration</span>
+        <span class="tag blue">Mirror bot launcher</span>
+        <span class="tag blue">Owner cabinet</span>
+        <span class="tag blue">HTTP API :8081</span>
+        <span class="tag blue">Auto-restore on restart</span>
+      </div>
+    </div>
+
+    <div class="bot-card purple">
+      <div class="bot-icon">🪞</div>
+      <div class="bot-name">mirror_bot — Customer Shop</div>
+      <div class="bot-handle">@sadsafsafbot / @dsfsafsabot · N instances</div>
+      <div class="bot-desc">
+        The actual shop every customer sees. One codebase, N running asyncio tasks — one per registered token. Handles all product purchases, payments, orders, referrals, and chat. Each instance is fully isolated by mirror_bot_id.
+      </div>
+      <div class="bot-tags">
+        <span class="tag purple">31+ handlers</span>
+        <span class="tag purple">Multi-instance</span>
+        <span class="tag purple">Auto-retry polling</span>
+        <span class="tag purple">7 middlewares</span>
+        <span class="tag purple">CS automation</span>
+      </div>
+    </div>
+
+    <div class="bot-card green">
+      <div class="bot-icon">🏪</div>
+      <div class="bot-name">seller_bot — Vendor Portal</div>
+      <div class="bot-handle">@sdsvfsdbot</div>
+      <div class="bot-desc">
+        For approved sellers who upload and manage inventory. Full upload wizard (FSM), order fulfillment flow, buyer chat, CC stock management, brute bank, special products, withdrawal requests.
+      </div>
+      <div class="bot-tags">
+        <span class="tag green">Upload wizard</span>
+        <span class="tag green">Order fulfillment</span>
+        <span class="tag green">Seller chat</span>
+        <span class="tag green">Weekly report</span>
+        <span class="tag green">Auto-payout watcher</span>
+      </div>
+    </div>
+
+    <div class="bot-card yellow">
+      <div class="bot-icon">🛠️</div>
+      <div class="bot-name">support_bot — Internal Ops</div>
+      <div class="bot-handle">Workers & Admins</div>
+      <div class="bot-desc">
+        Internal operations bot for workers and platform admins. Manage support tickets, moderate sellers, issue manual balance adjustments, upload products directly, view user info.
+      </div>
+      <div class="bot-tags">
+        <span class="tag yellow">Ticket management</span>
+        <span class="tag yellow">Manual balance</span>
+        <span class="tag yellow">Seller moderation</span>
+        <span class="tag yellow">Mass broadcast</span>
+        <span class="tag yellow">User lookup</span>
+      </div>
+    </div>
+
+    <div class="bot-card red">
+      <div class="bot-icon">⚡</div>
+      <div class="bot-name">worker_bot — Order Fulfillment</div>
+      <div class="bot-handle">Workers · port 8181</div>
+      <div class="bot-desc">
+        The bot workers use to claim and complete orders. Dashboard, order queue, file attachment for delivery results, dispute handling, withdrawal requests, performance stats.
+      </div>
+      <div class="bot-tags">
+        <span class="tag">Order claim/complete</span>
+        <span class="tag">File delivery</span>
+        <span class="tag">Worker stats</span>
+        <span class="tag">2h reminder loop</span>
+        <span class="tag">HTTP API :8181</span>
+      </div>
+    </div>
+
+    <div class="bot-card cyan">
+      <div class="bot-icon">📊</div>
+      <div class="bot-name">marketer_bot — Affiliates</div>
+      <div class="bot-handle">@msacdskabot</div>
+      <div class="bot-desc">
+        For affiliate marketers bringing users to mirror bots. Analytics dashboard (traffic + conversions), withdrawal requests, activity logs, daily revenue report. Links tracked via promo codes.
+      </div>
+      <div class="bot-tags">
+        <span class="tag blue">Affiliate tracking</span>
+        <span class="tag blue">Promo codes</span>
+        <span class="tag blue">Conversion analytics</span>
+        <span class="tag blue">Daily revenue report</span>
+      </div>
+    </div>
+
+    <div class="bot-card" style="border-color:#1e3a2f">
+      <div class="bot-icon">📣</div>
+      <div class="bot-name">marketer_bot — Affiliates</div>
+      <div class="bot-handle">Marketer referral system</div>
+      <div class="bot-desc">
+        Affiliate marketer bot. Manages marketer own bots, tier progression, analytics, withdrawals, and daily reports. Supports 4 languages (RU/EN/ZH/ES).
+      </div>
+      <div class="bot-tags">
+        <span class="tag green">Mirror monitoring</span>
+        <span class="tag green">Registration alerts</span>
+        <span class="tag green">Activity tracking</span>
+      </div>
+    </div>
+
+    <div class="bot-card" style="border-color:#1e2d4f">
+      <div class="bot-icon">🌐</div>
+      <div class="bot-name">web_panel — Admin Dashboard</div>
+      <div class="bot-handle">http://localhost:8000 · FastAPI + Jinja2</div>
+      <div class="bot-desc">
+        Full-featured browser admin panel. 43 pages, 50+ API namespaces. Manages products, orders, users, sellers, workers, finances, broadcasts, automation, and all system settings.
+      </div>
+      <div class="bot-tags">
+        <span class="tag purple">43 admin pages</span>
+        <span class="tag purple">8 scheduled jobs</span>
+        <span class="tag purple">Ledger reconciliation</span>
+        <span class="tag purple">Escrow engine</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-title">🤝 4-Level Referral System</div>
+
+  <div class="ref-chart" id="refChart">
+    <div class="ref-level">
+      <div class="ref-badge" style="background:rgba(59,130,246,0.15);color:#60a5fa">Level 1</div>
+      <div class="ref-bar-wrap">
+        <div class="ref-bar" id="bar1" style="width:0%;background:linear-gradient(90deg,#3b82f6,#2563eb)">
+          Direct referrer
+        </div>
+      </div>
+      <div class="ref-pct" style="color:#60a5fa">5%</div>
+    </div>
+    <div class="ref-level">
+      <div class="ref-badge" style="background:rgba(139,92,246,0.15);color:#a78bfa">Level 2</div>
+      <div class="ref-bar-wrap">
+        <div class="ref-bar" id="bar2" style="width:0%;background:linear-gradient(90deg,#8b5cf6,#7c3aed)">
+          Referrer's referrer
+        </div>
+      </div>
+      <div class="ref-pct" style="color:#a78bfa">3%</div>
+    </div>
+    <div class="ref-level">
+      <div class="ref-badge" style="background:rgba(16,185,129,0.15);color:#34d399">Level 3</div>
+      <div class="ref-bar-wrap">
+        <div class="ref-bar" id="bar3" style="width:0%;background:linear-gradient(90deg,#10b981,#059669)">
+          Level 3
+        </div>
+      </div>
+      <div class="ref-pct" style="color:#34d399">2%</div>
+    </div>
+    <div class="ref-level">
+      <div class="ref-badge" style="background:rgba(245,158,11,0.15);color:#fbbf24">Level 4</div>
+      <div class="ref-bar-wrap">
+        <div class="ref-bar" id="bar4" style="width:0%;background:linear-gradient(90deg,#f59e0b,#d97706)">
+          Level 4
+        </div>
+      </div>
+      <div class="ref-pct" style="color:#fbbf24">1%</div>
+    </div>
+  </div>
+  <p style="color:var(--muted);font-size:11px;margin-top:10px;">Configured in Admin → 🎁 Bulk Discounts + Referral Rates. Credited instantly on every purchase.</p>
+
+  <div class="divider"></div>
+  <div class="section-title">💰 Money Distribution</div>
+  <div class="money-grid">
+    <div class="money-card">
+      <div class="money-title">Bot Owner Income</div>
+      <div class="money-val" style="color:var(--accent4)">7%</div>
+      <div class="money-desc">Of every deposit made by users of their bot. Tracked daily, withdrawable on-demand.</div>
+    </div>
+    <div class="money-card">
+      <div class="money-title">Referral Payout (total)</div>
+      <div class="money-val" style="color:var(--accent)">≤11%</div>
+      <div class="money-desc">L1(5%) + L2(3%) + L3(2%) + L4(1%) — displayed as +12% in bot. Credited on each order.</div>
+    </div>
+    <div class="money-card">
+      <div class="money-title">Worker Earnings</div>
+      <div class="money-val" style="color:var(--accent3)">Per order</div>
+      <div class="money-desc">Fixed rate per completed order. Configurable per category. Weekly auto-payout available.</div>
+    </div>
+    <div class="money-card">
+      <div class="money-title">Seller Revenue</div>
+      <div class="money-val" style="color:var(--accent2)">Escrow</div>
+      <div class="money-desc">Held in escrow after order. Released after 3-day auto-confirm window or manual confirm.</div>
+    </div>
+    <div class="money-card">
+      <div class="money-title">Payment Fee</div>
+      <div class="money-val" style="color:var(--accent5)">2–3%</div>
+      <div class="money-desc">CryptoPay: 3%. Cryptomus: 2%. Applied on deposit, not on purchases.</div>
+    </div>
+    <div class="money-card">
+      <div class="money-title">Marketer Payout</div>
+      <div class="money-val" style="color:var(--accent6)">Custom</div>
+      <div class="money-desc">Per-conversion rate set per marketer. Tracked via promo code. Paid weekly.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 2 — CATALOG
+══════════════════════════════════════════ -->
+<div id="page-catalog" class="page">
+
+  <div class="section-title">🛒 Full Product Catalog</div>
+
+  <div class="catalog-grid">
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🔎</span>
+        <span class="cat-name">Search / Lookup</span>
+        <span class="cat-count">12 services</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">SSN + DOB</span><span class="cat-item-price">$2.80</span></div>
+        <div class="cat-item"><span class="cat-item-name">Credit Score</span><span class="cat-item-price">$2.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Driver's License (DL)</span><span class="cat-item-price">$7.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">MVR</span><span class="cat-item-price">$11.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Full MVR</span><span class="cat-item-price">$22.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone → Name</span><span class="cat-item-price">$1.50</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone → SSN</span><span class="cat-item-price">$4.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone → Full</span><span class="cat-item-price">$5.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Background Check</span><span class="cat-item-price">$2.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">MMN (Mother's Maiden)</span><span class="cat-item-price">$9.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">EIN</span><span class="cat-item-price">$11.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">Bank Account Lookup</span><span class="cat-item-price dynamic">dynamic</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">📈</span>
+        <span class="cat-name">Credit Reports</span>
+        <span class="cat-count">5 bureaus</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">TransUnion</span><span class="cat-item-price">$4.99 / $4.49 bulk</span></div>
+        <div class="cat-item"><span class="cat-item-name">Experian</span><span class="cat-item-price">$5.99 / $5.49 bulk</span></div>
+        <div class="cat-item"><span class="cat-item-name">Equifax</span><span class="cat-item-price">$6.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">LexisNexis</span><span class="cat-item-price">$9.00 / $8.50 bulk</span></div>
+        <div class="cat-item"><span class="cat-item-name">WalletHub</span><span class="cat-item-price">$8.00 / $7.00 bulk</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🧰</span>
+        <span class="cat-name">Personal FULLZ</span>
+        <span class="cat-count">Configurator</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Base price</span><span class="cat-item-price">$9.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CS 700+</span><span class="cat-item-price">+$2</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CS 800+</span><span class="cat-item-price">+$3</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ Age filter</span><span class="cat-item-price">+$1</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ Gender filter</span><span class="cat-item-price">+$2</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CR report</span><span class="cat-item-price">+$2</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CR + DL</span><span class="cat-item-price">+$10</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CR + DL + MVR</span><span class="cat-item-price">+$22</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CR + DL + Full MVR</span><span class="cat-item-price">+$32</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🏢</span>
+        <span class="cat-name">Business FULLZ</span>
+        <span class="cat-count">Configurator</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Base price</span><span class="cat-item-price">$15.00</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ LLC / Corp</span><span class="cat-item-price">+$5</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ Loan $25k–200k</span><span class="cat-item-price">+$5</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ Loan $200k–500k</span><span class="cat-item-price">+$5</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ Loan $500k+</span><span class="cat-item-price">+$7</span></div>
+        <div class="cat-item"><span class="cat-item-name">+ CR report</span><span class="cat-item-price">+$4</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🏦</span>
+        <span class="cat-name">Banks — VCC</span>
+        <span class="cat-count">15 banks</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">GreenFi / Netspend</span><span class="cat-item-price">$50–55</span></div>
+        <div class="cat-item"><span class="cat-item-name">Wise / Neteller</span><span class="cat-item-price">$60–65</span></div>
+        <div class="cat-item"><span class="cat-item-name">Current / Go2Bank</span><span class="cat-item-price">$69–70</span></div>
+        <div class="cat-item"><span class="cat-item-name">Kikoff / Shopify</span><span class="cat-item-price">$74</span></div>
+        <div class="cat-item"><span class="cat-item-name">Chime / OnePay</span><span class="cat-item-price">$85–99</span></div>
+        <div class="cat-item"><span class="cat-item-name">PayPal / Venmo / QB</span><span class="cat-item-price">$89–99</span></div>
+        <div class="cat-item"><span class="cat-item-name">Varo</span><span class="cat-item-price">$120</span></div>
+        <div class="cat-item"><span class="cat-item-name">Blockchain</span><span class="cat-item-price">$170</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🏦</span>
+        <span class="cat-name">Banks — Personal</span>
+        <span class="cat-count">15 banks</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Ally / USAlliance / Citizens</span><span class="cat-item-price">$65–70</span></div>
+        <div class="cat-item"><span class="cat-item-name">Regions / Huntington</span><span class="cat-item-price">$70–89</span></div>
+        <div class="cat-item"><span class="cat-item-name">Citi / TD / Chase</span><span class="cat-item-price">$89–99</span></div>
+        <div class="cat-item"><span class="cat-item-name">US Bank / Schwab / BOA / Alliant</span><span class="cat-item-price">$99–100</span></div>
+        <div class="cat-item"><span class="cat-item-name">Citi Gold</span><span class="cat-item-price">$110</span></div>
+        <div class="cat-item"><span class="cat-item-name">PNC</span><span class="cat-item-price">$140</span></div>
+        <div class="cat-item"><span class="cat-item-name">Wells Fargo</span><span class="cat-item-price">$259</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🏢</span>
+        <span class="cat-name">Banks — Business</span>
+        <span class="cat-count">10 banks</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">QuickBooks</span><span class="cat-item-price">$99</span></div>
+        <div class="cat-item"><span class="cat-item-name">BMO / BOA / North One</span><span class="cat-item-price">$120–130</span></div>
+        <div class="cat-item"><span class="cat-item-name">US Bank / Lili / PNC</span><span class="cat-item-price">$130–250</span></div>
+        <div class="cat-item"><span class="cat-item-name">Capital One</span><span class="cat-item-price">$250</span></div>
+        <div class="cat-item"><span class="cat-item-name">Chase</span><span class="cat-item-price">$199</span></div>
+        <div class="cat-item"><span class="cat-item-name">Wells Fargo</span><span class="cat-item-price">$395</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🪙</span>
+        <span class="cat-name">Banks — Crypto</span>
+        <span class="cat-count">6 banks</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Kraken</span><span class="cat-item-price">$100</span></div>
+        <div class="cat-item"><span class="cat-item-name">Coinbase</span><span class="cat-item-price">$140</span></div>
+        <div class="cat-item"><span class="cat-item-name">Binance</span><span class="cat-item-price">$199</span></div>
+        <div class="cat-item"><span class="cat-item-name">Crypto.com</span><span class="cat-item-price">$200</span></div>
+        <div class="cat-item"><span class="cat-item-name">Cash App</span><span class="cat-item-price">$160</span></div>
+        <div class="cat-item"><span class="cat-item-name">Blockchain</span><span class="cat-item-price">$170</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">📋</span>
+        <span class="cat-name">Bank Logs (Seller)</span>
+        <span class="cat-count">10 banks</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Chime</span><span class="cat-item-price">$45</span></div>
+        <div class="cat-item"><span class="cat-item-name">Venmo / PayPal</span><span class="cat-item-price">$50</span></div>
+        <div class="cat-item"><span class="cat-item-name">CashApp</span><span class="cat-item-price">$55</span></div>
+        <div class="cat-item"><span class="cat-item-name">Zelle</span><span class="cat-item-price">$60</span></div>
+        <div class="cat-item"><span class="cat-item-name">TD Bank</span><span class="cat-item-price">$90</span></div>
+        <div class="cat-item"><span class="cat-item-name">BOA / Chase</span><span class="cat-item-price">$110–120</span></div>
+        <div class="cat-item"><span class="cat-item-name">Coinbase / Wells Fargo</span><span class="cat-item-price">$80–130</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">📶</span>
+        <span class="cat-name">eSIM</span>
+        <span class="cat-count">3 operators</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Verizon SMS — 1/3/6mo</span><span class="cat-item-price">$20/$50/$70</span></div>
+        <div class="cat-item"><span class="cat-item-name">AT&T SMS — 1/3/6mo</span><span class="cat-item-price">$35/$50/$70</span></div>
+        <div class="cat-item"><span class="cat-item-name">T-Mobile SMS — 1/3/6mo</span><span class="cat-item-price">$35/$50/$70</span></div>
+        <div class="cat-item"><span class="cat-item-name">Data 5/10/15 GB (all)</span><span class="cat-item-price">$25/$40/$50</span></div>
+        <div class="cat-item"><span class="cat-item-name">Google Voice (any state)</span><span class="cat-item-price">$14</span></div>
+        <div class="cat-item"><span class="cat-item-name">Google Voice (specific state)</span><span class="cat-item-price">$16 (+$2)</span></div>
+        <div class="cat-item"><span class="cat-item-name">eSIM Configurator +CS/CR</span><span class="cat-item-price range">+$0–32</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🧾</span>
+        <span class="cat-name">Accounts / Subscriptions</span>
+        <span class="cat-count">10 services</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">BeenVerified</span><span class="cat-item-price">$13</span></div>
+        <div class="cat-item"><span class="cat-item-name">TruthFinder / 30d</span><span class="cat-item-price">$10 / $39</span></div>
+        <div class="cat-item"><span class="cat-item-name">InstantCheck / 30d</span><span class="cat-item-price">$10 / $35</span></div>
+        <div class="cat-item"><span class="cat-item-name">Intelius / 30d</span><span class="cat-item-price">$12 / $39</span></div>
+        <div class="cat-item"><span class="cat-item-name">Whitepages / 30d</span><span class="cat-item-price">$13 / $45</span></div>
+        <div class="cat-item"><span class="cat-item-name">MyLife</span><span class="cat-item-price">$10</span></div>
+        <div class="cat-item"><span class="cat-item-name">Monarch / Yodlee</span><span class="cat-item-price">$15</span></div>
+        <div class="cat-item"><span class="cat-item-name">Empower / PocketGuard / EveryDollar</span><span class="cat-item-price">$12</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">✍️</span>
+        <span class="cat-name">Add Info in CR</span>
+        <span class="cat-count">12 services</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Phone + Address + Employer (all)</span><span class="cat-item-price">$90</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone + Address (all bureaus)</span><span class="cat-item-price">$80</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone only (all bureaus)</span><span class="cat-item-price">$40</span></div>
+        <div class="cat-item"><span class="cat-item-name">Address only (all bureaus)</span><span class="cat-item-price">$45</span></div>
+        <div class="cat-item"><span class="cat-item-name">Phone / Address per bureau</span><span class="cat-item-price">$20–40</span></div>
+        <div class="cat-item"><span class="cat-item-name">BG Check add phone+address</span><span class="cat-item-price">$60</span></div>
+        <div class="cat-item"><span class="cat-item-name">Add Employer to TU</span><span class="cat-item-price">$15</span></div>
+        <div class="cat-item"><span class="cat-item-name">Unfreeze TU / EX</span><span class="cat-item-price">$20 / $25</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">💳</span>
+        <span class="cat-name">CC (Credit Cards)</span>
+        <span class="cat-count">Seller items</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">Standard CC</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">Non-VBV CC</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">With ZIP</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">With FULLZ</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">CC Selfregs</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">Enroll</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">OTP</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">NFC</span><span class="cat-item-price dynamic">seller price</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">📄</span>
+        <span class="cat-name">Documents</span>
+        <span class="cat-count">5 types</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">DL Front & Back</span><span class="cat-item-price dynamic">catalog price</span></div>
+        <div class="cat-item"><span class="cat-item-name">DL + Selfie</span><span class="cat-item-price dynamic">catalog price</span></div>
+        <div class="cat-item"><span class="cat-item-name">Passport</span><span class="cat-item-price dynamic">catalog price</span></div>
+        <div class="cat-item"><span class="cat-item-name">Business Docs</span><span class="cat-item-price dynamic">catalog price</span></div>
+        <div class="cat-item"><span class="cat-item-name">Checks (seller items)</span><span class="cat-item-price dynamic">seller price</span></div>
+        <div class="cat-item"><span class="cat-item-name">High-Quality Drawing</span><span class="cat-item-price range">coming soon</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">🌟</span>
+        <span class="cat-name">VIP Watchlist</span>
+        <span class="badge-new">new</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">VIP Subscription</span><span class="cat-item-price">$500</span></div>
+        <div class="cat-item"><span class="cat-item-name">Balance check → auto-buy</span><span class="cat-item-price range">automated</span></div>
+        <div class="cat-item"><span class="cat-item-name">Description (admin editable)</span><span class="cat-item-price dynamic">SystemSetting</span></div>
+        <div class="cat-item"><span class="cat-item-name">Video (admin uploadable)</span><span class="cat-item-price dynamic">file_id in DB</span></div>
+      </div>
+    </div>
+
+    <div class="cat-card">
+      <div class="cat-header">
+        <span class="cat-emoji">📞</span>
+        <span class="cat-name">Other Services</span>
+        <span class="cat-count">Dynamic buttons</span>
+      </div>
+      <div class="cat-items">
+        <div class="cat-item"><span class="cat-item-name">100% DB-managed buttons</span><span class="cat-item-price dynamic">admin panel</span></div>
+        <div class="cat-item"><span class="cat-item-name">Names, descriptions, URLs</span><span class="cat-item-price dynamic">editable</span></div>
+        <div class="cat-item"><span class="cat-item-name">AnotherServiceButton model</span><span class="cat-item-price dynamic">per bot</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 3 — FLOWS
+══════════════════════════════════════════ -->
+<div id="page-flows" class="page">
+
+  <div class="section-title">🔄 Key User Flows</div>
+
+  <div class="flow-wrap">
+
+    <div class="flow-card">
+      <div class="flow-title">👤 New User Onboarding</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num blue">1</div>
+          <div class="step-body">
+            <div class="step-label">/start [ref_code?]</div>
+            <div class="step-sub">Parses referral link. Creates user record. Sets referrer_id if ref present.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">2</div>
+          <div class="step-body">
+            <div class="step-label">Language Select</div>
+            <div class="step-sub">Auto-detect from Telegram language_code. EN / RU / ZH / ES.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">3</div>
+          <div class="step-body">
+            <div class="step-label">Rules Gate</div>
+            <div class="step-sub">User must accept terms. Blocked until accepted.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">4</div>
+          <div class="step-body">
+            <div class="step-label">Onboarding Tour (optional)</div>
+            <div class="step-sub">Guided tour of main features. Can be skipped.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">5</div>
+          <div class="step-body">
+            <div class="step-label">Welcome Coupon (WELCOME10)</div>
+            <div class="step-sub">Auto-issued to all new users.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">6</div>
+          <div class="step-body">
+            <div class="step-label">Main Menu</div>
+            <div class="step-sub">Reply keyboard with dynamic categories from DB.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">💰 Purchase Flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num green">1</div>
+          <div class="step-body">
+            <div class="step-label">Category → Item Selection</div>
+            <div class="step-sub">User browses catalog. Inline keyboard with counts from cache.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">2</div>
+          <div class="step-body">
+            <div class="step-label">Configurator (if applicable)</div>
+            <div class="step-sub">FULLZ / eSIM / Banks: multi-step price builder.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">3</div>
+          <div class="step-body">
+            <div class="step-label">Quantity + Bulk Discount</div>
+            <div class="step-sub">Select qty. DB-loaded tiers applied automatically.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">4</div>
+          <div class="step-body">
+            <div class="step-label">Coupon Code (optional)</div>
+            <div class="step-sub">Apply coupon at checkout. Validates + calculates discount.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">5</div>
+          <div class="step-body">
+            <div class="step-label">Balance Deduct → Order Created</div>
+            <div class="step-sub">Ledger debit. Order record created. Referral chain credited.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">6</div>
+          <div class="step-body">
+            <div class="step-label">Delivery</div>
+            <div class="step-sub">Instant (product catalog) or Worker-fulfilled (banks, FULLZ, docs).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">💳 Top-Up Flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num purple">1</div>
+          <div class="step-body">
+            <div class="step-label">Choose Payment Method</div>
+            <div class="step-sub">CryptoPay (3% fee) or Cryptomus (2% fee).</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num purple">2</div>
+          <div class="step-body">
+            <div class="step-label">Invoice Created</div>
+            <div class="step-sub">Payment link generated via external API. Shown with QR.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num purple">3</div>
+          <div class="step-body">
+            <div class="step-label">Polling / Webhook</div>
+            <div class="step-sub">PaymentMonitor polls status. Updates on paid/expired.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num purple">4</div>
+          <div class="step-body">
+            <div class="step-label">Balance Credited</div>
+            <div class="step-sub">Ledger credit. 3% first-deposit bonus if applicable. Bot owner +7%.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">🤝 Referral Chain</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num yellow">1</div>
+          <div class="step-body">
+            <div class="step-label">Referrer shares link</div>
+            <div class="step-sub">t.me/bot?start=ref_XXXXX — unique per user.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num yellow">2</div>
+          <div class="step-body">
+            <div class="step-label">New user joins</div>
+            <div class="step-sub">referrer_id set on new user record.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num yellow">3</div>
+          <div class="step-body">
+            <div class="step-label">New user makes purchase</div>
+            <div class="step-sub">_credit_referral_commission() triggered.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num yellow">4</div>
+          <div class="step-body">
+            <div class="step-label">Walk chain up to 4 levels</div>
+            <div class="step-sub">L1=5% L2=3% L3=2% L4=1% — credited instantly. Configurable in admin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">🏪 Seller Fulfillment Flow</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num blue">1</div>
+          <div class="step-body">
+            <div class="step-label">Seller uploads inventory</div>
+            <div class="step-sub">Via seller_bot upload wizard or bulk CSV import.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">2</div>
+          <div class="step-body">
+            <div class="step-label">Moderation (admin review)</div>
+            <div class="step-sub">Products approved/rejected in support_bot or web panel.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">3</div>
+          <div class="step-body">
+            <div class="step-label">Customer purchases</div>
+            <div class="step-sub">SellerOrder created. Funds held in escrow.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">4</div>
+          <div class="step-body">
+            <div class="step-label">Seller delivers</div>
+            <div class="step-sub">Seller marks complete via seller_bot. Dispute window opens.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num blue">5</div>
+          <div class="step-body">
+            <div class="step-label">Auto-confirm (3 days)</div>
+            <div class="step-sub">If no dispute, escrow released to seller automatically.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-card">
+      <div class="flow-title">🤖 Mirror Bot Lifecycle</div>
+      <div class="flow-steps">
+        <div class="flow-step">
+          <div class="step-num green">1</div>
+          <div class="step-body">
+            <div class="step-label">Owner submits token to main_bot</div>
+            <div class="step-sub">Token validated via Bot.get_me(). Saved to mirror_bots table.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">2</div>
+          <div class="step-body">
+            <div class="step-label">create_mirror_bot(token)</div>
+            <div class="step-sub">New Bot + Dispatcher. All 31 routers + 7 middlewares attached.</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">3</div>
+          <div class="step-body">
+            <div class="step-label">asyncio.create_task(_run_polling)</div>
+            <div class="step-sub">Runs independently. Auto-retries on crash (exp. backoff, max 120s).</div>
+          </div>
+        </div>
+        <div class="flow-step">
+          <div class="step-num green">4</div>
+          <div class="step-body">
+            <div class="step-label">restore_all_bots() on restart</div>
+            <div class="step-sub">All active tokens re-launched automatically on main_bot start.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 4 — DATABASE
+══════════════════════════════════════════ -->
+<div id="page-database" class="page">
+
+  <div class="section-title">🗄️ Database Schema — 103 Tables</div>
+
+  <div class="db-grid">
+
+    <div class="db-group">
+      <div class="db-group-header">🤖 Bots & Owners</div>
+      <div class="db-table-list">
+        <div class="db-table">mirror_bots <span>token, owner, active</span></div>
+        <div class="db-table">bot_owners <span>balance, earnings</span></div>
+        <div class="db-table">bot_owner_stats <span>daily income</span></div>
+        <div class="db-table">bot_owner_withdrawals <span>payout requests</span></div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">👤 Users</div>
+      <div class="db-table-list">
+        <div class="db-table">users <span>balance, refs, lang, ban</span></div>
+        <div class="db-table">referrals <span>referrer↔referred, earned</span></div>
+        <div class="db-table">wishlist_items</div>
+        <div class="db-table">shopping_carts</div>
+        <div class="db-table">cart_items</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">📦 Orders</div>
+      <div class="db-table-list">
+        <div class="db-table">orders <span>all service orders</span></div>
+        <div class="db-table">bulk_order_items</div>
+        <div class="db-table">worker_orders <span>claim status</span></div>
+        <div class="db-table">seller_orders <span>escrow</span></div>
+        <div class="db-table">product_purchases</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">💰 Finance / Ledger</div>
+      <div class="db-table-list">
+        <div class="db-table">transactions <span>ON_HOLD/COMPLETED</span></div>
+        <div class="db-table">service_prices <span>DB price overrides</span></div>
+        <div class="db-table">pricing_configs <span>runtime flags</span></div>
+        <div class="db-table">bulk_discount_tiers <span>qty discounts</span></div>
+        <div class="db-table">coupons</div>
+        <div class="db-table">user_coupons</div>
+        <div class="db-table">coupon_redemptions</div>
+        <div class="db-table">escrow_releases</div>
+        <div class="db-table">system_settings <span>key-value config</span></div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">🏪 Sellers</div>
+      <div class="db-table-list">
+        <div class="db-table">sellers <span>profile, deposit, policy</span></div>
+        <div class="db-table">seller_helpers <span>sub-accounts</span></div>
+        <div class="db-table">seller_deposit_payments</div>
+        <div class="db-table">seller_upload_batches</div>
+        <div class="db-table">seller_upload_templates</div>
+        <div class="db-table">seller_banks</div>
+        <div class="db-table">seller_withdrawals</div>
+        <div class="db-table">seller_conversations</div>
+        <div class="db-table">seller_chats</div>
+        <div class="db-table">seller_order_disputes</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">🛒 Seller Products (7 types)</div>
+      <div class="db-table-list">
+        <div class="db-table">seller_cc_items / _orders</div>
+        <div class="db-table">seller_enroll_items / _orders</div>
+        <div class="db-table">seller_nfc_items / _orders</div>
+        <div class="db-table">seller_otp_items / _orders</div>
+        <div class="db-table">seller_logs_items / _orders</div>
+        <div class="db-table">seller_selfreg_ba_items / _orders</div>
+        <div class="db-table">seller_selfreg_cc_items / _orders</div>
+        <div class="db-table">seller_check_items / _orders</div>
+        <div class="db-table">brute_bank_groups / items / orders</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">👷 Workers</div>
+      <div class="db-table-list">
+        <div class="db-table">workers <span>profile, categories</span></div>
+        <div class="db-table">worker_stats <span>performance</span></div>
+        <div class="db-table">worker_withdrawals</div>
+        <div class="db-table">worker_expense_reports</div>
+        <div class="db-table">worker_violations</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">📚 Product Catalog</div>
+      <div class="db-table-list">
+        <div class="db-table">products <span>admin catalog</span></div>
+        <div class="db-table">product_catalog_services</div>
+        <div class="db-table">product_ratings</div>
+        <div class="db-table">bank_items <span>admin bank inventory</span></div>
+        <div class="db-table">bank_positions</div>
+        <div class="db-table">cc_categories / cc_items</div>
+        <div class="db-table">account_categories / items / inventory</div>
+        <div class="db-table">education_categories / subscriptions / manuals</div>
+        <div class="db-table">manual_deliveries</div>
+        <div class="db-table">another_service_buttons</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">🎯 Menu & UI</div>
+      <div class="db-table-list">
+        <div class="db-table">mirror_menu_categories <span>dynamic main menu</span></div>
+        <div class="db-table">ui_translations</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">📣 Marketing</div>
+      <div class="db-table-list">
+        <div class="db-table">marketers <span>affiliates</span></div>
+        <div class="db-table">marketer_stats</div>
+        <div class="db-table">marketer_withdrawals</div>
+        <div class="db-table">marketer_activity_logs</div>
+        <div class="db-table">marketer_bot_links</div>
+        <div class="db-table">marketer_own_bots</div>
+        <div class="db-table">broadcasts</div>
+        <div class="db-table">broadcast_translations</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">🛡️ Support & Compliance</div>
+      <div class="db-table-list">
+        <div class="db-table">support_tickets</div>
+        <div class="db-table">support_messages</div>
+        <div class="db-table">complaints</div>
+        <div class="db-table">reports</div>
+        <div class="db-table">notification_logs</div>
+        <div class="db-table">kb_articles <span>knowledge base</span></div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">🔐 Admins & Audit</div>
+      <div class="db-table-list">
+        <div class="db-table">admins <span>roles, permissions</span></div>
+        <div class="db-table">admin_roles</div>
+        <div class="db-table">uploader_catalog_permissions</div>
+        <div class="db-table">admin_audit_logs</div>
+        <div class="db-table">audit_logs</div>
+        <div class="db-table">product_audit_logs</div>
+        <div class="db-table">product_moderation_logs</div>
+      </div>
+    </div>
+
+    <div class="db-group">
+      <div class="db-group-header">⚙️ Automation</div>
+      <div class="db-table-list">
+        <div class="db-table">automation_proxies</div>
+        <div class="db-table">automation_api_keys</div>
+        <div class="db-table">automation_configs</div>
+        <div class="db-table">automation_jobs</div>
+        <div class="db-table">automation_finance_entries</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE 5 — ADMIN PANEL
+══════════════════════════════════════════ -->
+<div id="page-admin" class="page">
+
+  <div class="section-title">⚙️ Admin Panel — 43 Pages · 50+ API Namespaces</div>
+
+  <div class="admin-grid">
+    <div class="admin-section"><div class="admin-icon">📊</div><div class="admin-info"><div class="admin-name">Dashboard</div><div class="admin-path">/dashboard</div><div class="admin-desc">KPI overview, revenue, order counts</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📦</div><div class="admin-info"><div class="admin-name">Orders</div><div class="admin-path">/orders</div><div class="admin-desc">All orders, status, assignment</div></div></div>
+    <div class="admin-section"><div class="admin-icon">👥</div><div class="admin-info"><div class="admin-name">Users</div><div class="admin-path">/users</div><div class="admin-desc">User lookup, balance, ban</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🤖</div><div class="admin-info"><div class="admin-name">Bots</div><div class="admin-path">/bots</div><div class="admin-desc">Mirror bot instances, start/stop</div></div></div>
+    <div class="admin-section"><div class="admin-icon">👷</div><div class="admin-info"><div class="admin-name">Workers</div><div class="admin-path">/workers</div><div class="admin-desc">Worker management, categories</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🏪</div><div class="admin-info"><div class="admin-name">Sellers</div><div class="admin-path">/sellers</div><div class="admin-desc">Seller profiles, deposits, status</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🔍</div><div class="admin-info"><div class="admin-name">Seller Moderation</div><div class="admin-path">/seller-moderation</div><div class="admin-desc">Approve/reject seller products</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📊</div><div class="admin-info"><div class="admin-name">Seller CRM</div><div class="admin-path">/seller-crm</div><div class="admin-desc">Seller Kanban board</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🧑‍💼</div><div class="admin-info"><div class="admin-name">Worker CRM</div><div class="admin-path">/worker-crm</div><div class="admin-desc">HR metrics, payouts, expenses</div></div></div>
+    <div class="admin-section"><div class="admin-icon">💬</div><div class="admin-info"><div class="admin-name">Support Chat</div><div class="admin-path">/support</div><div class="admin-desc">Live support ticket management</div></div></div>
+    <div class="admin-section"><div class="admin-icon">⚠️</div><div class="admin-info"><div class="admin-name">Complaints</div><div class="admin-path">/complaints</div><div class="admin-desc">Formal complaint queue</div></div></div>
+    <div class="admin-section"><div class="admin-icon">⚖️</div><div class="admin-info"><div class="admin-name">Disputes</div><div class="admin-path">/disputes</div><div class="admin-desc">Seller order dispute resolution</div></div></div>
+    <div class="admin-section"><div class="admin-icon">💳</div><div class="admin-info"><div class="admin-name">Deposits</div><div class="admin-path">/deposits</div><div class="admin-desc">User deposit history</div></div></div>
+    <div class="admin-section"><div class="admin-icon">💰</div><div class="admin-info"><div class="admin-name">Finance Hub</div><div class="admin-path">/finance</div><div class="admin-desc">Ledger, reconciliation, escrow</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🏧</div><div class="admin-info"><div class="admin-name">Withdrawals</div><div class="admin-path">/withdrawals</div><div class="admin-desc">All withdrawal requests unified</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📈</div><div class="admin-info"><div class="admin-name">Analytics</div><div class="admin-path">/analytics</div><div class="admin-desc">Traffic, conversion, revenue charts</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📋</div><div class="admin-info"><div class="admin-name">Reports</div><div class="admin-path">/reports</div><div class="admin-desc">Financial reports export</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🏦</div><div class="admin-info"><div class="admin-name">Banks</div><div class="admin-path">/banks</div><div class="admin-desc">Bank product catalog management</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🧾</div><div class="admin-info"><div class="admin-name">Products</div><div class="admin-path">/products</div><div class="admin-desc">General product catalog</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🗂️</div><div class="admin-info"><div class="admin-name">Accounts</div><div class="admin-path">/accounts</div><div class="admin-desc">Subscriptions / account items</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📶</div><div class="admin-info"><div class="admin-name">eSIM</div><div class="admin-path">/esim</div><div class="admin-desc">eSIM inventory & pricing</div></div></div>
+    <div class="admin-section"><div class="admin-icon">💳</div><div class="admin-info"><div class="admin-name">CC Catalog</div><div class="admin-path">/cc</div><div class="admin-desc">CC categories and items</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📚</div><div class="admin-info"><div class="admin-name">Education</div><div class="admin-path">/education</div><div class="admin-desc">Manuals, subscriptions, categories</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📞</div><div class="admin-info"><div class="admin-name">Other Services</div><div class="admin-path">/another-services</div><div class="admin-desc">Dynamic buttons (names, URLs)</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🔓</div><div class="admin-info"><div class="admin-name">Brute Bank</div><div class="admin-path">/brute-bank</div><div class="admin-desc">Brute bank product groups</div></div></div>
+    <div class="admin-section"><div class="admin-icon">💲</div><div class="admin-info"><div class="admin-name">Service Prices</div><div class="admin-path">/service-prices</div><div class="admin-desc">Override hardcoded service prices</div></div></div>
+    <div class="admin-section"><div class="admin-icon">⚙️</div><div class="admin-info"><div class="admin-name">Pricing Config</div><div class="admin-path">/pricing-config</div><div class="admin-desc">Runtime feature flags & overrides</div></div></div>
+    <div class="admin-section" style="border-color:#1e3a2f"><div class="admin-icon">🎁</div><div class="admin-info"><div class="admin-name">Bulk Discounts + Refs</div><div class="admin-path">/bulk-discounts</div><div class="admin-desc">Qty discount tiers + 4-level referral rates</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🗂️</div><div class="admin-info"><div class="admin-name">Menu Categories</div><div class="admin-path">/categories</div><div class="admin-desc">Dynamic main menu builder</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📣</div><div class="admin-info"><div class="admin-name">Broadcasts</div><div class="admin-path">/broadcasts</div><div class="admin-desc">Mass message campaigns + scheduler</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🤖</div><div class="admin-info"><div class="admin-name">Automation</div><div class="admin-path">/automation</div><div class="admin-desc">Automated job management</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📊</div><div class="admin-info"><div class="admin-name">Marketers</div><div class="admin-path">/marketers</div><div class="admin-desc">Affiliate tracking and payouts</div></div></div>
+    <div class="admin-section"><div class="admin-icon">👑</div><div class="admin-info"><div class="admin-name">Bot Owners</div><div class="admin-path">/bots (owners tab)</div><div class="admin-desc">Owner balance, stats, withdrawals</div></div></div>
+    <div class="admin-section"><div class="admin-icon">👤</div><div class="admin-info"><div class="admin-name">Admins</div><div class="admin-path">/admins</div><div class="admin-desc">Admin user management</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🔐</div><div class="admin-info"><div class="admin-name">Admin Roles</div><div class="admin-path">/admin-roles</div><div class="admin-desc">Custom permission roles</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🔍</div><div class="admin-info"><div class="admin-name">Audit Log</div><div class="admin-path">/audit</div><div class="admin-desc">Full admin action audit trail</div></div></div>
+    <div class="admin-section"><div class="admin-icon">📚</div><div class="admin-info"><div class="admin-name">Knowledge Base</div><div class="admin-path">/knowledge-base</div><div class="admin-desc">Support articles for workers/users</div></div></div>
+    <div class="admin-section"><div class="admin-icon">🗺️</div><div class="admin-info"><div class="admin-name">Admin Structure</div><div class="admin-path">/admin-structure</div><div class="admin-desc">Section map & readiness status</div></div></div>
+  </div>
+</div>
+
+<script>
+function show(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// Animate referral bars on load
+setTimeout(() => {
+  const bars = [
+    { id: 'bar1', w: '83' },
+    { id: 'bar2', w: '50' },
+    { id: 'bar3', w: '33' },
+    { id: 'bar4', w: '17' },
+  ];
+  bars.forEach(b => {
+    const el = document.getElementById(b.id);
+    if (el) el.style.width = b.w + '%';
+  });
+}, 300);
+</script>
+</body>
+</html>

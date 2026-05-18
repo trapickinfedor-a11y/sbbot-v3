@@ -1,0 +1,256 @@
+{% extends "_base.html" %}
+{% block title %}Brute Bank{% endblock %}
+{% block header_title %}🔓 Brute Bank{% endblock %}
+
+{% block extra_css %}
+<style>
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{color:#333;font-size:18px;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px}.card{background:#fff;border-radius:12px;padding:18px;border-top:4px solid #667eea;box-shadow:0 2px 8px rgba(0,0,0,.08)}.card .val{font-size:26px;font-weight:700;color:#1f2937}.card .lbl{font-size:12px;color:#6b7280;margin-top:4px}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:16px}.filters label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#374151}.filters select,.filters input,.filters textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px}
+.btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600}.btn-primary{background:#667eea;color:#fff}.btn-success{background:#10b981;color:#fff}.btn-danger{background:#ef4444;color:#fff}.btn-sm{padding:5px 11px;font-size:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}.tbl th{background:#f9fafb;font-weight:600;color:#374151;padding:10px 12px;text-align:left;border-bottom:2px solid #e5e7eb}.tbl td{padding:9px 12px;border-bottom:1px solid #f3f4f6;vertical-align:middle}.tbl tr:hover td{background:#f9fafb}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}.badge-active{background:#d1fae5;color:#065f46}.badge-hidden{background:#f3f4f6;color:#374151}.badge-pending{background:#fef3c7;color:#92400e}.badge-approved{background:#d1fae5;color:#065f46}.badge-rejected{background:#fee2e2;color:#991b1b}.badge-sold{background:#e9d5ff;color:#6b21a8}
+.loading,.empty{text-align:center;padding:26px;color:#6b7280}.cols{display:grid;grid-template-columns:1.05fr 1.15fr;gap:20px}.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:center;justify-content:center}.modal-overlay.open{display:flex}.modal-box{background:#fff;border-radius:14px;padding:24px;max-width:760px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.variant-list{display:grid;gap:10px}.variant-card{border:1px solid #e5e7eb;border-radius:10px;padding:12px;background:#fafafa}
+@media(max-width:1100px){.cols{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cards" id="statsCards"><div class="card"><div class="loading">Loading...</div></div></div>
+
+<div class="cols">
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <h2>Bank Groups</h2>
+      <button class="btn btn-primary" onclick="openGroupModal()">Add group</button>
+    </div>
+    <div class="filters">
+      <label><input type="checkbox" id="hideEmptyGroups" onchange="loadGroups()"> Hide empty</label>
+    </div>
+    <div id="groupsWrap"><div class="loading">Loading...</div></div>
+  </div>
+
+  <div class="section">
+    <h2>Items Moderation</h2>
+    <div class="filters">
+      <label>Moderation
+        <select id="itemModeration" onchange="loadItems()">
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="">All</option>
+        </select>
+      </label>
+      <label>Status
+        <select id="itemStatus" onchange="loadItems()">
+          <option value="">All</option>
+          <option value="available">Available</option>
+          <option value="sold">Sold</option>
+          <option value="removed">Removed</option>
+        </select>
+      </label>
+    </div>
+    <div id="itemsWrap"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="groupModal" onclick="closeModal(event,'groupModal')">
+  <div class="modal-box">
+    <h3 id="groupModalTitle">Add group</h3>
+    <form id="groupForm" onsubmit="saveGroup(event)">
+      <div class="form-grid">
+        <label>Bank code<input id="gCode" required></label>
+        <label>Bank name<input id="gName" required></label>
+        <label>Position<input id="gPosition" type="number" value="0"></label>
+        <label>Status
+          <select id="gActive"><option value="true">Active</option><option value="false">Hidden</option></select>
+        </label>
+        <label class="full">Attributes / Tags<input id="gAttributes" placeholder="AN:RN+INST YODLEE+NAME"></label>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+        <button type="button" class="btn" onclick="closeNamedModal('groupModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="variantModal" onclick="closeModal(event,'variantModal')">
+  <div class="modal-box">
+    <h3 id="variantTitle">Group variants</h3>
+    <div id="variantContent"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="itemModal" onclick="closeModal(event,'itemModal')">
+  <div class="modal-box">
+    <h3>Item details</h3>
+    <div id="itemContent"><div class="loading">Loading...</div></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let editingGroupId = null;
+function esc(v){return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function openNamedModal(id){document.getElementById(id).classList.add('open');}
+function closeNamedModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(e,id){if(e.target.id===id)closeNamedModal(id);}
+function moderationBadge(v){return ({pending:'<span class="badge badge-pending">Pending</span>',approved:'<span class="badge badge-approved">Approved</span>',rejected:'<span class="badge badge-rejected">Rejected</span>'})[v] || v;}
+function statusBadge(v){return ({available:'<span class="badge badge-approved">Available</span>',sold:'<span class="badge badge-sold">Sold</span>',removed:'<span class="badge badge-hidden">Removed</span>'})[v] || v;}
+
+async function loadStats(){
+  const r = await authFetch('/api/brute-bank/stats');
+  if(!r||!r.ok) return;
+  const s = await r.json();
+  document.getElementById('statsCards').innerHTML = `
+    <div class="card"><div class="val">${s.pending_moderation}</div><div class="lbl">Pending</div></div>
+    <div class="card"><div class="val">${s.active_groups}</div><div class="lbl">Active groups</div></div>
+    <div class="card"><div class="val">${s.available}</div><div class="lbl">Available items</div></div>
+    <div class="card"><div class="val">${s.sold}</div><div class="lbl">Sold</div></div>`;
+}
+
+async function loadGroups(){
+  const hideEmpty = document.getElementById('hideEmptyGroups').checked;
+  let url = '/api/brute-bank/groups?include_empty=' + (!hideEmpty);
+  const r = await authFetch(url);
+  if(!r||!r.ok) return;
+  const groups = await r.json();
+  if(!groups.length){document.getElementById('groupsWrap').innerHTML='<div class="empty">No groups</div>';return;}
+  document.getElementById('groupsWrap').innerHTML = `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Bank</th><th>Tags</th><th>Available</th><th>Variants</th><th>Status</th><th>Actions</th></tr></thead><tbody>${groups.map(g => `
+    <tr>
+      <td><b>${esc(g.bank_name)}</b><br><small style="color:#6b7280">${esc(g.bank_code)}</small></td>
+      <td>${g.attributes ? esc(g.attributes) : '—'}</td>
+      <td><b>${g.available_count}</b></td>
+      <td>${g.variants_count}</td>
+      <td><span class="badge ${g.is_active ? 'badge-active' : 'badge-hidden'}">${g.is_active ? 'Active' : 'Hidden'}</span></td>
+      <td><button class="btn btn-sm btn-primary" onclick="editGroup(${g.id})">Edit</button> <button class="btn btn-sm" onclick="viewVariants(${g.id}, '${esc(g.bank_name)}')">Variants</button> <button class="btn btn-sm btn-danger" onclick="deleteGroup(${g.id}, '${esc(g.bank_name)}')">Delete</button></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  window.__groups = groups;
+}
+
+function openGroupModal(){
+  editingGroupId = null;
+  document.getElementById('groupModalTitle').textContent = 'Add group';
+  document.getElementById('groupForm').reset();
+  document.getElementById('gPosition').value = '0';
+  document.getElementById('gActive').value = 'true';
+  document.getElementById('gCode').disabled = false;
+  openNamedModal('groupModal');
+}
+
+function editGroup(id){
+  const g = (window.__groups || []).find(x => x.id === id);
+  if(!g) return;
+  editingGroupId = id;
+  document.getElementById('groupModalTitle').textContent = `Edit ${g.bank_name}`;
+  document.getElementById('gCode').value = g.bank_code;
+  document.getElementById('gCode').disabled = true;
+  document.getElementById('gName').value = g.bank_name;
+  document.getElementById('gPosition').value = g.position;
+  document.getElementById('gActive').value = g.is_active ? 'true' : 'false';
+  document.getElementById('gAttributes').value = g.attributes || '';
+  openNamedModal('groupModal');
+}
+
+async function saveGroup(e){
+  e.preventDefault();
+  const body = {
+    bank_name: document.getElementById('gName').value,
+    position: parseInt(document.getElementById('gPosition').value || '0', 10),
+    is_active: document.getElementById('gActive').value === 'true',
+    attributes: document.getElementById('gAttributes').value || null,
+  };
+  let r;
+  if(editingGroupId){
+    r = await authFetch(`/api/brute-bank/groups/${editingGroupId}`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  } else {
+    body.bank_code = document.getElementById('gCode').value.trim();
+    r = await authFetch('/api/brute-bank/groups', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  }
+  if(!r) return;
+  if(!r.ok){const err = await r.json(); alert(err.detail || 'Save failed'); return;}
+  closeNamedModal('groupModal');
+  await Promise.all([loadStats(), loadGroups(), loadItems()]);
+}
+
+async function deleteGroup(id, name){
+  if(!confirm(`Delete group ${name}? Linked items will stay ungrouped.`)) return;
+  await authFetch(`/api/brute-bank/groups/${id}`, {method:'DELETE'});
+  await Promise.all([loadStats(), loadGroups(), loadItems()]);
+}
+
+async function viewVariants(groupId, bankName){
+  document.getElementById('variantTitle').textContent = `Variants: ${bankName}`;
+  document.getElementById('variantContent').innerHTML = '<div class="loading">Loading...</div>';
+  openNamedModal('variantModal');
+  const r = await authFetch(`/api/brute-bank/groups/${groupId}/variants?available_only=true`);
+  if(!r||!r.ok){document.getElementById('variantContent').innerHTML='<div class="empty">Failed to load variants</div>';return;}
+  const data = await r.json();
+  if(!data.variants.length){document.getElementById('variantContent').innerHTML='<div class="empty">No available variants</div>';return;}
+  document.getElementById('variantContent').innerHTML = `<div style="margin-bottom:10px;color:#6b7280">${data.group.attributes ? esc(data.group.attributes) : 'No tags configured'}</div><div class="variant-list">${data.variants.map(v => `
+    <div class="variant-card"><b>${esc(v.balance_range || 'No range')} ${Number(v.price).toFixed(2)}$ ${esc(v.account_type || 'NO TYPE')}</b><div style="margin-top:6px;color:#374151">Quantity: <b>${v.quantity}</b>${v.balance_info ? ` | Balance: ${esc(v.balance_info)}` : ''}</div></div>`).join('')}</div>`;
+}
+
+async function loadItems(){
+  const moderation = document.getElementById('itemModeration').value;
+  const status = document.getElementById('itemStatus').value;
+  let url = '/api/brute-bank/items?limit=100';
+  if(moderation) url += `&moderation_status=${moderation}`;
+  if(status) url += `&status=${status}`;
+  const r = await authFetch(url);
+  if(!r||!r.ok) return;
+  const data = await r.json();
+  if(!data.items.length){document.getElementById('itemsWrap').innerHTML='<div class="empty">No items found</div>';return;}
+  document.getElementById('itemsWrap').innerHTML = `<div style="overflow-x:auto"><table class="tbl"><thead><tr><th>ID</th><th>Batch</th><th>Bank</th><th>Group</th><th>Variant</th><th>Price</th><th>Moderation</th><th>Status</th><th>Actions</th></tr></thead><tbody>${data.items.map(item => `
+    <tr>
+      <td>${item.id}</td>
+      <td>${item.upload_batch_id ? '#' + item.upload_batch_id : '—'}</td>
+      <td><b>${esc(item.bank_name)}</b><br><small style="color:#6b7280">${esc(item.bank_code)}</small></td>
+      <td>${item.group_name ? `<b>${esc(item.group_name)}</b>${item.group_attributes ? `<br><small style="color:#6b7280">${esc(item.group_attributes)}</small>` : ''}` : '<span style="color:#9ca3af">Ungrouped</span>'}</td>
+      <td>${esc(item.balance_range || '—')} / ${esc(item.account_type || '—')}</td>
+      <td>$${item.price.toFixed(2)}</td>
+      <td>${moderationBadge(item.moderation_status)}</td>
+      <td>${statusBadge(item.status)}</td>
+      <td><button class="btn btn-sm btn-primary" onclick="viewItem(${item.id})">View</button>${item.moderation_status === 'pending' ? ` <button class="btn btn-sm btn-success" onclick="approveItem(${item.id})">Approve</button> <button class="btn btn-sm btn-danger" onclick="rejectItem(${item.id})">Reject</button>` : ''}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function viewItem(id){
+  document.getElementById('itemContent').innerHTML = '<div class="loading">Loading...</div>';
+  openNamedModal('itemModal');
+  const r = await authFetch(`/api/brute-bank/items/${id}`);
+  if(!r||!r.ok){document.getElementById('itemContent').innerHTML='<div class="empty">Failed to load item</div>';return;}
+  const item = await r.json();
+  document.getElementById('itemContent').innerHTML = `
+    <div><b>${esc(item.bank_name)}</b> (${esc(item.bank_code)})</div>
+    <div style="margin-top:4px;color:#374151">Batch: ${item.upload_batch_id ? '#' + item.upload_batch_id : '—'}</div>
+    <div style="margin-top:8px;color:#374151">Group: ${item.group_name ? esc(item.group_name) : 'Ungrouped'}</div>
+    <div style="margin-top:4px;color:#374151">Variant: ${esc(item.balance_range || '—')} / ${esc(item.account_type || '—')}</div>
+    <div style="margin-top:4px;color:#374151">Price: $${item.price.toFixed(2)}</div>
+    <div style="margin-top:4px;color:#374151">Status: ${item.status}</div>
+    <div style="margin-top:4px;color:#374151">Moderation: ${item.moderation_status}${item.moderation_comment ? ' — ' + esc(item.moderation_comment) : ''}</div>
+    <div style="margin-top:10px;color:#374151">Balance info: ${esc(item.balance_info || '—')}</div>
+    <div style="margin-top:10px;color:#374151">Details: ${esc(item.account_details || '—')}</div>
+    <div style="margin-top:10px"><pre style="background:#f8fafc;padding:12px;border-radius:8px;white-space:pre-wrap">${esc(JSON.stringify(item.credentials, null, 2))}</pre></div>`;
+}
+
+async function approveItem(id){
+  if(!confirm('Approve this item?')) return;
+  const r = await authFetch(`/api/brute-bank/items/${id}/approve`, {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+  if(r&&r.ok) await Promise.all([loadStats(), loadGroups(), loadItems()]);
+}
+
+async function rejectItem(id){
+  const comment = prompt('Reject reason (optional):') || '';
+  const r = await authFetch(`/api/brute-bank/items/${id}/reject`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({comment})});
+  if(r&&r.ok) await Promise.all([loadStats(), loadGroups(), loadItems()]);
+}
+
+loadStats();
+loadGroups();
+loadItems();
+</script>
+{% endblock %}

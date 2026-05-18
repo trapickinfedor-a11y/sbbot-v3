@@ -1,0 +1,416 @@
+{% extends "_base.html" %}
+{% block title %}Заказы{% endblock %}
+{% block header_title %}📑 Заказы{% endblock %}
+{% block subnav %}
+<div class="admin-subnav" id="categoryNav">
+    <button class="tab-btn active" data-category="" onclick="setCategory('')">Все</button>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:20px}
+    .controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .controls select,.controls input{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;color:#374151;background:#fff}
+    .controls select:focus,.controls input:focus{outline:none;border-color:#667eea}
+    .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .2s}
+    .btn-primary{background:#667eea;color:#fff}
+    .btn-primary:hover{background:#5a67d8}
+    .btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
+    .btn-secondary:hover{background:#e5e7eb}
+    .btn-sm{padding:5px 10px;font-size:12px}
+    .cat-count{font-size:11px;color:#9ca3af;margin-left:4px}
+    .tab-btn.active .cat-count{color:#667eea}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th{background:#f9fafb;padding:10px 12px;text-align:left;font-weight:600;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+    td{padding:10px 12px;border-bottom:1px solid #f0f0f0;color:#374151}
+    tr:hover td{background:#fafbff}
+    .badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+    .badge-pending{background:#fef3c7;color:#92400e}
+    .badge-processing{background:#dbeafe;color:#1e40af}
+    .badge-completed{background:#d1fae5;color:#065f46}
+    .badge-cancelled{background:#fee2e2;color:#991b1b}
+    .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid #f0f0f0;flex-wrap:wrap;gap:10px}
+    .pagination-info{font-size:13px;color:#6b7280}
+    .pagination-btns{display:flex;gap:8px;align-items:center}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;overflow-y:auto;padding:20px}
+    .modal.open{display:flex;align-items:flex-start;justify-content:center}
+    .modal-box{background:#fff;border-radius:12px;width:100%;max-width:760px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+    .modal-head h3{font-size:18px;font-weight:600}
+    .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;line-height:1}
+    .modal-body{padding:24px;max-height:70vh;overflow-y:auto}
+    .modal-foot{padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px}
+    .detail-row{display:flex;gap:8px;margin-bottom:10px;font-size:14px}
+    .detail-label{font-weight:600;color:#6b7280;min-width:130px;flex-shrink:0}
+    .detail-val{color:#111;word-break:break-all}
+    .data-block{background:#f9fafb;border-radius:8px;padding:14px;margin:12px 0;font-size:13px;font-family:monospace;white-space:pre-wrap;word-break:break-all}
+    .bulk-table{width:100%;font-size:12px;border-collapse:collapse;margin-top:10px}
+    .bulk-table th,.bulk-table td{padding:6px 8px;border:1px solid #e5e7eb;text-align:left}
+    .bulk-table th{background:#f3f4f6;font-weight:600}
+    .form-row{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+    .form-row label{font-size:13px;font-weight:500;color:#6b7280;min-width:110px}
+    .form-row select,.form-row input{flex:1;padding:8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px}
+    @media(max-width:768px){.controls{flex-direction:column;align-items:stretch}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="section">
+    <div class="controls">
+        <a href="#" class="btn btn-secondary" onclick="exportCsv('orders'); return false;">📥 Export CSV</a>
+        <input type="text" id="searchInput" placeholder="🔍 Search Order ID or Buyer..." style="width:250px" onkeydown="if(event.key==='Enter')resetLoad()">
+        <select id="statusFilter" onchange="resetLoad()">
+            <option value="">Все статусы</option>
+            <option value="pending">🕐 Pending</option>
+            <option value="processing">⚙️ Processing</option>
+            <option value="completed">✅ Completed</option>
+            <option value="cancelled">❌ Cancelled</option>
+        </select>
+        <select id="sellerFilter" onchange="resetLoad()"><option value="">Все продавцы</option></select>
+        <select id="productTypeFilter" onchange="resetLoad()">
+            <option value="">Все типы</option>
+            <option value="banks">🏦 Banks</option>
+            <option value="cc">💳 CC</option>
+            <option value="nfc">📱 NFC</option>
+            <option value="otp">📲 OTP</option>
+            <option value="checks">🖊 Checks</option>
+            <option value="enrollment">📋 Enrollment</option>
+            <option value="brute">🔓 Brute</option>
+            <option value="logs">📄 Logs</option>
+        </select>
+        <select id="workerFilter" onchange="resetLoad()"><option value="">Все воркеры</option></select>
+        <input type="number" id="userFilter" placeholder="User ID..." style="width:120px" onkeydown="if(event.key==='Enter')resetLoad()">
+        <select id="perPage" onchange="resetLoad()">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+        </select>
+        <button class="btn btn-primary" onclick="resetLoad()">🔍 Найти</button>
+        <button class="btn btn-secondary" onclick="resetLoad()">🔄 Обновить</button>
+    </div>
+    <div id="ordersTable"><div style="text-align:center;padding:40px;color:#888">Загрузка...</div></div>
+    <div class="pagination" id="pagination" style="display:none">
+        <div class="pagination-info">Показано <b id="showFrom">0</b>–<b id="showTo">0</b> из <b id="totalCount">0</b></div>
+        <div class="pagination-btns">
+            <button class="btn btn-secondary btn-sm" id="btnFirst" onclick="goPage('first')" disabled>⏮</button>
+            <button class="btn btn-secondary btn-sm" id="btnPrev" onclick="goPage('prev')" disabled>← Назад</button>
+            <span style="font-size:13px;color:#6b7280">Стр. <span id="curPage">1</span>/<span id="totalPages">1</span></span>
+            <button class="btn btn-secondary btn-sm" id="btnNext" onclick="goPage('next')">Вперёд →</button>
+            <button class="btn btn-secondary btn-sm" id="btnLast" onclick="goPage('last')">⏭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="orderModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="modalTitle">📦 Заказ</h3>
+            <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body" id="modalBody">Загрузка...</div>
+        <div class="modal-foot">
+            <div class="form-row" style="margin:0;flex:1">
+                <label>Статус:</label>
+                <select id="editStatus">
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <label style="margin-left:12px">Воркер ID:</label>
+                <input type="number" id="editWorker" placeholder="Worker ID" style="width:120px">
+            </div>
+            <button class="btn btn-danger" onclick="forceCancel()" title="Принудительно отменить застрявший заказ">🚫 Force Cancel</button>
+            <button class="btn btn-success" onclick="forceComplete()" title="Принудительно завершить застрявший заказ">✅ Force Complete</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Закрыть</button>
+            <button class="btn btn-primary" onclick="saveOrder()">💾 Сохранить</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+let curOffset = 0, curLimit = 50, curTotal = 0, curCategory = '', curOrderId = null;
+let categoryStats = [];
+
+async function exportCsv(type) {
+    const t = localStorage.getItem('token');
+    if (!t) { alert('Login required'); return; }
+    const r = await fetch('/api/export/' + type, { headers: { 'Authorization': 'Bearer ' + t } });
+    if (!r.ok) { alert('Export failed'); return; }
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = type + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function setCategory(cat) {
+    curCategory = cat;
+    document.querySelectorAll('#categoryNav .tab-btn').forEach(b => b.classList.remove('active'));
+    const clicked = document.querySelector(`#categoryNav .tab-btn[data-category="${CSS.escape(cat)}"]`);
+    if (clicked) clicked.classList.add('active');
+    resetLoad();
+}
+
+function resetLoad() { curOffset = 0; loadOrders(); }
+
+function goPage(dir) {
+    const maxOffset = (Math.ceil(curTotal / curLimit) - 1) * curLimit;
+    if (dir === 'first') curOffset = 0;
+    else if (dir === 'prev') curOffset = Math.max(0, curOffset - curLimit);
+    else if (dir === 'next') curOffset = Math.min(maxOffset, curOffset + curLimit);
+    else if (dir === 'last') curOffset = maxOffset;
+    loadOrders();
+}
+
+async function loadOrders() {
+    curLimit = parseInt(document.getElementById('perPage').value);
+    const status = document.getElementById('statusFilter').value;
+    const worker = document.getElementById('workerFilter').value;
+    const user = document.getElementById('userFilter').value;
+    const search = document.getElementById('searchInput')?.value?.trim() || '';
+    
+    let url = `/api/orders/?limit=${curLimit}&offset=${curOffset}`;
+    if (status) url += `&status=${encodeURIComponent(status)}`;
+    if (curCategory) url += `&category=${encodeURIComponent(curCategory)}`;
+    if (worker) url += `&worker_id=${worker}`;
+    if (user) url += `&user_id=${user}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    
+    document.getElementById('ordersTable').innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        const r = await authFetch(url);
+        if (!r) return;
+        const data = await r.json();
+        curTotal = data.total || 0;
+        renderTable(data.items || []);
+    } catch (e) {
+        document.getElementById('ordersTable').innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`;
+    }
+}
+
+const STATUS_BADGES = {
+    pending: '<span class="badge badge-pending">Pending</span>',
+    processing: '<span class="badge badge-processing">Processing</span>',
+    completed: '<span class="badge badge-completed">Completed</span>',
+    cancelled: '<span class="badge badge-cancelled">Cancelled</span>',
+};
+
+function renderTable(items) {
+    if (!items.length) {
+        document.getElementById('ordersTable').innerHTML = '<div style="text-align:center;padding:40px;color:#888">Нет заказов</div>';
+        document.getElementById('pagination').style.display = 'none';
+        return;
+    }
+    const rows = items.map(o => {
+        const badge = STATUS_BADGES[o.status] || `<span class="badge">${o.status}</span>`;
+        const date = o.created_at ? new Date(o.created_at).toLocaleString('ru-RU') : '—';
+        const bulk = o.is_bulk ? `<span style="background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:10px;font-size:11px">Bulk ${o.done_count||0}/${o.bulk_count}</span>` : '';
+        return `<tr>
+            <td><a href="#" onclick="openOrder(${o.id});return false" style="color:#667eea;font-weight:600">#${o.id}</a></td>
+            <td>${o.user_id}</td>
+            <td><span style="background:#f3f4f6;padding:2px 6px;border-radius:4px;font-size:12px">${o.category||'—'}</span></td>
+            <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${o.service_name||'—'}</td>
+            <td>$${(o.price||0).toFixed(2)}</td>
+            <td style="color:${o.income>0?'#059669':'#6b7280'}">$${(o.income||0).toFixed(2)}</td>
+            <td>${badge} ${bulk}</td>
+            <td>${o.worker_id||'—'}</td>
+            <td style="font-size:12px;color:#6b7280">${date}</td>
+            <td><button class="btn btn-secondary btn-sm" onclick="openOrder(${o.id})">Открыть</button></td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('ordersTable').innerHTML = `
+        <table>
+            <thead><tr>
+                <th>ID</th><th>User</th><th>Категория</th><th>Сервис</th>
+                <th>Цена</th><th>Доход</th><th>Статус</th><th>Воркер</th><th>Дата</th><th></th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>`;
+
+    const totalPages = Math.max(1, Math.ceil(curTotal / curLimit));
+    const curPageNum = Math.floor(curOffset / curLimit) + 1;
+    document.getElementById('showFrom').textContent = curTotal ? curOffset + 1 : 0;
+    document.getElementById('showTo').textContent = Math.min(curOffset + curLimit, curTotal);
+    document.getElementById('totalCount').textContent = curTotal;
+    document.getElementById('curPage').textContent = curPageNum;
+    document.getElementById('totalPages').textContent = totalPages;
+    document.getElementById('pagination').style.display = 'flex';
+    document.getElementById('btnFirst').disabled = curOffset === 0;
+    document.getElementById('btnPrev').disabled = curOffset === 0;
+    document.getElementById('btnNext').disabled = curOffset + curLimit >= curTotal;
+    document.getElementById('btnLast').disabled = curOffset + curLimit >= curTotal;
+}
+
+async function openOrder(id) {
+    curOrderId = id;
+    document.getElementById('modalTitle').textContent = `📦 Заказ #${id}`;
+    document.getElementById('modalBody').innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    document.getElementById('orderModal').classList.add('open');
+    try {
+        const r = await authFetch(`/api/orders/${id}`);
+        if (!r) return;
+        const o = await r.json();
+        document.getElementById('editStatus').value = o.status || 'pending';
+        document.getElementById('editWorker').value = o.worker_id || '';
+
+        const inputJson = o.input_data ? JSON.stringify(o.input_data, null, 2) : 'нет';
+        const resultJson = o.result_data ? JSON.stringify(o.result_data, null, 2) : 'нет';
+        const createdAt = o.created_at ? new Date(o.created_at).toLocaleString('ru-RU') : '—';
+        const completedAt = o.completed_at ? new Date(o.completed_at).toLocaleString('ru-RU') : '—';
+
+        let bulkHtml = '';
+        if (o.is_bulk && o.bulk_items && o.bulk_items.length) {
+            const brows = o.bulk_items.map(b => `<tr>
+                <td>${b.item_number}</td>
+                <td><span class="badge badge-${b.status}">${b.status}</span></td>
+                <td style="font-size:11px;max-width:200px;overflow:hidden">${b.input_data ? JSON.stringify(b.input_data) : '—'}</td>
+                <td style="font-size:11px;max-width:200px;overflow:hidden">${b.result_data ? JSON.stringify(b.result_data) : '—'}</td>
+            </tr>`).join('');
+            bulkHtml = `<h4 style="margin:16px 0 8px;font-size:14px">Bulk Items (${o.bulk_items.length})</h4>
+                <table class="bulk-table"><thead><tr><th>#</th><th>Статус</th><th>Input</th><th>Result</th></tr></thead>
+                <tbody>${brows}</tbody></table>`;
+        }
+
+        document.getElementById('modalBody').innerHTML = `
+            <div class="detail-row"><span class="detail-label">ID</span><span class="detail-val">#${o.id}</span></div>
+            <div class="detail-row"><span class="detail-label">User ID</span><span class="detail-val">${o.user_id}</span></div>
+            <div class="detail-row"><span class="detail-label">Bot ID</span><span class="detail-val">${o.mirror_bot_id||'—'}</span></div>
+            <div class="detail-row"><span class="detail-label">Категория</span><span class="detail-val">${o.category||'—'}</span></div>
+            <div class="detail-row"><span class="detail-label">Сервис</span><span class="detail-val">${o.service_name||'—'}</span></div>
+            <div class="detail-row"><span class="detail-label">Цена</span><span class="detail-val">$${parseFloat(o.price||0).toFixed(2)}</span></div>
+            <div class="detail-row"><span class="detail-label">Bulk</span><span class="detail-val">${o.is_bulk ? `Да (${o.bulk_count} шт)` : 'Нет'}</span></div>
+            <div class="detail-row"><span class="detail-label">Воркер</span><span class="detail-val">${o.worker_id||'не назначен'}</span></div>
+            <div class="detail-row"><span class="detail-label">Создан</span><span class="detail-val">${createdAt}</span></div>
+            <div class="detail-row"><span class="detail-label">Завершён</span><span class="detail-val">${completedAt}</span></div>
+            <h4 style="margin:16px 0 8px;font-size:14px;color:#6b7280">Входные данные</h4>
+            <div class="data-block">${inputJson}</div>
+            <h4 style="margin:16px 0 8px;font-size:14px;color:#6b7280">Результат</h4>
+            <div class="data-block">${resultJson}</div>
+            ${bulkHtml}`;
+    } catch (e) {
+        document.getElementById('modalBody').innerHTML = `<div style="color:red">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function saveOrder() {
+    if (!curOrderId) return;
+    const status = document.getElementById('editStatus').value;
+    const workerId = document.getElementById('editWorker').value;
+    const body = { status };
+    if (workerId) body.worker_id = parseInt(workerId);
+    try {
+        const r = await authFetch(`/api/orders/${curOrderId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (!r || !r.ok) { alert('Ошибка сохранения'); return; }
+        alert('Заказ обновлен');
+        closeModal();
+        loadOrders();
+    } catch (e) { alert('Ошибка: ' + e.message); }
+}
+
+async function forceComplete() {
+    if (!curOrderId) return;
+    if (!confirm('⚠️ ВНИМАНИЕ: Принудительно завершить этот заказ?\n\nЭто действие нельзя отменить. Используйте только для застрявших заказов.')) return;
+    try {
+        const r = await authFetch(`/api/orders/${curOrderId}/force-complete`, { method: 'POST' });
+        if (!r || !r.ok) {
+            const err = await r.json().catch(() => ({}));
+            alert('Ошибка: ' + (err.detail || 'Failed to force-complete'));
+            return;
+        }
+        alert('✅ Заказ принудительно завершен');
+        closeModal();
+        loadOrders();
+    } catch (e) { alert('Ошибка: ' + e.message); }
+}
+
+async function forceCancel() {
+    if (!curOrderId) return;
+    if (!confirm('⚠️ ВНИМАНИЕ: Принудительно отменить этот заказ?\n\nЭто действие нельзя отменить. Используйте только для застрявших заказов.')) return;
+    try {
+        const r = await authFetch(`/api/orders/${curOrderId}/force-cancel`, { method: 'POST' });
+        if (!r || !r.ok) {
+            const err = await r.json().catch(() => ({}));
+            alert('Ошибка: ' + (err.detail || 'Failed to force-cancel'));
+            return;
+        }
+        alert('✅ Заказ принудительно отменен');
+        closeModal();
+        loadOrders();
+    } catch (e) { alert('Ошибка: ' + e.message); }
+}
+
+function closeModal() {
+    document.getElementById('orderModal').classList.remove('open');
+    curOrderId = null;
+}
+
+document.getElementById('orderModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+async function loadCategoryTabs() {
+    try {
+        const r = await authFetch('/api/orders/stats/by-category?period_days=365');
+        if (!r || !r.ok) return;
+        const data = await r.json();
+        categoryStats = data || [];
+        const nav = document.getElementById('categoryNav');
+        categoryStats.forEach(c => {
+            if (!c.category) return;
+            const btn = document.createElement('button');
+            btn.className = 'tab-btn';
+            btn.setAttribute('data-category', c.category);
+            btn.onclick = () => setCategory(c.category);
+            btn.innerHTML = `${c.category} <span class="cat-count">${c.total_orders}</span>`;
+            nav.appendChild(btn);
+        });
+    } catch (e) {}
+}
+
+async function loadWorkers() {
+    try {
+        const r = await authFetch('/api/workers/?limit=200');
+        if (!r || !r.ok) return;
+        const data = await r.json();
+        const sel = document.getElementById('workerFilter');
+        (data.items || data || []).forEach(w => {
+            const o = document.createElement('option');
+            o.value = w.id;
+            o.textContent = `#${w.id} ${w.name || ''}`;
+            sel.appendChild(o);
+        });
+    } catch (e) {}
+}
+
+async function loadSellers() {
+    try {
+        const r = await authFetch('/api/sellers?limit=200');
+        if (!r || !r.ok) return;
+        const data = await r.json();
+        const sel = document.getElementById('sellerFilter');
+        (data || []).forEach(s => {
+            const o = document.createElement('option');
+            o.value = s.id;
+            o.textContent = `#${s.id} ${s.display_name || s.name || s.username || ''}`;
+            sel.appendChild(o);
+        });
+    } catch (e) {}
+}
+
+async function init() {
+    await Promise.all([loadCategoryTabs(), loadWorkers(), loadSellers()]);
+    loadOrders();
+}
+
+init();
+</script>
+{% endblock %}

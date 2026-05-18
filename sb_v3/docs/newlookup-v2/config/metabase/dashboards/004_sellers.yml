@@ -1,0 +1,393 @@
+# Metabase Dashboard: Sellers Analytics
+# Dashboard ID: 004
+# Description: Seller performance, products, and withdrawals
+
+dashboard:
+  name: "🏪 Sellers Analytics"
+  description: "Seller performance, product catalog, and payout metrics"
+  position: 4
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Seller ID"
+      type: "number"
+      required: false
+
+  cards:
+    - name: "Total Sellers"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_sellers
+        FROM sellers
+
+    - name: "Active Sellers"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(DISTINCT seller_id) as active_sellers
+        FROM (
+          SELECT seller_id FROM seller_bank_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_cc_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_enroll_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_logs_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_nfc_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_otp_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_selfreg_cc_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_check_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_document_items WHERE is_active = true
+          UNION
+          SELECT seller_id FROM seller_fullz_items WHERE is_active = true
+        ) active_sellers
+
+    - name: "Total Products"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_products
+        FROM (
+          SELECT id, created_at FROM seller_bank_items
+          UNION ALL
+          SELECT id, created_at FROM seller_cc_items
+          UNION ALL
+          SELECT id, created_at FROM seller_enroll_items
+          UNION ALL
+          SELECT id, created_at FROM seller_logs_items
+          UNION ALL
+          SELECT id, created_at FROM seller_nfc_items
+          UNION ALL
+          SELECT id, created_at FROM seller_otp_items
+          UNION ALL
+          SELECT id, created_at FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT id, created_at FROM seller_check_items
+          UNION ALL
+          SELECT id, created_at FROM seller_document_items
+          UNION ALL
+          SELECT id, created_at FROM seller_fullz_items
+        ) all_products
+        WHERE created_at <= {{date_range.end}}
+
+    - name: "Pending Moderation"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as pending_moderation
+        FROM (
+          SELECT moderation_status FROM seller_bank_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_cc_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_enroll_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_logs_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_nfc_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_otp_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_selfreg_cc_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_check_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_document_items WHERE moderation_status = 'pending'
+          UNION ALL
+          SELECT moderation_status FROM seller_fullz_items WHERE moderation_status = 'pending'
+        ) pending_items
+
+    - name: "Seller Revenue Trend"
+      type: "line"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          SUM(price) as seller_revenue,
+          COUNT(DISTINCT seller_id) as active_sellers
+        FROM (
+          SELECT seller_id, price, created_at FROM seller_bank_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_cc_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, price, created_at FROM seller_enroll_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, price, created_at FROM seller_logs_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_nfc_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_otp_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_selfreg_cc_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_check_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_document_items WHERE is_in_stock = true
+          UNION ALL
+          SELECT seller_id, buyer_price as price, created_at FROM seller_fullz_items WHERE is_in_stock = true
+        ) all_sales
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Top Sellers by Revenue"
+      type: "bar"
+      position: { row: 3, col: 1, size: 6 }
+      query: |
+        SELECT 
+          seller_id,
+          COUNT(*) as products_count,
+          SUM(CASE WHEN is_in_stock = true THEN 1 ELSE 0 END) as active_count,
+          SUM(CASE WHEN is_in_stock = true THEN COALESCE(buyer_price, price) ELSE 0 END) as total_revenue,
+          AVG(CASE WHEN is_in_stock = true THEN COALESCE(buyer_price, price) END) as avg_price
+        FROM (
+          SELECT seller_id, price, NULL as buyer_price, is_in_stock, created_at FROM seller_bank_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_cc_items
+          UNION ALL
+          SELECT seller_id, price, NULL as buyer_price, is_in_stock, created_at FROM seller_enroll_items
+          UNION ALL
+          SELECT seller_id, price, NULL as buyer_price, is_in_stock, created_at FROM seller_logs_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_nfc_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_otp_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_check_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_document_items
+          UNION ALL
+          SELECT seller_id, NULL as price, buyer_price, is_in_stock, created_at FROM seller_fullz_items
+        ) all_products
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY seller_id
+        HAVING SUM(CASE WHEN is_in_stock = true THEN COALESCE(buyer_price, price) ELSE 0 END) > 0
+        ORDER BY total_revenue DESC
+        LIMIT 10
+
+    - name: "Products by Category"
+      type: "pie"
+      position: { row: 3, col: 7, size: 6 }
+      query: |
+        SELECT 
+          COALESCE(category, 'other') as category,
+          COUNT(*) as products_count,
+          SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active_count
+        FROM (
+          SELECT COALESCE(category, 'other') as category, is_active FROM seller_bank_items
+          UNION ALL
+          SELECT COALESCE(category_code, 'other') as category, is_active FROM seller_cc_items
+          UNION ALL
+          SELECT 'enroll' as category, is_active FROM seller_enroll_items
+          UNION ALL
+          SELECT 'logs' as category, is_active FROM seller_logs_items
+          UNION ALL
+          SELECT 'nfc' as category, is_active FROM seller_nfc_items
+          UNION ALL
+          SELECT 'otp' as category, is_active FROM seller_otp_items
+          UNION ALL
+          SELECT 'selfreg_cc' as category, is_active FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT 'check' as category, is_active FROM seller_check_items
+          UNION ALL
+          SELECT 'document' as category, is_active FROM seller_document_items
+          UNION ALL
+          SELECT 'fullz' as category, is_active FROM seller_fullz_items
+        ) all_products
+        GROUP BY category
+        ORDER BY products_count DESC
+
+    - name: "Product Moderation Status"
+      type: "bar"
+      position: { row: 4, col: 1, size: 6 }
+      query: |
+        SELECT 
+          moderation_status,
+          COUNT(*) as count
+        FROM (
+          SELECT moderation_status FROM seller_bank_items
+          UNION ALL
+          SELECT moderation_status FROM seller_cc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_enroll_items
+          UNION ALL
+          SELECT moderation_status FROM seller_logs_items
+          UNION ALL
+          SELECT moderation_status FROM seller_nfc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_otp_items
+          UNION ALL
+          SELECT moderation_status FROM seller_selfreg_cc_items
+          UNION ALL
+          SELECT moderation_status FROM seller_check_items
+          UNION ALL
+          SELECT moderation_status FROM seller_document_items
+          UNION ALL
+          SELECT moderation_status FROM seller_fullz_items
+        ) all_products
+        GROUP BY moderation_status
+        ORDER BY count DESC
+
+    - name: "Transactions Summary"
+      type: "table"
+      position: { row: 4, col: 7, size: 6 }
+      query: |
+        SELECT 
+          transaction_type,
+          COUNT(*) as count,
+          SUM(amount) as total_amount,
+          AVG(amount) as avg_amount
+        FROM transactions
+        WHERE transaction_type IN ('deposit', 'purchase', 'withdrawal', 'commission', 'refund', 'payout_worker')
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY transaction_type
+        ORDER BY total_amount DESC
+
+    - name: "Seller Products Table"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          COALESCE(category, category_code, product_type, 'other') as category,
+          COALESCE(item_name, bank_name, bank, portal, check_type, nfc_type, fullz_type, product_subtype) as service_name,
+          COALESCE(buyer_price, price, seller_price) as price,
+          COALESCE(stock_count, stock_quantity, quantity, 0) as stock_quantity,
+          moderation_status,
+          is_active,
+          created_at,
+          COALESCE(moderation_status, 'pending') as status,
+          product_type
+        FROM (
+          SELECT 
+            id, seller_id, category, NULL as category_code, NULL as item_name, 
+            bank as bank_name, bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            price, NULL as buyer_price, NULL as seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_bank' as product_type
+          FROM seller_bank_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, category_code, item_name,
+            NULL as bank_name, NULL as bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_cc' as product_type
+          FROM seller_cc_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, NULL as item_name,
+            NULL as bank_name, NULL as bank, portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            price, NULL as buyer_price, NULL as seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_enroll' as product_type
+          FROM seller_enroll_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, NULL as item_name,
+            NULL as bank_name, bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            'logs' as product_type, product_subtype,
+            price, NULL as buyer_price, NULL as seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_logs' as product_type
+          FROM seller_logs_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            bank_name, NULL as bank, NULL as portal, NULL as check_type, nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_nfc' as product_type
+          FROM seller_nfc_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            bank_name, NULL as bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_otp' as product_type
+          FROM seller_otp_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            bank_name, NULL as bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_selfreg_cc' as product_type
+          FROM seller_selfreg_cc_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            bank_name, NULL as bank, NULL as portal, check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_check' as product_type
+          FROM seller_check_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            NULL as bank_name, NULL as bank, NULL as portal, NULL as check_type, NULL as nfc_type, NULL as fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, NULL as quantity,
+            moderation_status, is_active, created_at,
+            'seller_document' as product_type
+          FROM seller_document_items
+          
+          UNION ALL
+          
+          SELECT 
+            id, seller_id, NULL as category, NULL as category_code, item_name,
+            NULL as bank_name, NULL as bank, NULL as portal, NULL as check_type, NULL as nfc_type, fullz_type,
+            product_type, product_subtype,
+            NULL as price, buyer_price, seller_price,
+            NULL as stock_count, NULL as stock_quantity, quantity,
+            moderation_status, is_active, created_at,
+            'seller_fullz' as product_type
+          FROM seller_fullz_items
+        ) all_products
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY created_at DESC
+        LIMIT 100

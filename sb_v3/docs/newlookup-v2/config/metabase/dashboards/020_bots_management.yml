@@ -1,0 +1,170 @@
+# Metabase Dashboard: Bots Management (как в web_panel/api/bots.py)
+# Dashboard ID: 020
+# Description: Управление ботами - активация, владельцы, статистика
+
+dashboard:
+  name: "🤖 Bots Management"
+  description: "Управление ботами - активация, владельцы, статистика, мониторинг"
+  position: 20
+
+  parameters:
+    - name: "Bot ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "active", "inactive"]
+    - name: "Bot Type Filter"
+      type: "string"
+      required: false
+      values: ["all", "user", "seller", "support", "worker", "marketer"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "🤖 Total Bots"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_bots
+        FROM mirror_bots
+
+    - name: "✅ Active Bots"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_bots
+        FROM mirror_bots
+        WHERE is_active = true
+
+    - name: "⏸️ Inactive Bots"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as inactive_bots
+        FROM mirror_bots
+        WHERE is_active = false
+
+    - name: "👑 Total Bot Owners"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(DISTINCT owner_user_id) as total_owners
+        FROM mirror_bots
+
+    # ========== ALL BOTS TABLE ==========
+    - name: "🤖 All Bots"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          mb.id,
+          mb.bot_username,
+          mb.bot_type,
+          mb.owner_user_id,
+          ou.username as owner_username,
+          mb.is_active,
+          mb.created_at,
+          (SELECT COUNT(*) FROM users WHERE mirror_bot_id = mb.id) as users_count,
+          (SELECT COUNT(*) FROM orders WHERE mirror_bot_id = mb.id) as orders_count,
+          (SELECT SUM(price) FROM orders WHERE mirror_bot_id = mb.id AND status = 'completed') as total_revenue,
+          'View / Activate/Deactivate / Stats' as actions
+        FROM mirror_bots mb
+        LEFT JOIN users ou ON mb.owner_user_id = ou.user_id
+        WHERE ({{bot_id}} IS NULL OR mb.id = {{bot_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'active' AND mb.is_active = true) OR
+            ({{status_filter}} = 'inactive' AND mb.is_active = false)
+          )
+          AND (
+            {{bot_type_filter}} = 'all' OR
+            mb.bot_type = {{bot_type_filter}}
+          )
+        ORDER BY mb.created_at DESC
+        LIMIT 100
+
+    # ========== BOT OWNERS ==========
+    - name: "👑 Bot Owners"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          bo.owner_user_id,
+          ou.username,
+          bo.balance,
+          bo.total_earned,
+          bo.total_withdrawn,
+          COUNT(mb.id) as bots_count,
+          (SELECT COUNT(*) FROM bot_owner_withdrawals WHERE owner_user_id = bo.owner_user_id AND status = 'pending') as pending_withdrawals,
+          'View Bots / Withdrawals' as actions
+        FROM bot_owners bo
+        LEFT JOIN users ou ON bo.owner_user_id = ou.user_id
+        LEFT JOIN mirror_bots mb ON bo.owner_user_id = mb.owner_user_id
+        GROUP BY bo.owner_user_id, ou.username, bo.balance, bo.total_earned, bo.total_withdrawn
+        ORDER BY bots_count DESC
+        LIMIT 50
+
+    # ========== BOT STATS ==========
+    - name: "📊 Bot Statistics (30 days)"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          mb.id as bot_id,
+          mb.bot_username,
+          mb.bot_type,
+          (SELECT COUNT(*) FROM users WHERE mirror_bot_id = mb.id) as users_count,
+          (SELECT COUNT(*) FROM orders WHERE mirror_bot_id = mb.id AND status = 'completed') as orders_count,
+          (SELECT SUM(price) FROM orders WHERE mirror_bot_id = mb.id AND status = 'completed') as revenue,
+          (SELECT SUM(price) FROM orders WHERE mirror_bot_id = mb.id AND status = 'completed' AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}) as period_revenue,
+          'View Details' as action
+        FROM mirror_bots mb
+        WHERE mb.is_active = true
+        ORDER BY revenue DESC
+        LIMIT 50
+
+    # ========== BOT ACTIVITY ==========
+    - name: "📈 Bot Activity (7 days)"
+      type: "line"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(o.created_at) as date,
+          o.mirror_bot_id,
+          mb.bot_username,
+          COUNT(*) as orders_count,
+          SUM(o.price) as revenue
+        FROM orders o
+        JOIN mirror_bots mb ON o.mirror_bot_id = mb.id
+        WHERE o.status = 'completed'
+          AND o.created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(o.created_at), o.mirror_bot_id, mb.bot_username
+        ORDER BY date, revenue DESC
+
+    # ========== BOT OWNER WITHDRAWALS ==========
+    - name: "💸 Bot Owner Withdrawals Pending"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          bow.id,
+          bow.owner_user_id,
+          ou.username,
+          bow.amount,
+          bow.payment_method,
+          bow.payment_network,
+          bow.requisites,
+          bow.tx_hash,
+          bow.status,
+          bow.created_at,
+          bow.processed_at,
+          'Approve/Reject' as action
+        FROM bot_owner_withdrawals bow
+        LEFT JOIN users ou ON bow.owner_user_id = ou.user_id
+        WHERE bow.status = 'pending'
+        ORDER BY bow.created_at ASC
+        LIMIT 50

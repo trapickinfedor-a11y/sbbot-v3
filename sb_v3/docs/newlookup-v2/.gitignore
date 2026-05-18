@@ -1,0 +1,142 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+.remote_deps/
+
+# Archive (cursor reports, temp docs)
+_archive/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Backups
+backups/
+*.dump
+*.dump.gz
+*.sql.gz
+
+# Docker
+.dockerignore
+
+# Uploads & Media
+uploads/*
+!uploads/.gitkeep
+media/*
+!media/.gitkeep
+data/*
+!data/.gitkeep
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Monitoring data
+prometheus_data/
+grafana_data/
+
+# Certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Secrets
+secrets/
+*.secret
+
+# Node modules (if any)
+node_modules/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# Pytest
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Redis dump
+dump.rdb
+
+# Alembic
+# Keep alembic/ but ignore generated files
+alembic/versions/*.pyc
+
+# Local development
+local/
+.local/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Keep important empty directories
+!.gitkeep

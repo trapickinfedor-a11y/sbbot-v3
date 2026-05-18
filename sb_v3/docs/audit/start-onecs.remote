@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd /opt/csbot_admin_system/app
+export BUILT_IN_FORGE_API_KEY='bDHZRQSSRa4ZEpvY8ky5zA'
+export BUILT_IN_FORGE_API_URL='https://forge.manus.ai'
+export DATABASE_URL='mysql://4MS1DseWiEEE88D.04296004ebde:Aw0X7MZWa2KQo4R4Vh6q@gateway05.us-east-1.prod.aws.tidbcloud.com:4000/3G3cLuw8nhULXovSY6Dm9j?ssl={"rejectUnauthorized":true}'
+export JWT_SECRET='9wnMuuHkJS7B3ohDN32h42'
+export NODE_ENV='production'
+export OAUTH_SERVER_URL='https://api.manus.im'
+export OWNER_NAME='seyyybi'
+export OWNER_OPEN_ID='msPjmChTWLrrozbGon4GhQ'
+export PORT='3112'
+export VITE_APP_ID='3G3cLuw8nhULXovSY6Dm9j'
+export VITE_FRONTEND_FORGE_API_KEY='Am4gtvuzaAvEjgcJZbrmks'
+export VITE_FRONTEND_FORGE_API_URL='https://forge.manus.ai'
+exec /usr/bin/env node dist/index.js

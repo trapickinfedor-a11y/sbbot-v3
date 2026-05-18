@@ -1,0 +1,216 @@
+{% extends "_base.html" %}
+{% block title %}Knowledge Base{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>📚 Knowledge Base</h1>
+  <button class="btn btn-primary" onclick="openAddModal()">➕ New Article</button>
+</div>
+
+<div class="card" style="margin-bottom:16px">
+  <div class="card-body" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="kb-search" class="form-control" placeholder="🔍 Search articles..." style="max-width:280px" oninput="filterArticles()">
+    <select id="kb-audience" class="form-select" style="max-width:140px" onchange="filterArticles()">
+      <option value="">All audiences</option>
+      <option value="user">User</option>
+      <option value="worker">Worker</option>
+      <option value="all">All</option>
+    </select>
+    <select id="kb-category" class="form-select" style="max-width:160px" onchange="filterArticles()">
+      <option value="">All categories</option>
+      <option value="general">General</option>
+      <option value="financial">Financial</option>
+      <option value="technical">Technical</option>
+      <option value="suggestion">Suggestion</option>
+      <option value="worker">Worker</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:14px">
+      <input type="checkbox" id="kb-active-only" checked onchange="filterArticles()"> Active only
+    </label>
+    <span id="kb-count" style="color:#6b7280;font-size:13px"></span>
+  </div>
+</div>
+
+<div id="kb-list" class="card-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px"></div>
+
+<!-- Modal -->
+<div id="kb-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center" onclick="if(event.target===this)closeModal()">
+  <div class="card" style="width:100%;max-width:600px;max-height:90vh;overflow-y:auto;padding:24px">
+    <h3 id="modal-title" style="margin-bottom:16px">New Article</h3>
+    <input type="hidden" id="modal-id">
+    <div style="display:grid;gap:12px">
+      <div>
+        <label class="form-label">Title *</label>
+        <input type="text" id="modal-title-input" class="form-control" placeholder="Article title">
+      </div>
+      <div>
+        <label class="form-label">Body *</label>
+        <textarea id="modal-body" class="form-control" rows="7" placeholder="Article content (supports Telegram HTML like <b>, <i>, <code>)"></textarea>
+      </div>
+      <div>
+        <label class="form-label">Keywords <small style="color:#6b7280">(comma-separated)</small></label>
+        <input type="text" id="modal-keywords" class="form-control" placeholder="withdraw, balance, btc, refund">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="form-label">Category</label>
+          <select id="modal-category" class="form-select">
+            <option value="general">General</option>
+            <option value="financial">Financial</option>
+            <option value="technical">Technical</option>
+            <option value="suggestion">Suggestion</option>
+            <option value="worker">Worker</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Audience</label>
+          <select id="modal-audience" class="form-select">
+            <option value="user">User</option>
+            <option value="worker">Worker</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label style="display:flex;align-items:center;gap:8px">
+          <input type="checkbox" id="modal-active" checked> Active (visible to bots)
+        </label>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button class="btn btn-primary" onclick="saveArticle()">💾 Save</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modal-delete-btn" onclick="deleteArticle()" style="display:none;margin-left:auto">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  #kb-modal { display:none }
+  #kb-modal.open { display:flex }
+  .kb-card { background:#fff; border-radius:10px; border:1px solid #e5e7eb; padding:16px; cursor:pointer; transition:box-shadow .15s }
+  .kb-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.08) }
+  .kb-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px }
+  .kb-badge { font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600 }
+  .kb-badge-user { background:#dbeafe; color:#1d4ed8 }
+  .kb-badge-worker { background:#d1fae5; color:#065f46 }
+  .kb-badge-all { background:#fef3c7; color:#92400e }
+  .kb-badge-inactive { background:#f3f4f6; color:#9ca3af }
+  .kb-stats { display:flex; gap:12px; font-size:12px; color:#6b7280; margin-top:10px }
+  .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px }
+</style>
+
+<script>
+let allArticles = [];
+
+async function loadArticles() {
+  const r = await authFetch('/api/knowledge-base/');
+  if (!r.ok) { document.getElementById('kb-list').innerHTML = '<div style="color:red">Failed to load</div>'; return; }
+  allArticles = await r.json();
+  filterArticles();
+}
+
+function filterArticles() {
+  const q = (document.getElementById('kb-search').value || '').toLowerCase();
+  const aud = document.getElementById('kb-audience').value;
+  const cat = document.getElementById('kb-category').value;
+  const activeOnly = document.getElementById('kb-active-only').checked;
+  let filtered = allArticles;
+  if (q) filtered = filtered.filter(a => (a.title + ' ' + (a.keywords||'') + ' ' + a.body).toLowerCase().includes(q));
+  if (aud) filtered = filtered.filter(a => a.audience === aud);
+  if (cat) filtered = filtered.filter(a => a.category === cat);
+  if (activeOnly) filtered = filtered.filter(a => a.is_active);
+  document.getElementById('kb-count').textContent = `${filtered.length} of ${allArticles.length}`;
+  renderArticles(filtered);
+}
+
+const catLabels = { general:'❓ General', financial:'💰 Financial', technical:'⚙️ Technical', suggestion:'💡 Suggestion', worker:'👷 Worker' };
+const audClass = { user:'kb-badge-user', worker:'kb-badge-worker', all:'kb-badge-all' };
+
+function renderArticles(articles) {
+  const el = document.getElementById('kb-list');
+  if (!articles.length) { el.innerHTML = '<div style="color:#6b7280;padding:40px;grid-column:1/-1;text-align:center">No articles found</div>'; return; }
+  el.innerHTML = articles.map(a => `
+    <div class="kb-card" onclick="openEditModal(${a.id})">
+      <div class="kb-card-header">
+        <strong style="font-size:14px;line-height:1.4">${escHtml(a.title)}</strong>
+        <span class="kb-badge ${a.is_active ? audClass[a.audience]||'kb-badge-user' : 'kb-badge-inactive'}">${a.audience}${a.is_active ? '' : ' · off'}</span>
+      </div>
+      <div style="font-size:13px;color:#6b7280;line-height:1.5">${escHtml(a.body.substring(0,120))}${a.body.length>120?'…':''}</div>
+      ${a.keywords ? `<div style="margin-top:6px;font-size:11px;color:#9ca3af">🏷 ${escHtml(a.keywords)}</div>` : ''}
+      <div class="kb-stats">
+        <span>${catLabels[a.category]||a.category}</span>
+        <span>👁 ${a.views || 0}</span>
+        <span>👍 ${a.helpful_votes || 0}</span>
+        <span style="margin-left:auto;font-size:11px">#${a.id}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function openAddModal() {
+  document.getElementById('modal-title').textContent = 'New Article';
+  document.getElementById('modal-id').value = '';
+  document.getElementById('modal-title-input').value = '';
+  document.getElementById('modal-body').value = '';
+  document.getElementById('modal-keywords').value = '';
+  document.getElementById('modal-category').value = 'general';
+  document.getElementById('modal-audience').value = 'user';
+  document.getElementById('modal-active').checked = true;
+  document.getElementById('modal-delete-btn').style.display = 'none';
+  document.getElementById('kb-modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const a = allArticles.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('modal-title').textContent = 'Edit Article';
+  document.getElementById('modal-id').value = a.id;
+  document.getElementById('modal-title-input').value = a.title;
+  document.getElementById('modal-body').value = a.body;
+  document.getElementById('modal-keywords').value = a.keywords || '';
+  document.getElementById('modal-category').value = a.category || 'general';
+  document.getElementById('modal-audience').value = a.audience || 'user';
+  document.getElementById('modal-active').checked = a.is_active;
+  document.getElementById('modal-delete-btn').style.display = 'inline-block';
+  document.getElementById('kb-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('kb-modal').classList.remove('open');
+}
+
+async function saveArticle() {
+  const id = document.getElementById('modal-id').value;
+  const payload = {
+    title: document.getElementById('modal-title-input').value.trim(),
+    body: document.getElementById('modal-body').value.trim(),
+    keywords: document.getElementById('modal-keywords').value.trim() || null,
+    category: document.getElementById('modal-category').value,
+    audience: document.getElementById('modal-audience').value,
+    is_active: document.getElementById('modal-active').checked,
+  };
+  if (!payload.title || !payload.body) { alert('Title and body are required'); return; }
+  const url = id ? `/api/knowledge-base/${id}` : '/api/knowledge-base/';
+  const method = id ? 'PUT' : 'POST';
+  const r = await authFetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+  if (!r.ok) { alert('Error: ' + (await r.text())); return; }
+  closeModal();
+  await loadArticles();
+}
+
+async function deleteArticle() {
+  const id = document.getElementById('modal-id').value;
+  if (!id || !confirm('Delete this article?')) return;
+  const r = await authFetch(`/api/knowledge-base/${id}`, { method: 'DELETE' });
+  if (!r.ok) { alert('Error deleting'); return; }
+  closeModal();
+  await loadArticles();
+}
+
+loadArticles();
+</script>
+{% endblock %}

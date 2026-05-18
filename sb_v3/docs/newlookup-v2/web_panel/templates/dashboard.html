@@ -1,0 +1,2419 @@
+{% extends "_base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block header_title %}🛡️ Admin Dashboard - NewLookup{% endblock %}
+{% block extra_css %}
+<style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-card.critical .number {
+            color: #ef4444;
+        }
+        
+        .stat-card.warning .number {
+            color: #f59e0b;
+        }
+        
+        .stat-card.clickable {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .stat-card.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .last-updated {
+            font-size: 12px;
+            color: #9ca3af;
+            text-align: right;
+            margin-bottom: 10px;
+        }
+        
+        .refresh-indicator {
+            display: inline-block;
+            margin-left: 8px;
+            color: #667eea;
+            cursor: pointer;
+        }
+        
+        .refresh-indicator:hover {
+            color: #5568d3;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .controls select, .controls input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            margin-right: 5px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #e3fcef; color: #006644; }
+        .badge-warning { background: #fff4e6; color: #b95000; }
+        .badge-danger { background: #ffe6e6; color: #d32f2f; }
+        .badge-info { background: #e6f4ff; color: #0050b3; }
+        .badge-admin { background: #ede7f6; color: #6a1b9a; }
+        .badge-user { background: #e3f2fd; color: #1565c0; }
+        .badge-marketer { background: #fff8e1; color: #f57f17; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+        }
+        
+        .modal h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #000;
+        }
+        
+        .analytics-period {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .period-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .period-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .success-message {
+            background: #efe;
+            color: #363;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .category-icon {
+            font-size: 18px;
+        }
+        
+        .category-code {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <!-- Обзор -->
+        <div id="overview" class="tab-content active">
+            <div class="section" style="margin-bottom:20px">
+                <h2>📅 Диапазон дат</h2>
+                <div class="controls">
+                    <input type="date" id="overviewDateFrom">
+                    <input type="date" id="overviewDateTo">
+                    <button class="btn btn-primary" onclick="loadOverview()">Применить</button>
+                </div>
+            </div>
+            <div class="last-updated" id="lastUpdated">
+                Загрузка... <span class="refresh-indicator" onclick="loadOverview()" title="Обновить">🔄</span>
+            </div>
+            <div class="stats-grid" id="overviewStats">
+                <div class="loading">Загрузка статистики...</div>
+            </div>
+        </div>
+        
+        
+        <!-- Аналитика -->
+        <div id="analytics" class="tab-content">
+            <div class="section">
+                <h2>📈 Аналитика</h2>
+                
+                <div class="analytics-period">
+                    <button class="period-btn active" onclick="setAnalyticsPeriod(1)">1 день</button>
+                    <button class="period-btn" onclick="setAnalyticsPeriod(7)">7 дней</button>
+                    <button class="period-btn" onclick="setAnalyticsPeriod(14)">14 дней</button>
+                    <button class="period-btn" onclick="setAnalyticsPeriod(21)">21 день</button>
+                    <button class="period-btn" onclick="setAnalyticsPeriod(30)">30 дней</button>
+                </div>
+                
+                <div id="analyticsContent">
+                    <div class="loading">Загрузка аналитики...</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Заказы -->
+        <div id="orders" class="tab-content">
+            <div class="section">
+                <h2>📋 Заказы</h2>
+                
+                <div class="controls">
+                    <select id="orderStatusFilter">
+                        <option value="">Все статусы</option>
+                        <option value="pending">В ожидании</option>
+                        <option value="processing">В обработке</option>
+                        <option value="completed">Завершен</option>
+                        <option value="cancelled">Отменен</option>
+                    </select>
+                    <select id="orderCategoryFilter">
+                        <option value="">Все категории</option>
+                    </select>
+                    <select id="ordersPerPage" onchange="changeOrdersLimit()">
+                        <option value="10">10 на странице</option>
+                        <option value="25">25 на странице</option>
+                        <option value="50" selected>50 на странице</option>
+                        <option value="100">100 на странице</option>
+                        <option value="200">200 на странице</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="loadOrders()">🔍 Найти</button>
+                </div>
+
+                <div id="ordersTable">
+                    <div class="loading">Загрузка заказов...</div>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div id="ordersPagination" style="display: none; margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                        <div style="color: #666; font-size: 14px;">
+                            Показано <strong id="ordersShowingFrom">0</strong>-<strong id="ordersShowingTo">0</strong> из <strong id="ordersTotalCount">0</strong> записей
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="btn btn-secondary" id="ordersFirstPage" onclick="goToOrdersPage('first')" disabled>
+                                ⏮ Первая
+                            </button>
+                            <button class="btn btn-secondary" id="ordersPrevPage" onclick="goToOrdersPage('prev')" disabled>
+                                ← Назад
+                            </button>
+                            <span style="padding: 8px 16px; background: white; border-radius: 6px; font-weight: 600;">
+                                Страница <span id="ordersCurrentPage">1</span> из <span id="ordersTotalPages">1</span>
+                            </span>
+                            <button class="btn btn-secondary" id="ordersNextPage" onclick="goToOrdersPage('next')">
+                                Вперед →
+                            </button>
+                            <button class="btn btn-secondary" id="ordersLastPage" onclick="goToOrdersPage('last')">
+                                Последняя ⏭
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+            </div>
+        
+    <!-- Модальные окна -->
+    
+    <!-- Редактирование пользователя -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('userModal')">&times;</span>
+            <h3>Управление пользователем</h3>
+            
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="text" id="modalUserId" readonly>
+        </div>
+        
+            <div class="form-group">
+                <label>Текущий баланс:</label>
+                <input type="text" id="modalUserBalance" readonly>
+            </div>
+        
+            <div class="form-group">
+                <label>Изменить баланс на:</label>
+                <input type="number" id="modalBalanceChange" step="0.01" placeholder="Например: +50.00 или -25.50">
+        </div>
+        
+            <div class="form-group">
+                <label>Причина изменения:</label>
+                <input type="text" id="modalBalanceReason" placeholder="Причина изменения баланса">
+            </div>
+        
+            <div class="form-group">
+                <label>Статус:</label>
+                <select id="modalUserStatus">
+                    <option value="false">Активен</option>
+                    <option value="true">Заблокирован</option>
+                </select>
+        </div>
+        
+            <div class="form-group">
+                <label>Причина блокировки:</label>
+                <input type="text" id="modalBanReason" placeholder="Причина блокировки (если применимо)">
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="updateUser()">💾 Сохранить</button>
+                <button class="btn btn-secondary" onclick="closeModal('userModal')">❌ Отмена</button>
+            </div>
+            </div>
+        </div>
+        
+    <!-- Отправка сообщения пользователю -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('messageModal')">&times;</span>
+            <h3>Отправить сообщение пользователю</h3>
+            
+            <div class="form-group">
+                <label>User ID:</label>
+                <input type="text" id="messageUserId" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>Способ отправки:</label>
+                <select id="messageSendMethod">
+                    <option value="original">Через его бота</option>
+                    <option value="any">Через любой доступный бот</option>
+                    <option value="specific">Через конкретный бот</option>
+                </select>
+        </div>
+            
+            <div class="form-group" id="specificBotGroup" style="display: none;">
+                <label>Выберите бота:</label>
+                <select id="messageSpecificBot">
+                </select>
+    </div>
+    
+            <div class="form-group">
+                <label>Сообщение:</label>
+                <textarea id="messageText" placeholder="Введите сообщение для пользователя..."></textarea>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="sendMessage()">📤 Отправить</button>
+                <button class="btn btn-secondary" onclick="closeModal('messageModal')">❌ Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Рассылка -->
+    <div id="broadcastModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('broadcastModal')">&times;</span>
+            <h3>Рассылка сообщения</h3>
+            
+            <div class="form-group">
+                <label>Тип рассылки:</label>
+                <select id="broadcastType">
+                    <option value="all">Всем пользователям всех ботов</option>
+                    <option value="bot">Пользователям конкретного бота</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="broadcastBotGroup" style="display: none;">
+                <label>Выберите бота:</label>
+                <select id="broadcastBotId">
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Сообщение:</label>
+                <textarea id="broadcastMessage" placeholder="Введите сообщение для рассылки..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>URL фото (необязательно):</label>
+                <input type="text" id="broadcastPhoto" placeholder="https://example.com/photo.jpg">
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="sendBroadcast()">📢 Отправить рассылку</button>
+                <button class="btn btn-secondary" onclick="closeModal('broadcastModal')">❌ Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Просмотр пользователей бота -->
+    <div id="botUsersModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeModal('botUsersModal')">&times;</span>
+            <h3>Пользователи бота</h3>
+            
+            <div id="botUsersContent">
+                <div class="loading">Загрузка пользователей...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Расширенный поиск пользователя -->
+    <div id="advancedSearchModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeModal('advancedSearchModal')">&times;</span>
+            <h3>🔍 Расширенный поиск пользователя</h3>
+            
+            <div class="form-group">
+                <label>User ID для поиска:</label>
+                <input type="text" id="advancedSearchUserId" placeholder="Введите User ID...">
+                <button class="btn btn-primary" onclick="performAdvancedSearch()">🔍 Найти во всех ботах</button>
+            </div>
+            
+            <div id="advancedSearchResults" style="display: none;">
+                <h4>Результаты поиска:</h4>
+                <div id="advancedSearchContent"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Добавление воркера -->
+    <div id="addWorkerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addWorkerModal')">&times;</span>
+            <h3>➕ Добавить воркера</h3>
+            
+            <div class="form-group">
+                <label>Telegram ID:</label>
+                <input type="number" id="workerTelegramId" placeholder="Введите Telegram ID...">
+            </div>
+            
+            <div class="form-group">
+                <label>Username (необязательно):</label>
+                <input type="text" id="workerUsername" placeholder="@username">
+            </div>
+            
+            <div class="form-group">
+                <label>Категории:</label>
+                <div id="workerCategories">
+                    <!-- Категории загружаются динамически -->
+                    <p style="color: #666; font-style: italic;">Загрузка категорий...</p>
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="btn btn-success" onclick="addWorker()">➕ Добавить</button>
+                <button class="btn btn-secondary" onclick="closeModal('addWorkerModal')">❌ Отмена</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Детальная аналитика воркера -->
+    <div id="workerAnalyticsModal" class="modal">
+        <div class="modal-content" style="max-width: 1200px;">
+            <span class="close" onclick="closeModal('workerAnalyticsModal')">&times;</span>
+            <h3>📊 Детальная аналитика воркера</h3>
+            
+            <div class="analytics-period" style="margin-bottom: 20px;">
+                <button class="period-btn active" onclick="setWorkerAnalyticsPeriod(7)">7 дней</button>
+                <button class="period-btn" onclick="setWorkerAnalyticsPeriod(14)">14 дней</button>
+                <button class="period-btn" onclick="setWorkerAnalyticsPeriod(30)">30 дней</button>
+                <button class="period-btn" onclick="setWorkerAnalyticsPeriod(90)">90 дней</button>
+            </div>
+            
+            <div id="workerAnalyticsContent">
+                <div class="loading">Загрузка аналитики...</div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+    <script>
+        // Глобальные переменные
+        let currentUser = null;
+        let currentAnalyticsPeriod = 1;
+        let currentWorkerAnalyticsPeriod = 30;
+        let currentWorkerId = null;
+        
+        // API запросы (authFetch из _base.html)
+        async function apiRequest(url, options = {}) {
+            options.headers = options.headers || {};
+            if (!options.headers['Content-Type']) options.headers['Content-Type'] = 'application/json';
+            return authFetch(url, options);
+        }
+        
+        // Показать/скрыть сообщения
+        function showMessage(text, type = 'error') {
+            const messageEl = document.getElementById(type === 'error' ? 'errorMessage' : 'successMessage');
+            const otherEl = document.getElementById(type === 'error' ? 'successMessage' : 'errorMessage');
+            
+            otherEl.style.display = 'none';
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Переключение вкладок
+        function showTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Убрать активный класс с вкладок дашборда
+            document.querySelectorAll('.dash-tab').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.color = '#666';
+                btn.style.borderBottomColor = 'transparent';
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById(tabName).classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+                event.target.style.color = '#667eea';
+                event.target.style.borderBottomColor = '#667eea';
+            }
+            
+            // Загрузить данные для вкладки
+            switch(tabName) {
+                case 'overview':
+                    loadOverview();
+                    break;
+                case 'users':
+                    loadUsers();
+                    loadBotsForFilter();
+                    break;
+                case 'bots':
+                    loadBots();
+                    break;
+                case 'workers':
+                    loadWorkers();
+                    break;
+                case 'orders':
+                    loadOrders();
+                    loadCategoriesForFilter();
+                    break;
+                case 'complaints':
+                    loadComplaints();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+            }
+        }
+
+        function getDashboardDateQuery() {
+            const from = document.getElementById('overviewDateFrom')?.value || '';
+            const to = document.getElementById('overviewDateTo')?.value || '';
+            const params = new URLSearchParams();
+            if (from) params.set('date_from', from);
+            if (to) params.set('date_to', to);
+            return params.toString();
+        }
+
+        function setDashboardQuickRange(days = 30) {
+            const to = new Date();
+            const from = new Date();
+            from.setDate(to.getDate() - days + 1);
+            const fromInput = document.getElementById('overviewDateFrom');
+            const toInput = document.getElementById('overviewDateTo');
+            if (fromInput) fromInput.value = from.toISOString().slice(0, 10);
+            if (toInput) toInput.value = to.toISOString().slice(0, 10);
+        }
+        
+        // Загрузка обзора
+        async function loadOverview() {
+            try {
+                const query = getDashboardDateQuery();
+                const response = await apiRequest(`/api/dashboard/stats${query ? '?' + query : ''}`);
+                if (!response || !response.ok) {
+                    document.getElementById('overviewStats').innerHTML = '<div style="text-align:center;padding:40px;color:#c33">Ошибка загрузки данных (статус: ' + (response ? response.status : 'нет ответа') + ')</div>';
+                    return;
+                }
+                const data = await response.json();
+                if (!data || typeof data !== 'object') {
+                    document.getElementById('overviewStats').innerHTML = '<div style="text-align:center;padding:40px;color:#c33">Некорректный ответ от API</div>';
+                    return;
+                }
+                const periodLabel = data.period ? `${data.period.date_from} .. ${data.period.date_to}` : 'период';
+                
+                // Update last updated time
+                if (data.last_updated) {
+                    const lastUpdate = new Date(data.last_updated);
+                    const now = new Date();
+                    const diffMs = now - lastUpdate;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const timeAgo = diffMins < 1 ? 'только что' : diffMins === 1 ? '1 минуту назад' : `${diffMins} минут назад`;
+                    document.getElementById('lastUpdated').innerHTML = `Обновлено: ${timeAgo} <span class="refresh-indicator" onclick="loadOverview()" title="Обновить">🔄</span>`;
+                }
+                
+                const moderation = data.moderation || {};
+                const disputes = data.disputes || {};
+                const withdrawals = data.withdrawals || {};
+                const pendingModTotal = moderation.pending_total || 0;
+                const pendingWdTotal = withdrawals.pending_total || 0;
+                const openDisputesCount = disputes.open || 0;
+                const pendingModClass = pendingModTotal > 20 ? 'critical' : pendingModTotal > 10 ? 'warning' : '';
+                const openDisputesClass = openDisputesCount > 10 ? 'critical' : openDisputesCount > 5 ? 'warning' : '';
+                const pendingWdClass = pendingWdTotal > 10 ? 'critical' : pendingWdTotal > 5 ? 'warning' : '';
+                const totalBalance = data.total_balance != null ? '$' + Number(data.total_balance).toFixed(2) : 'N/A';
+                const revenue24h = data.revenue_24h != null ? '$' + Number(data.revenue_24h).toFixed(2) : 'N/A';
+
+                const statsHtml = `
+                    <div class="stat-card">
+                        <h3>Всего пользователей</h3>
+                        <div class="number">${data.total_users}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Общий баланс</h3>
+                        <div class="number">${totalBalance}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Активные боты</h3>
+                        <div class="number">${data.active_bots}</div>
+                    </div>
+                    <div class="stat-card clickable ${pendingModClass}" onclick="window.location.href='/seller-moderation'" title="Перейти к модерации">
+                        <h3>⏳ Pending Moderation</h3>
+                        <div class="number">${pendingModTotal}</div>
+                        <small style="color:#888">Banks: ${moderation.pending_banks || 0}, CC: ${moderation.pending_cc || 0}, NFC: ${moderation.pending_nfc || 0}</small>
+                    </div>
+                    <div class="stat-card clickable ${openDisputesClass}" onclick="window.location.href='/disputes'" title="Перейти к спорам">
+                        <h3>⚖️ Open Disputes</h3>
+                        <div class="number">${openDisputesCount}</div>
+                        <small style="color:#888">Требуют внимания</small>
+                    </div>
+                    <div class="stat-card clickable ${pendingWdClass}" onclick="window.location.href='/finance'" title="Перейти к выводам">
+                        <h3>💸 Pending Withdrawals</h3>
+                        <div class="number">${pendingWdTotal}</div>
+                        <small style="color:#888">Sellers: ${withdrawals.pending_sellers || 0}, Workers: ${withdrawals.pending_workers || 0}, Owners: ${withdrawals.pending_owners || 0}</small>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Заказы за период</h3>
+                        <div class="number">${data.new_orders_24h}</div>
+                        <small style="color:#888">${periodLabel}</small>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Доход за период</h3>
+                        <div class="number">${revenue24h}</div>
+                        <small style="color:#888">${periodLabel}</small>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Всего воркеров</h3>
+                        <div class="number">${data.total_workers}</div>
+                    </div>
+                `;
+                
+                document.getElementById('overviewStats').innerHTML = statsHtml;
+            } catch (error) {
+                showMessage('Ошибка загрузки обзора: ' + error.message);
+            }
+        }
+        
+        // Auto-refresh every 30 seconds
+        let autoRefreshInterval = null;
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                const activeTab = document.querySelector('.tab-content.active');
+                if (activeTab && activeTab.id === 'overview') {
+                    loadOverview();
+                }
+            }, 30000); // 30 seconds
+        }
+        
+        // Stop auto-refresh when leaving page
+        window.addEventListener('beforeunload', () => {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+        });
+        
+        // Загрузка пользователей
+        async function loadUsers() {
+            try {
+                const botFilter = document.getElementById('userBotFilter')?.value || '';
+                const searchFilter = document.getElementById('userSearch')?.value || '';
+                
+                let url = '/api/users/?limit=100';
+                if (botFilter) url += `&mirror_bot_id=${botFilter}`;
+                
+                const response = await apiRequest(url);
+                const users = await response.json();
+                
+                // Фильтр по User ID если задан
+                const filteredUsers = searchFilter ? 
+                    users.filter(user => user.user_id.toString().includes(searchFilter)) : 
+                    users;
+                
+                // Получаем информацию о ботах для отображения
+                const botsResponse = await apiRequest('/api/bots/?limit=1000');
+                const botsData = await botsResponse.json();
+                const bots = botsData.items || botsData;
+                const botsMap = {};
+                bots.forEach(bot => {
+                    botsMap[bot.id] = bot;
+                });
+                
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Bot</th>
+                                <th>Владелец бота</th>
+                                <th>Баланс</th>
+                                <th>Заказы</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filteredUsers.map(user => {
+                                const bot = botsMap[user.mirror_bot_id];
+                                return `
+                                <tr>
+                                    <td>
+                                        <strong>${user.user_id}</strong>
+                                        <br>
+                                        <small>
+                                            <button class="btn btn-secondary" onclick="showAdvancedUserSearchFor(${user.user_id})" style="font-size: 10px; padding: 2px 6px;">
+                                                🔍 Найти во всех ботах
+                                            </button>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>Bot ${user.mirror_bot_id}</strong><br>
+                                        <small>@${bot?.bot_username || 'Unknown'}</small>
+                                    </td>
+                                    <td>${bot?.owner_user_id || 'Unknown'}</td>
+                                    <td>$${user.balance.toFixed(2)}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" onclick="showUserOrders(${user.user_id})">
+                                            📋 Заказы
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${user.is_banned ? 'badge-danger' : 'badge-success'}">
+                                            ${user.is_banned ? 'Заблокирован' : 'Активен'}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="editUser(${user.user_id})">
+                                            ✏️ Изменить
+                                        </button>
+                                        <button class="btn btn-success" onclick="showMessageModal(${user.user_id})">
+                                            💬 Сообщение
+                                        </button>
+                        </td>
+                    </tr>
+                            `}).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('usersTable').innerHTML = tableHtml;
+            } catch (error) {
+                showMessage('Ошибка загрузки пользователей: ' + error.message);
+            }
+        }
+        
+        // Загрузка ботов для фильтра
+        async function loadBotsForFilter() {
+            try {
+                const response = await apiRequest('/api/bots/?limit=1000');
+                const botsData = await response.json();
+                const bots = botsData.items || botsData;
+                
+                const select = document.getElementById('userBotFilter');
+                if (select) {
+                    select.innerHTML = '<option value="">Все боты</option>' + 
+                        bots.map(bot => `<option value="${bot.id}">Bot ${bot.id} (${bot.bot_username || 'Unknown'})</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки ботов для фильтра:', error);
+            }
+        }
+        
+        // Загрузка ботов
+        async function loadBots() {
+            try {
+                const response = await apiRequest('/api/bots/?limit=1000');
+                const botsData = await response.json();
+                const bots = botsData.items || botsData;
+                
+                function _dashBotTypeBadge(t, l) {
+                    const c = {admin: 'badge-admin', user: 'badge-user', marketer: 'badge-marketer'}[t] || 'badge-info';
+                    return `<span class="badge ${c}">${l || t}</span>`;
+                }
+
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Тип</th>
+                                <th>Владелец</th>
+                                <th>Username</th>
+                                <th>Пользователи</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                    </tr>
+                        </thead>
+                        <tbody>
+                            ${bots.map(bot => `
+                                <tr>
+                                    <td>${bot.id}</td>
+                                    <td>${_dashBotTypeBadge(bot.bot_type, bot.bot_type_label)}</td>
+                                    <td>${bot.owner_user_id}</td>
+                                    <td>@${bot.bot_username || 'Unknown'}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" onclick="showBotUsers(${bot.id})">
+                                            👥 ${bot.users_count} участников
+                                        </button>
+                        </td>
+                                    <td>
+                                        <span class="badge ${bot.is_active ? 'badge-success' : 'badge-danger'}">
+                                            ${bot.is_active ? 'Активен' : 'Неактивен'}
+                                        </span>
+                        </td>
+                                    <td>${new Date(bot.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="showBotBroadcast(${bot.id})">
+                                            📢 Рассылка
+                                        </button>
+                                        <button class="btn btn-warning" onclick="toggleBot(${bot.id}, ${!bot.is_active})">
+                                            ${bot.is_active ? '⏸️ Деактивировать' : '▶️ Активировать'}
+                                        </button>
+                                        <button class="btn btn-danger" onclick="deleteBot(${bot.id})">
+                                            🗑️ Удалить
+                                        </button>
+                        </td>
+                    </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('botsTable').innerHTML = tableHtml;
+                
+                // Обновляем список ботов для рассылки
+                const broadcastSelect = document.getElementById('broadcastBotId');
+                if (broadcastSelect) {
+                    broadcastSelect.innerHTML = bots.map(bot => 
+                        `<option value="${bot.id}">Bot ${bot.id} (@${bot.bot_username || 'Unknown'})</option>`
+                    ).join('');
+                }
+            } catch (error) {
+                showMessage('Ошибка загрузки ботов: ' + error.message);
+            }
+        }
+        
+        // Загрузка аналитики
+        async function loadAnalytics() {
+            try {
+                // Загружаем суммарную статистику
+                const summaryResponse = await apiRequest('/api/analytics/stats/summary');
+                const summaryData = await summaryResponse.json();
+                
+                // Загружаем заказы по категориям
+                const categoryResponse = await apiRequest(`/api/analytics/orders/by-category?period_days=${currentAnalyticsPeriod}`);
+                const categoryData = await categoryResponse.json();
+                
+                const analyticsHtml = `
+                    <div class="stats-grid">
+                    <div class="stat-card">
+                            <h3>Новые пользователи (${currentAnalyticsPeriod} дн.)</h3>
+                            <div class="number">${summaryData[currentAnalyticsPeriod + '_days'].new_users}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Новые боты (${currentAnalyticsPeriod} дн.)</h3>
+                            <div class="number">${summaryData[currentAnalyticsPeriod + '_days'].new_bots}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Заказы (${currentAnalyticsPeriod} дн.)</h3>
+                            <div class="number">${summaryData[currentAnalyticsPeriod + '_days'].total_orders}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Доход (${currentAnalyticsPeriod} дн.)</h3>
+                            <div class="number">$${summaryData[currentAnalyticsPeriod + '_days'].revenue.toFixed(2)}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Баланс новых (${currentAnalyticsPeriod} дн.)</h3>
+                            <div class="number">$${summaryData[currentAnalyticsPeriod + '_days'].new_users_balance.toFixed(2)}</div>
+                    </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h3>Заказы по категориям за ${currentAnalyticsPeriod} дн.</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Категория</th>
+                                    <th>Всего заказов</th>
+                                    <th>Завершено</th>
+                                    <th>В ожидании</th>
+                                    <th>В работе</th>
+                                    <th>Отменено</th>
+                                    <th>Доход</th>
+                    </tr>
+                            </thead>
+                            <tbody>
+                                ${categoryData.categories.map(cat => `
+                                    <tr>
+                                        <td><strong>${cat.category}</strong></td>
+                                        <td>${cat.total_orders}</td>
+                                        <td><span class="badge badge-success">${cat.completed}</span></td>
+                                        <td><span class="badge badge-warning">${cat.pending}</span></td>
+                                        <td><span class="badge badge-info">${cat.processing}</span></td>
+                                        <td><span class="badge badge-danger">${cat.cancelled}</span></td>
+                                        <td>$${cat.revenue.toFixed(2)}</td>
+                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('analyticsContent').innerHTML = analyticsHtml;
+            } catch (error) {
+                showMessage('Ошибка загрузки аналитики: ' + error.message);
+            }
+        }
+        
+        // Установка периода аналитики
+        function setAnalyticsPeriod(days) {
+            currentAnalyticsPeriod = days;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            loadAnalytics();
+        }
+        
+        // Загрузка заказов
+        let ordersCurrentOffset = 0;
+        let ordersCurrentLimit = 50;
+        let ordersTotalRecords = 0;
+
+        async function loadOrders() {
+            try {
+                const statusFilter = document.getElementById('orderStatusFilter')?.value || '';
+                const categoryFilter = document.getElementById('orderCategoryFilter')?.value || '';
+
+                // Получаем лимит из селектора
+                ordersCurrentLimit = parseInt(document.getElementById('ordersPerPage')?.value || '50');
+
+                let url = `/api/orders/?limit=${ordersCurrentLimit}&offset=${ordersCurrentOffset}`;
+                if (statusFilter) url += `&status=${statusFilter}`;
+                if (categoryFilter) url += `&category=${categoryFilter}`;
+
+                const response = await apiRequest(url);
+                const data = await response.json();
+
+                // Извлекаем массив заказов и общее количество из ответа
+                const orders = data.items || data;
+                ordersTotalRecords = data.total || orders.length;
+                
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Категория</th>
+                                <th>Сервис</th>
+                                <th>Цена</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                    </tr>
+                        </thead>
+                        <tbody>
+                            ${orders.map(order => `
+                                <tr>
+                                    <td>${order.id}</td>
+                                    <td>${order.user_id}</td>
+                                    <td>${order.category}</td>
+                                    <td>${order.service_name}</td>
+                                    <td>$${order.price.toFixed(2)}</td>
+                                    <td>
+                                        <span class="badge ${getStatusBadgeClass(order.status)}">
+                                            ${getStatusText(order.status)}
+                                        </span>
+                        </td>
+                                    <td>${new Date(order.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" onclick="viewOrder(${order.id})">
+                                            👁️ Просмотр
+                                        </button>
+                        </td>
+                    </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('ordersTable').innerHTML = tableHtml;
+
+                // Обновляем пагинацию
+                updateOrdersPagination();
+
+            } catch (error) {
+                showMessage('Ошибка загрузки заказов: ' + error.message);
+            }
+        }
+
+        // Обновление пагинации заказов
+        function updateOrdersPagination() {
+            const paginationDiv = document.getElementById('ordersPagination');
+            const totalPages = Math.ceil(ordersTotalRecords / ordersCurrentLimit);
+            const currentPage = Math.floor(ordersCurrentOffset / ordersCurrentLimit) + 1;
+            const showingFrom = ordersCurrentOffset + 1;
+            const showingTo = Math.min(ordersCurrentOffset + ordersCurrentLimit, ordersTotalRecords);
+
+            // Показываем пагинацию только если есть записи
+            if (ordersTotalRecords > 0) {
+                paginationDiv.style.display = 'block';
+
+                document.getElementById('ordersShowingFrom').textContent = showingFrom;
+                document.getElementById('ordersShowingTo').textContent = showingTo;
+                document.getElementById('ordersTotalCount').textContent = ordersTotalRecords;
+                document.getElementById('ordersCurrentPage').textContent = currentPage;
+                document.getElementById('ordersTotalPages').textContent = totalPages;
+
+                // Управление кнопками навигации
+                document.getElementById('ordersFirstPage').disabled = currentPage === 1;
+                document.getElementById('ordersPrevPage').disabled = currentPage === 1;
+                document.getElementById('ordersNextPage').disabled = currentPage >= totalPages;
+                document.getElementById('ordersLastPage').disabled = currentPage >= totalPages;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+        }
+
+        // Навигация по страницам заказов
+        function goToOrdersPage(action) {
+            const totalPages = Math.ceil(ordersTotalRecords / ordersCurrentLimit);
+            const currentPage = Math.floor(ordersCurrentOffset / ordersCurrentLimit) + 1;
+
+            switch(action) {
+                case 'first':
+                    ordersCurrentOffset = 0;
+                    break;
+                case 'prev':
+                    if (currentPage > 1) {
+                        ordersCurrentOffset -= ordersCurrentLimit;
+                    }
+                    break;
+                case 'next':
+                    if (currentPage < totalPages) {
+                        ordersCurrentOffset += ordersCurrentLimit;
+                    }
+                    break;
+                case 'last':
+                    ordersCurrentOffset = (totalPages - 1) * ordersCurrentLimit;
+                    break;
+            }
+
+            loadOrders();
+        }
+
+        // Изменение лимита записей на странице для заказов
+        function changeOrdersLimit() {
+            ordersCurrentOffset = 0; // Сброс на первую страницу
+            loadOrders();
+        }
+        
+        // Загрузка категорий для фильтра
+        async function loadCategoriesForFilter() {
+            try {
+                const response = await apiRequest('/api/orders/?limit=1000');
+                const data = await response.json();
+
+                // Извлекаем массив заказов из ответа
+                const orders = data.items || data;
+
+                const categories = [...new Set(orders.map(order => order.category))];
+                
+                const select = document.getElementById('orderCategoryFilter');
+                if (select) {
+                    select.innerHTML = '<option value="">Все категории</option>' + 
+                        categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки категорий для фильтра:', error);
+            }
+        }
+        
+        // Вспомогательные функции для статусов
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'completed': return 'badge-success';
+                case 'processing': return 'badge-info';
+                case 'pending': return 'badge-warning';
+                case 'cancelled': return 'badge-danger';
+                default: return 'badge-secondary';
+            }
+        }
+        
+        function getStatusText(status) {
+            switch(status) {
+                case 'completed': return 'Завершен';
+                case 'processing': return 'В обработке';
+                case 'pending': return 'В ожидании';
+                case 'cancelled': return 'Отменен';
+                default: return status;
+            }
+        }
+        
+        // Модальные окна
+        function showModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // Редактирование пользователя
+        async function editUser(userId) {
+            try {
+                const response = await apiRequest(`/api/users/${userId}`);
+                const user = await response.json();
+                
+                document.getElementById('modalUserId').value = user.user_id;
+                document.getElementById('modalUserBalance').value = '$' + user.balance.toFixed(2);
+                document.getElementById('modalUserStatus').value = user.is_banned.toString();
+                document.getElementById('modalBanReason').value = user.ban_reason || '';
+                document.getElementById('modalBalanceChange').value = '';
+                document.getElementById('modalBalanceReason').value = '';
+                
+                currentUser = user;
+                showModal('userModal');
+            } catch (error) {
+                showMessage('Ошибка загрузки пользователя: ' + error.message);
+            }
+        }
+        
+        // Обновление пользователя
+        async function updateUser() {
+            try {
+                const userId = currentUser.user_id;
+                const balanceChange = parseFloat(document.getElementById('modalBalanceChange').value);
+                const balanceReason = document.getElementById('modalBalanceReason').value;
+                const isBanned = document.getElementById('modalUserStatus').value === 'true';
+                const banReason = document.getElementById('modalBanReason').value;
+                
+                // Обновляем баланс если указано изменение
+                if (balanceChange && balanceReason) {
+                    const balanceResponse = await apiRequest(`/api/users/${userId}/balance`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                            amount: balanceChange,
+                            reason: balanceReason
+                    })
+                });
+                
+                    if (!balanceResponse.ok) {
+                        throw new Error('Ошибка изменения баланса');
+                    }
+                }
+                
+                // Обновляем статус бана
+                const banResponse = await apiRequest(`/api/users/${userId}/ban`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        is_banned: isBanned,
+                        reason: banReason
+                    })
+                });
+                
+                if (!banResponse.ok) {
+                    throw new Error('Ошибка изменения статуса');
+                }
+                
+                closeModal('userModal');
+                showMessage('Пользователь успешно обновлен', 'success');
+                loadUsers();
+            } catch (error) {
+                showMessage('Ошибка обновления пользователя: ' + error.message);
+            }
+        }
+        
+        // Показать модальное окно сообщения
+        function showMessageModal(userId) {
+            document.getElementById('messageUserId').value = userId;
+            document.getElementById('messageText').value = '';
+            document.getElementById('messageSendMethod').value = 'original';
+            document.getElementById('specificBotGroup').style.display = 'none';
+            
+            // Загружаем список ботов для выбора
+            loadBotsForMessage();
+            
+            showModal('messageModal');
+        }
+        
+        // Загрузка ботов для отправки сообщений
+        async function loadBotsForMessage() {
+            try {
+                const response = await apiRequest('/api/bots/?limit=1000');
+                const botsData = await response.json();
+                const bots = botsData.items || botsData;
+                
+                const select = document.getElementById('messageSpecificBot');
+                select.innerHTML = bots.map(bot => 
+                    `<option value="${bot.id}">Bot ${bot.id} (@${bot.bot_username || 'Unknown'})</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Ошибка загрузки ботов для сообщений:', error);
+            }
+        }
+        
+        // Обработчик изменения способа отправки сообщения
+        document.addEventListener('DOMContentLoaded', function() {
+            const methodSelect = document.getElementById('messageSendMethod');
+            if (methodSelect) {
+                methodSelect.addEventListener('change', function() {
+                    const specificGroup = document.getElementById('specificBotGroup');
+                    specificGroup.style.display = this.value === 'specific' ? 'block' : 'none';
+                });
+            }
+        });
+        
+        // Отправка сообщения пользователю
+        async function sendMessage() {
+            try {
+                const userId = document.getElementById('messageUserId').value;
+                const message = document.getElementById('messageText').value;
+                const sendMethod = document.getElementById('messageSendMethod').value;
+                
+                if (!message.trim()) {
+                    showMessage('Введите сообщение');
+                    return;
+                }
+                
+                let url, body;
+                
+                if (sendMethod === 'original') {
+                    // Через оригинальный бот пользователя
+                    url = `/api/users/${userId}/send-message`;
+                    body = { message };
+                } else if (sendMethod === 'any') {
+                    // Через любой доступный бот
+                    url = `/api/users/${userId}/send-message-any-bot`;
+                    body = { message };
+                } else if (sendMethod === 'specific') {
+                    // Через конкретный бот
+                    const botId = document.getElementById('messageSpecificBot').value;
+                    url = `/api/users/${userId}/send-message-any-bot`;
+                    body = { message, preferred_bot_id: parseInt(botId) };
+                }
+                
+                const response = await apiRequest(url, {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка отправки сообщения');
+                }
+                
+                const result = await response.json();
+                
+                closeModal('messageModal');
+                
+                let successMessage = 'Сообщение успешно отправлено';
+                if (result.bot_username) {
+                    successMessage += ` через @${result.bot_username}`;
+                }
+                if (result.attempts) {
+                    successMessage += ` (попыток: ${result.attempts})`;
+                }
+                
+                showMessage(successMessage, 'success');
+            } catch (error) {
+                showMessage('Ошибка отправки сообщения: ' + error.message);
+            }
+        }
+        
+        // Показать модальное окно рассылки
+        function showBroadcastModal() {
+            document.getElementById('broadcastType').value = 'all';
+            document.getElementById('broadcastMessage').value = '';
+            document.getElementById('broadcastPhoto').value = '';
+            document.getElementById('broadcastBotGroup').style.display = 'none';
+            showModal('broadcastModal');
+        }
+        
+        // Рассылка конкретному боту
+        function showBotBroadcast(botId) {
+            document.getElementById('broadcastType').value = 'bot';
+            document.getElementById('broadcastBotId').value = botId;
+            document.getElementById('broadcastMessage').value = '';
+            document.getElementById('broadcastPhoto').value = '';
+            document.getElementById('broadcastBotGroup').style.display = 'block';
+            showModal('broadcastModal');
+        }
+        
+        // Изменение типа рассылки
+        document.getElementById('broadcastType').addEventListener('change', function() {
+            const botGroup = document.getElementById('broadcastBotGroup');
+            botGroup.style.display = this.value === 'bot' ? 'block' : 'none';
+        });
+        
+        // Отправка рассылки
+        async function sendBroadcast() {
+            try {
+                const type = document.getElementById('broadcastType').value;
+                const message = document.getElementById('broadcastMessage').value;
+                const photo = document.getElementById('broadcastPhoto').value;
+                
+                if (!message.trim()) {
+                    showMessage('Введите сообщение для рассылки');
+                    return;
+                }
+                
+                let url, body;
+                
+                if (type === 'all') {
+                    url = '/api/bots/broadcast-all';
+                    body = { message, include_photo: photo || null };
+                } else {
+                    const botId = document.getElementById('broadcastBotId').value;
+                    url = `/api/bots/${botId}/broadcast`;
+                    body = { message, include_photo: photo || null };
+                }
+                
+                const response = await apiRequest(url, {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка отправки рассылки');
+                }
+                
+                const result = await response.json();
+                
+                closeModal('broadcastModal');
+                showMessage(`Рассылка завершена. Отправлено: ${result.sent}, Ошибок: ${result.failed}`, 'success');
+            } catch (error) {
+                showMessage('Ошибка отправки рассылки: ' + error.message);
+            }
+        }
+        
+        // Показать пользователей бота
+        async function showBotUsers(botId) {
+            try {
+                const response = await apiRequest(`/api/bots/${botId}/users`);
+                const users = await response.json();
+                
+                const statsResponse = await apiRequest(`/api/bots/${botId}/stats`);
+                const stats = await statsResponse.json();
+                
+                const contentHtml = `
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="stat-card">
+                            <h3>Всего пользователей</h3>
+                            <div class="number">${stats.total_users}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Общий баланс</h3>
+                            <div class="number">$${stats.total_balance.toFixed(2)}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Всего заказов</h3>
+                            <div class="number">${stats.total_orders}</div>
+                    </div>
+                    <div class="stat-card">
+                            <h3>Общий доход</h3>
+                            <div class="number">$${stats.total_revenue.toFixed(2)}</div>
+                    </div>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Баланс</th>
+                                <th>Дата регистрации</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr>
+                                    <td>${user.user_id}</td>
+                                    <td>$${user.balance.toFixed(2)}</td>
+                                    <td>${new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('botUsersContent').innerHTML = contentHtml;
+                showModal('botUsersModal');
+            } catch (error) {
+                showMessage('Ошибка загрузки пользователей бота: ' + error.message);
+            }
+        }
+        
+        // Переключение состояния бота
+        async function toggleBot(botId, isActive) {
+            try {
+                const response = await apiRequest(`/api/bots/${botId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ is_active: isActive })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка изменения состояния бота');
+                }
+                
+                showMessage(`Бот ${isActive ? 'активирован' : 'деактивирован'}`, 'success');
+                loadBots();
+            } catch (error) {
+                showMessage('Ошибка изменения состояния бота: ' + error.message);
+            }
+        }
+        
+        // Удаление бота
+        async function deleteBot(botId) {
+            if (!confirm('Вы уверены, что хотите удалить этого бота? Это действие необратимо.')) {
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(`/api/bots/${botId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка удаления бота');
+                }
+                
+                showMessage('Бот успешно удален', 'success');
+                loadBots();
+            } catch (error) {
+                showMessage('Ошибка удаления бота: ' + error.message);
+            }
+        }
+        
+        // Просмотр заказов пользователя
+        async function showUserOrders(userId) {
+            try {
+                const response = await apiRequest(`/api/users/${userId}/orders`);
+                const orders = await response.json();
+                
+                const statsResponse = await apiRequest(`/api/users/${userId}/stats`);
+                const stats = await statsResponse.json();
+                
+                alert(`Статистика пользователя ${userId}:\n\nВсего заказов: ${stats.total_orders}\nЗавершено: ${stats.completed_orders}\nВ ожидании: ${stats.pending_orders}\nВ обработке: ${stats.processing_orders}\nПотрачено: $${stats.total_spent.toFixed(2)}\nБаланс: $${stats.balance.toFixed(2)}`);
+            } catch (error) {
+                showMessage('Ошибка загрузки заказов пользователя: ' + error.message);
+            }
+        }
+        
+        // Просмотр заказа
+        async function viewOrder(orderId) {
+            try {
+                const response = await apiRequest(`/api/orders/${orderId}`);
+                const order = await response.json();
+                
+                let orderDetails = `
+📋 Заказ #${order.id}
+👤 Пользователь: ${order.user_id}
+🤖 Бот: ${order.mirror_bot_id}
+📂 Категория: ${order.category}
+🛒 Сервис: ${order.service_name}
+💰 Цена: $${order.price}
+📊 Статус: ${order.status}
+📅 Создан: ${new Date(order.created_at).toLocaleString('ru-RU')}
+`;
+
+                if (order.taken_at) {
+                    orderDetails += `⏰ Взят в работу: ${new Date(order.taken_at).toLocaleString('ru-RU')}\n`;
+                }
+                
+                if (order.completed_at) {
+                    orderDetails += `✅ Завершен: ${new Date(order.completed_at).toLocaleString('ru-RU')}\n`;
+                }
+                
+                if (order.worker_id) {
+                    orderDetails += `👷 Воркер: ${order.worker_id}\n`;
+                }
+                
+                if (order.input_data) {
+                    orderDetails += `\n📝 Входные данные:\n${JSON.stringify(order.input_data, null, 2)}\n`;
+                }
+                
+                if (order.result_data) {
+                    orderDetails += `\n📋 Результат:\n${JSON.stringify(order.result_data, null, 2)}\n`;
+                }
+                
+                if (order.is_bulk && order.bulk_items && order.bulk_items.length > 0) {
+                    orderDetails += `\n📦 Bulk заказ (${order.bulk_count} элементов):\n`;
+                    order.bulk_items.forEach((item, index) => {
+                        orderDetails += `  ${index + 1}. Статус: ${item.status}\n`;
+                    });
+                }
+                
+                alert(orderDetails);
+            } catch (error) {
+                showMessage('Ошибка загрузки заказа: ' + error.message, 'error');
+            }
+        }
+        
+        // Показать модальное окно расширенного поиска
+        function showAdvancedUserSearch() {
+            document.getElementById('advancedSearchUserId').value = '';
+            document.getElementById('advancedSearchResults').style.display = 'none';
+            showModal('advancedSearchModal');
+        }
+        
+        // Выполнить расширенный поиск пользователя
+        async function performAdvancedSearch() {
+            try {
+                const userId = document.getElementById('advancedSearchUserId').value;
+                
+                if (!userId.trim()) {
+                    showMessage('Введите User ID для поиска');
+                    return;
+                }
+                
+                const response = await apiRequest(`/api/users/search/${userId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Пользователь не найден');
+                }
+                
+                const data = await response.json();
+                
+                // Отображаем результаты поиска
+                const resultsHtml = `
+                    <div class="section">
+                        <h4>👤 Пользователь ${data.user_id}</h4>
+                        <p><strong>Всего заказов:</strong> ${data.total_orders}</p>
+                        <p><strong>Завершенных заказов:</strong> ${data.completed_orders}</p>
+                        <p><strong>Потрачено:</strong> $${data.total_spent.toFixed(2)}</p>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>🤖 Найден в ботах:</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Bot ID</th>
+                                    <th>Username</th>
+                                    <th>Владелец</th>
+                                    <th>Баланс</th>
+                                    <th>Статус</th>
+                                    <th>Дата регистрации</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.found_in_bots.map(bot => `
+                                    <tr>
+                                        <td>${bot.mirror_bot_id}</td>
+                                        <td>@${bot.bot_username || 'Unknown'}</td>
+                                        <td>${bot.bot_owner}</td>
+                                        <td>$${bot.balance.toFixed(2)}</td>
+                                        <td>
+                                            <span class="badge ${bot.is_banned ? 'badge-danger' : 'badge-success'}">
+                                                ${bot.is_banned ? 'Заблокирован' : 'Активен'}
+                                            </span>
+                                        </td>
+                                        <td>${new Date(bot.created_at).toLocaleDateString('ru-RU')}</td>
+                                        <td>
+                                            <button class="btn btn-primary" onclick="editUserFromSearch(${bot.user_id})">
+                                                ✏️ Изменить
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>📞 Связь с пользователем:</h4>
+                        <p>Доступные боты для отправки сообщений:</p>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                            ${data.available_bots_for_contact.map(bot => `
+                                <button class="btn btn-success" onclick="sendMessageViaBot(${data.user_id}, ${bot.id})">
+                                    📤 Через @${bot.username || 'Unknown'}
+                                </button>
+                            `).join('')}
+                            <button class="btn btn-warning" onclick="sendMessageAnyBot(${data.user_id})">
+                                📤 Через любой бот
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('advancedSearchContent').innerHTML = resultsHtml;
+                document.getElementById('advancedSearchResults').style.display = 'block';
+                
+            } catch (error) {
+                showMessage('Ошибка поиска: ' + error.message);
+            }
+        }
+        
+        // Редактировать пользователя из результатов поиска
+        async function editUserFromSearch(userId) {
+            closeModal('advancedSearchModal');
+            await editUser(userId);
+        }
+        
+        // Отправить сообщение через конкретный бот
+        function sendMessageViaBot(userId, botId) {
+            closeModal('advancedSearchModal');
+            document.getElementById('messageUserId').value = userId;
+            document.getElementById('messageText').value = '';
+            document.getElementById('messageSendMethod').value = 'specific';
+            document.getElementById('messageSpecificBot').value = botId;
+            document.getElementById('specificBotGroup').style.display = 'block';
+            
+            loadBotsForMessage();
+            showModal('messageModal');
+        }
+        
+        // Отправить сообщение через любой бот
+        function sendMessageAnyBot(userId) {
+            closeModal('advancedSearchModal');
+            document.getElementById('messageUserId').value = userId;
+            document.getElementById('messageText').value = '';
+            document.getElementById('messageSendMethod').value = 'any';
+            document.getElementById('specificBotGroup').style.display = 'none';
+            
+            showModal('messageModal');
+        }
+        
+        // Быстрый поиск пользователя из таблицы
+        function showAdvancedUserSearchFor(userId) {
+            document.getElementById('advancedSearchUserId').value = userId;
+            showModal('advancedSearchModal');
+            performAdvancedSearch();
+        }
+        
+        // Загрузка воркеров
+        async function loadWorkers() {
+            try {
+                const statusFilter = document.getElementById('workerStatusFilter')?.value || '';
+                
+                // Сначала пробуем простой endpoint
+                let url = '/api/workers/';
+                
+                const response = await apiRequest(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const workers = await response.json();
+                
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Telegram ID</th>
+                                <th>Username</th>
+                                <th>Категории</th>
+                                <th>Баланс</th>
+                                <th>Заказов выполнено</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${workers.filter(worker => {
+                                if (!statusFilter) return true;
+                                return worker.is_active.toString() === statusFilter;
+                            }).map(worker => `
+                                <tr>
+                                    <td>${worker.id}</td>
+                                    <td>${worker.telegram_id}</td>
+                                    <td>@${worker.username || 'Unknown'}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                            ${worker.categories.map(cat => 
+                                                `<span class="badge badge-info">${cat}</span>`
+                                            ).join('')}
+                                        </div>
+                                    </td>
+                                    <td>$${worker.balance.toFixed(2)}</td>
+                                    <td><span class="badge badge-info">${worker.orders_completed}</span></td>
+                                    <td>
+                                        <span class="badge ${worker.is_active ? 'badge-success' : 'badge-danger'}">
+                                            ${worker.is_active ? 'Активен' : 'Неактивен'}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(worker.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="showWorkerAnalytics(${worker.id})">
+                                            📊 Аналитика
+                                        </button>
+                                        <button class="btn btn-warning" onclick="toggleWorker(${worker.id}, ${!worker.is_active})">
+                                            ${worker.is_active ? '⏸️ Деактивировать' : '▶️ Активировать'}
+                                        </button>
+                                        <button class="btn btn-danger" onclick="deleteWorker(${worker.id})">
+                                            🗑️ Удалить
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('workersTable').innerHTML = tableHtml;
+            } catch (error) {
+                showMessage('Ошибка загрузки воркеров: ' + error.message);
+            }
+        }
+        
+        // Показать модальное окно добавления воркера
+        async function showAddWorkerModal() {
+            document.getElementById('workerTelegramId').value = '';
+            document.getElementById('workerUsername').value = '';
+            
+            // Загружаем категории
+            try {
+                const response = await apiRequest('/api/workers/categories');
+                const data = await response.json();
+                
+                const categoriesHtml = data.categories.map(cat => 
+                    `<label><input type="checkbox" value="${cat.id}"> ${cat.emoji} ${cat.name}</label>`
+                ).join('');
+                
+                document.getElementById('workerCategories').innerHTML = categoriesHtml;
+            } catch (error) {
+                console.error('Ошибка загрузки категорий:', error);
+                // Fallback к статичным категориям
+                document.getElementById('workerCategories').innerHTML = `
+                    <label><input type="checkbox" value="📶 eSIM"> 📶 eSIM</label>
+                    <label><input type="checkbox" value="📄 DOCUMENTS"> 📄 DOCUMENTS</label>
+                    <label><input type="checkbox" value="🧰 PROS & FULLZ"> 🧰 PROS & FULLZ</label>
+                    <label><input type="checkbox" value="🏦 BANKS"> 🏦 BANKS</label>
+                    <label><input type="checkbox" value="🧾 Subscriptions / Accounts"> 🧾 Subscriptions / Accounts</label>
+                    <label><input type="checkbox" value="✍️ Add info in CR"> ✍️ Add info in CR</label>
+                    <label><input type="checkbox" value="🔎 Search"> 🔎 Search</label>
+                    <label><input type="checkbox" value="📈 CREDIT REPORTS"> 📈 CREDIT REPORTS</label>
+                `;
+            }
+            
+            showModal('addWorkerModal');
+        }
+        
+        // Добавить воркера
+        async function addWorker() {
+            try {
+                const telegramId = document.getElementById('workerTelegramId').value;
+                const username = document.getElementById('workerUsername').value;
+                
+                if (!telegramId) {
+                    showMessage('Введите Telegram ID');
+                    return;
+                }
+                
+                // Собираем выбранные категории
+                const categories = [];
+                document.querySelectorAll('#workerCategories input[type="checkbox"]:checked').forEach(cb => {
+                    categories.push(cb.value);
+                });
+                
+                if (categories.length === 0) {
+                    showMessage('Выберите хотя бы одну категорию');
+                    return;
+                }
+                
+                const response = await apiRequest('/api/workers/', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        telegram_id: parseInt(telegramId),
+                        username: username || null,
+                        categories: categories
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка добавления воркера');
+                }
+                
+                closeModal('addWorkerModal');
+                showMessage('Воркер успешно добавлен', 'success');
+                loadWorkers();
+            } catch (error) {
+                showMessage('Ошибка добавления воркера: ' + error.message);
+            }
+        }
+        
+        // Показать детальную аналитику воркера
+        async function showWorkerAnalytics(workerId) {
+            currentWorkerId = workerId;
+            showModal('workerAnalyticsModal');
+            await loadWorkerAnalytics();
+        }
+        
+        // Загрузить аналитику воркера
+        async function loadWorkerAnalytics() {
+            try {
+                const response = await apiRequest(`/api/workers/${currentWorkerId}/analytics?period_days=${currentWorkerAnalyticsPeriod}`);
+                const data = await response.json();
+                
+                const analyticsHtml = `
+                    <div class="section">
+                        <h4>👷 Воркер: @${data.worker_info.username || 'Unknown'} (ID: ${data.worker_info.id})</h4>
+                        <p><strong>Telegram ID:</strong> ${data.worker_info.telegram_id}</p>
+                        <p><strong>Категории:</strong> ${data.worker_info.categories.join(', ')}</p>
+                        <p><strong>Статус:</strong> ${data.worker_info.is_active ? 'Активен' : 'Неактивен'}</p>
+                        <p><strong>Баланс:</strong> $${data.worker_info.balance.toFixed(2)}</p>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Всего заказов</h3>
+                            <div class="number">${data.general_stats.total_orders}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Выполнено</h3>
+                            <div class="number">${data.general_stats.completed_orders}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Отменено</h3>
+                            <div class="number">${data.general_stats.cancelled_orders}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Успешность</h3>
+                            <div class="number">${data.general_stats.success_rate}%</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Заработано</h3>
+                            <div class="number">$${data.general_stats.total_earnings.toFixed(2)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Средний чек</h3>
+                            <div class="number">$${data.general_stats.avg_order_value.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>📊 Статистика по категориям</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Категория</th>
+                                    <th>Всего заказов</th>
+                                    <th>Выполнено</th>
+                                    <th>Отменено</th>
+                                    <th>Успешность</th>
+                                    <th>Заработано</th>
+                                    <th>Средняя цена</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.category_stats.map(cat => `
+                                    <tr>
+                                        <td><strong>${cat.category}</strong></td>
+                                        <td>${cat.total_orders}</td>
+                                        <td><span class="badge badge-success">${cat.completed_orders}</span></td>
+                                        <td><span class="badge badge-danger">${cat.cancelled_orders}</span></td>
+                                        <td>
+                                            <span class="badge ${cat.success_rate >= 80 ? 'badge-success' : cat.success_rate >= 60 ? 'badge-warning' : 'badge-danger'}">
+                                                ${cat.success_rate}%
+                                            </span>
+                                        </td>
+                                        <td>$${cat.earnings.toFixed(2)}</td>
+                                        <td>$${cat.avg_price.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="section">
+                        <h4>🔧 Статистика по сервисам</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Сервис</th>
+                                    <th>Категория</th>
+                                    <th>Заказы</th>
+                                    <th>Выполнено</th>
+                                    <th>Отменено</th>
+                                    <th>Успешность</th>
+                                    <th>Заработано</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.service_stats.map(service => `
+                                    <tr>
+                                        <td><strong>${service.service_name}</strong></td>
+                                        <td><span class="badge badge-info">${service.category}</span></td>
+                                        <td>${service.total_orders}</td>
+                                        <td><span class="badge badge-success">${service.completed_orders}</span></td>
+                                        <td><span class="badge badge-danger">${service.cancelled_orders}</span></td>
+                                        <td>
+                                            <span class="badge ${service.success_rate >= 80 ? 'badge-success' : service.success_rate >= 60 ? 'badge-warning' : 'badge-danger'}">
+                                                ${service.success_rate}%
+                                            </span>
+                                        </td>
+                                        <td>$${service.earnings.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    ${data.completion_time_stats.length > 0 ? `
+                    <div class="section">
+                        <h4>⏱️ Время выполнения по категориям</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Категория</th>
+                                    <th>Среднее время выполнения</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.completion_time_stats.map(time => `
+                                    <tr>
+                                        <td><strong>${time.category}</strong></td>
+                                        <td>${time.avg_completion_hours} часов</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+                    
+                    ${data.daily_stats.length > 0 ? `
+                    <div class="section">
+                        <h4>📅 Статистика по дням</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Дата</th>
+                                    <th>Заказы</th>
+                                    <th>Выполнено</th>
+                                    <th>Заработано</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.daily_stats.map(day => `
+                                    <tr>
+                                        <td>${day.date}</td>
+                                        <td>${day.orders}</td>
+                                        <td><span class="badge badge-success">${day.completed}</span></td>
+                                        <td>$${day.earnings.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
+                `;
+                
+                document.getElementById('workerAnalyticsContent').innerHTML = analyticsHtml;
+            } catch (error) {
+                showMessage('Ошибка загрузки аналитики воркера: ' + error.message);
+            }
+        }
+        
+        // Установка периода аналитики воркера
+        function setWorkerAnalyticsPeriod(days) {
+            currentWorkerAnalyticsPeriod = days;
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('#workerAnalyticsModal .period-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            loadWorkerAnalytics();
+        }
+        
+        // Переключение состояния воркера
+        async function toggleWorker(workerId, isActive) {
+            try {
+                const response = await apiRequest(`/api/workers/${workerId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ is_active: isActive })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка изменения состояния воркера');
+                }
+                
+                showMessage(`Воркер ${isActive ? 'активирован' : 'деактивирован'}`, 'success');
+                loadWorkers();
+            } catch (error) {
+                showMessage('Ошибка изменения состояния воркера: ' + error.message);
+            }
+        }
+        
+        // Удаление воркера
+        async function deleteWorker(workerId) {
+            if (!confirm('Вы уверены, что хотите удалить этого воркера? Это действие необратимо.')) {
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(`/api/workers/${workerId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка удаления воркера');
+                }
+                
+                showMessage('Воркер успешно удален', 'success');
+                loadWorkers();
+            } catch (error) {
+                showMessage('Ошибка удаления воркера: ' + error.message);
+            }
+        }
+        
+        
+        // Загрузка жалоб
+        async function loadComplaints() {
+            try {
+                const response = await apiRequest('/api/complaints/');
+                const complaints = await response.json();
+                
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Тип</th>
+                                <th>Описание</th>
+                                <th>Статус</th>
+                                <th>Создана</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${complaints.map(complaint => `
+                                <tr>
+                                    <td>${complaint.id}</td>
+                                    <td>${complaint.user_id}</td>
+                                    <td><span class="badge badge-warning">${complaint.type}</span></td>
+                                    <td>${complaint.description.substring(0, 50)}...</td>
+                                    <td>
+                                        <span class="badge ${getComplaintStatusBadge(complaint.status)}">
+                                            ${getComplaintStatusText(complaint.status)}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(complaint.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <button class="btn btn-primary" onclick="viewComplaint(${complaint.id})">
+                                            👁️ Просмотр
+                                        </button>
+                                        <button class="btn btn-success" onclick="resolveComplaint(${complaint.id})">
+                                            ✅ Решить
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                
+                document.getElementById('complaintsTable').innerHTML = tableHtml;
+            } catch (error) {
+                document.getElementById('complaintsTable').innerHTML = `
+                    <div class="section">
+                        <p>Ошибка загрузки жалоб: ${error.message}</p>
+                        <p>Возможно, API жалоб не настроен или недоступен.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Вспомогательные функции для статусов
+        function getTicketStatusBadge(status) {
+            switch(status) {
+                case 'open': return 'badge-warning';
+                case 'in_progress': return 'badge-info';
+                case 'closed': return 'badge-success';
+                default: return 'badge-secondary';
+            }
+        }
+        
+        function getTicketStatusText(status) {
+            switch(status) {
+                case 'open': return 'Открыт';
+                case 'in_progress': return 'В работе';
+                case 'closed': return 'Закрыт';
+                default: return status;
+            }
+        }
+        
+        function getPriorityBadge(priority) {
+            switch(priority) {
+                case 'high': return 'badge-danger';
+                case 'medium': return 'badge-warning';
+                case 'low': return 'badge-info';
+                default: return 'badge-secondary';
+            }
+        }
+        
+        function getComplaintStatusBadge(status) {
+            switch(status) {
+                case 'new': return 'badge-warning';
+                case 'reviewing': return 'badge-info';
+                case 'resolved': return 'badge-success';
+                case 'rejected': return 'badge-danger';
+                default: return 'badge-secondary';
+            }
+        }
+        
+        function getComplaintStatusText(status) {
+            switch(status) {
+                case 'new': return 'Новая';
+                case 'reviewing': return 'На рассмотрении';
+                case 'resolved': return 'Решена';
+                case 'rejected': return 'Отклонена';
+                default: return status;
+            }
+        }
+        
+        // Заглушки для функций управления (будут реализованы при необходимости)
+        function showAddCategoryModal() {
+            showMessage('Функция добавления категории в разработке');
+        }
+        
+        function showAddServiceModal() {
+            showMessage('Функция добавления сервиса в разработке');
+        }
+        
+        function editCategory(id) {
+            showMessage('Функция редактирования категории в разработке');
+        }
+        
+        function deleteCategory(id) {
+            showMessage('Функция удаления категории в разработке');
+        }
+        
+        function editService(id) {
+            showMessage('Функция редактирования сервиса в разработке');
+        }
+        
+        function deleteService(id) {
+            showMessage('Функция удаления сервиса в разработке');
+        }
+        
+        async function viewTicket(id) {
+            try {
+                const response = await apiRequest(`/api/support-tickets/${id}`);
+                const ticket = await response.json();
+                
+                alert(`Тикет #${ticket.id}\nПользователь: ${ticket.user_id}\nТема: ${ticket.subject || ticket.title}\nСтатус: ${ticket.status}\nСоздан: ${new Date(ticket.created_at).toLocaleString('ru-RU')}\n\nСообщение:\n${ticket.message || ticket.description || 'Нет сообщения'}`);
+            } catch (error) {
+                showMessage('Ошибка загрузки тикета: ' + error.message);
+            }
+        }
+        
+        async function closeTicket(id) {
+            if (!confirm('Вы уверены, что хотите закрыть этот тикет?')) {
+                return;
+            }
+            
+            try {
+                const response = await apiRequest(`/api/support-tickets/${id}/close`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    showMessage('Тикет успешно закрыт');
+                    loadSupportTickets();
+                } else {
+                    showMessage('Ошибка закрытия тикета');
+                }
+            } catch (error) {
+                showMessage('Ошибка закрытия тикета: ' + error.message);
+            }
+        }
+        
+        function viewComplaint(id) {
+            showMessage('Функция просмотра жалобы в разработке');
+        }
+        
+        function resolveComplaint(id) {
+            showMessage('Функция решения жалобы в разработке');
+        }
+        
+        // Обновление username ботов
+        async function updateBotUsernames() {
+            if (!confirm('Обновить username для всех ботов? Это может занять некоторое время.')) {
+                return;
+            }
+            
+            try {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '⏳ Обновление...';
+                button.disabled = true;
+                
+                const response = await apiRequest('/api/bots/update-usernames', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка обновления username');
+                }
+                
+                const result = await response.json();
+                
+                let message = `Обновление завершено!\n\nУспешно: ${result.updated}\nОшибок: ${result.failed}`;
+                
+                if (result.results.length > 0) {
+                    message += '\n\nДетали:';
+                    result.results.forEach(r => {
+                        if (r.status === 'success') {
+                            message += `\n✅ Бот ${r.bot_id}: ${r.old_username || 'None'} → @${r.new_username}`;
+                        } else {
+                            message += `\n❌ Бот ${r.bot_id}: ${r.error}`;
+                        }
+                    });
+                }
+                
+                alert(message);
+                showMessage(`Username обновлены. Успешно: ${result.updated}, Ошибок: ${result.failed}`, 'success');
+                loadBots();
+                
+                button.textContent = originalText;
+                button.disabled = false;
+            } catch (error) {
+                showMessage('Ошибка обновления username: ' + error.message);
+                button.textContent = originalText;
+                button.disabled = false;
+            }
+        }
+        
+        // Закрытие модальных окон по клику вне них
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+        
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            setDashboardQuickRange(30);
+            loadOverview();
+        });
+    </script>
+{% endblock %}

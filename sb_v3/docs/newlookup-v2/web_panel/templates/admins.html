@@ -1,0 +1,160 @@
+{% extends "_base.html" %}
+{% block title %}Админы{% endblock %}
+{% block header_title %}👤 Управление админами{% endblock %}
+{% block extra_css %}
+<style>
+.section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{color:#333;font-size:20px;margin-bottom:16px}
+.btn-primary{padding:10px 24px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px}
+.btn-primary:hover{opacity:.95}
+.btn-secondary{padding:8px 16px;background:#e5e7eb;color:#333;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-secondary:hover{background:#d1d5db}
+.btn-danger{padding:8px 16px;background:#ef4444;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-danger:hover{background:#dc2626}
+.btn-success{padding:8px 16px;background:#22c55e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px}
+.btn-success:hover{background:#16a34a}
+.loading{text-align:center;padding:40px;color:#666}
+.success-msg{background:#e3fcef;color:#006644;padding:12px;border-radius:8px;margin-bottom:16px;display:none}
+.error-msg{background:#ffe6e6;color:#d32f2f;padding:12px;border-radius:8px;margin-bottom:16px;display:none}
+.admins-table{width:100%;border-collapse:collapse}
+.admins-table th,.admins-table td{padding:12px 16px;text-align:left;border-bottom:1px solid #e5e7eb}
+.admins-table th{background:#f9fafb;font-weight:600;color:#374151}
+.admins-table tr:hover{background:#f9fafb}
+.badge{display:inline-block;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:500}
+.badge-active{background:#d1fae5;color:#065f46}
+.badge-inactive{background:#fee2e2;color:#991b1b}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
+.modal.show{display:flex}
+.modal-content{background:#fff;padding:24px;border-radius:12px;max-width:400px;width:100%;max-height:90vh;overflow-y:auto}
+.modal-content h3{margin-bottom:20px;color:#333}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;margin-bottom:6px;font-weight:500;color:#374151}
+.form-group input,.form-group select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#667eea}
+.catalog-permissions{display:none;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb}
+.catalog-permissions.show{display:block}
+.catalog-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.catalog-option{display:flex;align-items:center;gap:8px;font-size:13px;color:#374151}
+.catalog-option input{width:auto}
+.catalog-hint{margin-top:8px;font-size:12px;color:#6b7280}
+.modal-actions{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+.access-denied{text-align:center;padding:60px 24px;color:#6b7280}
+.access-denied h2{margin-bottom:12px;color:#374151}
+</style>
+{% endblock %}
+{% block content %}
+<div id="successMsg" class="success-msg"></div>
+<div id="errorMsg" class="error-msg"></div>
+<div id="accessDenied" class="section access-denied" style="display:none">
+    <h2>⛔ Доступ запрещён</h2>
+    <p>Только owner может управлять админами.</p>
+</div>
+<div id="adminsSection" class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <h2 style="margin:0">Список админов</h2>
+        <button class="btn-primary" onclick="openAddModal()">➕ Добавить админа</button>
+    </div>
+    <div id="adminsContent"><div class="loading">Загрузка...</div></div>
+</div>
+
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <h3>Добавить админа</h3>
+        <div class="form-group">
+            <label>Username *</label>
+            <input type="text" id="addUsername" placeholder="admin2">
+        </div>
+        <div class="form-group">
+            <label>Пароль (мин. 8 символов) *</label>
+            <input type="password" id="addPassword" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+            <label>Роль</label>
+            <select id="addRole">
+                <option value="owner">owner</option>
+                <option value="super_admin">super_admin</option>
+                <option value="admin" selected>admin</option>
+                <option value="finance">finance</option>
+                <option value="accountant">accountant</option>
+                <option value="moderator">moderator</option>
+                <option value="support">support</option>
+                <option value="uploader">uploader</option>
+                <option value="viewer">viewer</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Telegram ID (опционально)</label>
+            <input type="number" id="addTelegramId" placeholder="123456789">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeAddModal()">Отмена</button>
+            <button class="btn-primary" onclick="submitAdd()">Создать</button>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <h3>Редактировать админа</h3>
+        <input type="hidden" id="editId">
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" id="editUsername" disabled style="background:#f3f4f6">
+        </div>
+        <div class="form-group">
+            <label>Новый пароль (оставьте пустым, чтобы не менять)</label>
+            <input type="password" id="editPassword" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+            <label>Роль</label>
+            <select id="editRole">
+                <option value="owner">owner</option>
+                <option value="super_admin">super_admin</option>
+                <option value="admin">admin</option>
+                <option value="finance">finance</option>
+                <option value="accountant">accountant</option>
+                <option value="moderator">moderator</option>
+                <option value="support">support</option>
+                <option value="uploader">uploader</option>
+                <option value="viewer">viewer</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Telegram ID</label>
+            <input type="number" id="editTelegramId" placeholder="123456789">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeEditModal()">Отмена</button>
+            <button class="btn-primary" onclick="submitEdit()">Сохранить</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function showMsg(t,text){const el=document.getElementById(t==='success'?'successMsg':'errorMsg');const o=document.getElementById(t==='success'?'errorMsg':'successMsg');o.style.display='none';el.textContent=text;el.style.display='block';setTimeout(()=>el.style.display='none',4000)}
+let adminsData=[];
+let customRoleOptions=[];
+function populateRoleSelect(selectId, selectedRole, selectedRoleId){
+  const select=document.getElementById(selectId);
+  if(!select)return;
+  const builtin=['owner','super_admin','admin','finance','accountant','moderator','support','uploader','viewer'];
+  const builtinOptions = builtin.map(role=>`<option value="${role}">${role}</option>`).join('');
+  const customOptions = (customRoleOptions||[]).map(role=>`<option value="custom:${role.id}">custom: ${role.display_name}</option>`).join('');
+  select.innerHTML = builtinOptions + customOptions;
+  const currentValue = selectedRoleId ? `custom:${selectedRoleId}` : (builtin.includes(selectedRole) ? selectedRole : 'admin');
+  select.value = currentValue;
+}
+async function loadCustomRoles(){const r=await authFetch('/api/admin-roles');if(!r||!r.ok){customRoleOptions=[];return}customRoleOptions=await r.json();populateRoleSelect('addRole','admin',null);populateRoleSelect('editRole','admin',null)}
+async function loadAdmins(){const r=await authFetch('/api/admins');if(!r){return}if(r.status===403){document.getElementById('accessDenied').style.display='block';document.getElementById('adminsSection').style.display='none';return}if(!r.ok){showMsg('error','Ошибка загрузки');return}adminsData=await r.json();const admins=adminsData;document.getElementById('adminsContent').innerHTML=`<table class="admins-table"><thead><tr><th>ID</th><th>Username</th><th>Роль</th><th>Telegram ID</th><th>Статус</th><th>Действия</th></tr></thead><tbody>${admins.map(a=>`<tr><td>${a.id}</td><td>${a.username}</td><td>${a.role_id&&a.role_name?`custom<br><small style="color:#6b7280">${a.role_name}</small>`:a.role}${a.allowed_catalogs&&a.allowed_catalogs.length?`<br><small style="color:#6b7280">${a.allowed_catalogs.join(', ')}</small>`:''}</td><td>${a.telegram_id||'—'}</td><td><span class="badge badge-${a.is_active?'active':'inactive'}">${a.is_active?'Активен':'Неактивен'}</span></td><td>${a.is_active?`<button class="btn-secondary" onclick="openEditModal(${a.id})">✏️</button> <button class="btn-danger" onclick="deactivate(${a.id})">Деактивировать</button>`:`<button class="btn-success" onclick="activate(${a.id})">Активировать</button>`}</td></tr>`).join('')}</tbody></table>`}
+async function openAddModal(){document.getElementById('addModal').classList.add('show');document.getElementById('addUsername').value='';document.getElementById('addPassword').value='';populateRoleSelect('addRole','admin',null);document.getElementById('addTelegramId').value=''}
+function closeAddModal(){document.getElementById('addModal').classList.remove('show')}
+async function submitAdd(){const username=document.getElementById('addUsername').value.trim();const password=document.getElementById('addPassword').value;const roleValue=document.getElementById('addRole').value;if(!username){showMsg('error','Введите username');return}if(password.length<8){showMsg('error','Пароль минимум 8 символов');return}const isCustom=roleValue.startsWith('custom:');const payload={username,password,role:isCustom?'custom':roleValue,role_id:isCustom?parseInt(roleValue.split(':')[1]):null,telegram_id:document.getElementById('addTelegramId').value||null,allowed_catalogs:[]};const r=await authFetch('/api/admins',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r)return;if(!r.ok){const d=await r.json();showMsg('error',d.detail||'Ошибка');return}closeAddModal();showMsg('success','Админ создан');loadAdmins()}
+function openEditModal(id){const a=adminsData.find(x=>x.id===id);if(!a)return;document.getElementById('editId').value=id;document.getElementById('editUsername').value=a.username;document.getElementById('editPassword').value='';populateRoleSelect('editRole',a.role,a.role_id);document.getElementById('editTelegramId').value=a.telegram_id||'';document.getElementById('editModal').classList.add('show')}
+function closeEditModal(){document.getElementById('editModal').classList.remove('show')}
+async function submitEdit(){const id=document.getElementById('editId').value;const body={};const p=document.getElementById('editPassword').value;const roleValue=document.getElementById('editRole').value;const isCustom=roleValue.startsWith('custom:');if(p)body.password=p;body.role=isCustom?'custom':roleValue;body.role_id=isCustom?parseInt(roleValue.split(':')[1]):null;/* do NOT send allowed_catalogs - preserve existing catalog assignments */const tg=document.getElementById('editTelegramId').value;body.telegram_id=tg?parseInt(tg):null;const r=await authFetch(`/api/admins/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r)return;if(!r.ok){const d=await r.json();showMsg('error',d.detail||'Ошибка');return}closeEditModal();showMsg('success','Сохранено');loadAdmins()}
+async function deactivate(id){if(!confirm('Деактивировать админа?'))return;const r=await authFetch(`/api/admins/${id}/deactivate`,{method:'POST'});if(!r)return;if(!r.ok){const d=await r.json();showMsg('error',d.detail||'Ошибка');return}showMsg('success','Админ деактивирован');loadAdmins()}
+async function activate(id){const r=await authFetch(`/api/admins/${id}/activate`,{method:'POST'});if(!r)return;if(!r.ok){const d=await r.json();showMsg('error',d.detail||'Ошибка');return}showMsg('success','Админ активирован');loadAdmins()}
+(async()=>{await loadCustomRoles();loadAdmins();})();
+</script>
+{% endblock %}

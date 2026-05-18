@@ -1,0 +1,168 @@
+# Metabase Dashboard: Workers Management (как в web_panel/api/workers.py)
+# Dashboard ID: 018
+# Description: Управление воркерами - активация, задания, выплаты
+
+dashboard:
+  name: "👷 Workers Management"
+  description: "Управление воркерами - активация, назначения, статистика, выплаты"
+  position: 18
+
+  parameters:
+    - name: "Worker ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "active", "inactive", "busy"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "👷 Total Workers"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_workers
+        FROM workers
+        WHERE is_active = true
+
+    - name: "📦 Busy Workers"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(DISTINCT worker_id) as busy_workers
+        FROM orders
+        WHERE status = 'processing'
+          AND worker_id IS NOT NULL
+
+    - name: "⏳ Free Workers"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM workers WHERE is_active = true) -
+          (SELECT COUNT(DISTINCT worker_id) FROM orders WHERE status = 'processing' AND worker_id IS NOT NULL)
+        as free_workers
+
+    - name: "💰 Total Worker Balances"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_balances
+        FROM workers
+
+    # ========== ALL WORKERS TABLE ==========
+    - name: "👷 All Workers"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          w.id,
+          w.user_id,
+          u.username,
+          w.balance,
+          w.total_earned,
+          w.total_withdrawn,
+          w.is_active,
+          w.is_busy,
+          w.current_order_id,
+          (SELECT COUNT(*) FROM orders WHERE worker_id = w.id AND status = 'completed') as completed_orders,
+          (SELECT SUM(price) FROM orders WHERE worker_id = w.id AND status = 'completed') as total_revenue,
+          'Activate/Deactivate/View/Assign' as actions
+        FROM workers w
+        LEFT JOIN users u ON w.user_id = u.user_id
+        WHERE ({{worker_id}} IS NULL OR w.id = {{worker_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            ({{status_filter}} = 'active' AND w.is_active = true) OR
+            ({{status_filter}} = 'inactive' AND w.is_active = false)
+          )
+        ORDER BY w.created_at DESC
+        LIMIT 100
+
+    # ========== WORKER PERFORMANCE ==========
+    - name: "📊 Worker Performance (30 days)"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          w.id as worker_id,
+          u.username,
+          COUNT(o.id) as orders_completed,
+          SUM(o.price) as total_revenue,
+          AVG(EXTRACT(EPOCH FROM (o.completed_at - o.created_at)) / 60) as avg_minutes_per_order,
+          w.balance,
+          w.total_earned,
+          'View Details' as action
+        FROM workers w
+        LEFT JOIN users u ON w.user_id = u.user_id
+        LEFT JOIN orders o ON w.id = o.worker_id 
+          AND o.status = 'completed'
+          AND o.completed_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY w.id, u.username, w.balance, w.total_earned
+        HAVING COUNT(o.id) > 0
+        ORDER BY orders_completed DESC
+        LIMIT 50
+
+    # ========== WORKER WITHDRAWALS ==========
+    - name: "💸 Worker Withdrawals Pending"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          ww.id,
+          ww.worker_id,
+          u.username,
+          ww.amount,
+          ww.payment_method,
+          ww.payment_network,
+          ww.requisites,
+          ww.tx_hash,
+          ww.status,
+          ww.created_at,
+          ww.processed_at,
+          'Approve/Reject' as action
+        FROM worker_withdrawals ww
+        LEFT JOIN users u ON ww.worker_id = u.user_id
+        WHERE ww.status = 'pending'
+        ORDER BY ww.created_at ASC
+        LIMIT 50
+
+    # ========== WORKER VIOLATIONS ==========
+    - name: "⚠️ Worker Violations"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          wv.id,
+          wv.worker_id,
+          u.username,
+          wv.violation_type,
+          wv.penalty_amount,
+          wv.description,
+          wv.created_at,
+          'Review' as action
+        FROM worker_violations wv
+        LEFT JOIN users u ON wv.worker_id = u.user_id
+        ORDER BY wv.created_at DESC
+        LIMIT 50
+
+    # ========== WORKER STATS ==========
+    - name: "📈 Worker Activity (7 days)"
+      type: "line"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(o.created_at) as date,
+          COUNT(DISTINCT o.worker_id) as active_workers,
+          COUNT(*) as orders_completed,
+          SUM(o.price) as total_revenue
+        FROM orders o
+        WHERE o.status = 'completed'
+          AND o.worker_id IS NOT NULL
+          AND o.created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(o.created_at)
+        ORDER BY date

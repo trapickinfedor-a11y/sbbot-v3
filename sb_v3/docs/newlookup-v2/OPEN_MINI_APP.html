@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url=http://localhost:8000/seller-mini-app?dev_tg_id=123456789">
+    <title>Opening Seller Mini App...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #409cff, #5eb3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            margin: 30px auto;
+            border: 4px solid rgba(64, 156, 255, 0.2);
+            border-top-color: #409cff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        p {
+            color: #7d8e9e;
+            font-size: 16px;
+        }
+        a {
+            color: #409cff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Opening Seller Mini App</h1>
+        <div class="spinner"></div>
+        <p>Redirecting to <a href="http://localhost:8000/seller-mini-app?dev_tg_id=123456789">http://localhost:8000/seller-mini-app</a></p>
+        <p style="margin-top: 20px; font-size: 14px;">If not redirected automatically, click the link above</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Открытие Админки</title>
+    <meta http-equiv="refresh" content="0;url=http://localhost:8000">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { font-size: 32px; margin-bottom: 20px; }
+        p { font-size: 18px; margin-bottom: 30px; }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .credentials {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+        }
+        .credentials code {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖥️ Web Panel Admin</h1>
+        <p>Открываем админку...</p>
+        
+        <a href="http://localhost:8000" class="btn">
+            🚀 Открыть Админку
+        </a>
+        
+        <div class="credentials">
+            <h3>🔐 Логин:</h3>
+            <code>Username: admin</code>
+            <code>Password: admin123</code>
+        </div>
+        
+        <p style="margin-top: 20px; font-size: 14px; opacity: 0.8;">
+            Если не открылось автоматически, кликните на кнопку выше
+        </p>
+    </div>
+    
+    <script>
+        // Пытаемся открыть разными способами
+        window.location.href = 'http://localhost:8000';
+        
+        // Для Safari
+        setTimeout(() => {
+            window.open('http://localhost:8000', '_blank');
+        }, 1000);
+    </script>
+</body>
+</html>

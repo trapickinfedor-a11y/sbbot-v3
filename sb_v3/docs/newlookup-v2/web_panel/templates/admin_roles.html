@@ -1,0 +1,128 @@
+{% extends "_base.html" %}
+{% block title %}Роли{% endblock %}
+{% block header_title %}🔐 Кастомные роли{% endblock %}
+{% block container_modifier %} admin-container--w900{% endblock %}
+{% block extra_css %}
+<style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+        .section h2{font-size:18px;margin-bottom:16px}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        table th{background:#f9fafb;padding:12px;text-align:left}
+        table td{padding:12px;border-bottom:1px solid #eee}
+        .perms{font-size:12px;color:#6b7280}
+        .empty{color:#9ca3af;padding:20px;text-align:center}
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2>Список ролей</h2>
+            <button onclick="openCreate()" style="padding:10px 16px;border:none;border-radius:8px;background:#4f46e5;color:#fff;cursor:pointer">➕ Новая роль</button>
+        </div>
+        <div id="rolesTable"><div class="empty">Загрузка...</div></div>
+    </div>
+    <div id="roleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;z-index:1000">
+        <div style="background:#fff;border-radius:12px;padding:24px;max-width:720px;width:100%">
+            <h3 id="roleModalTitle" style="margin-bottom:16px">Новая роль</h3>
+            <input id="roleId" type="hidden">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                <input id="roleName" placeholder="role_code" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px">
+                <input id="roleDisplayName" placeholder="Display Name" style="padding:10px 12px;border:1px solid #d1d5db;border-radius:8px">
+            </div>
+            <div id="permissionGrid" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:16px"></div>
+            <div style="display:flex;gap:12px;justify-content:flex-end">
+                <button onclick="closeModal()" style="padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;background:#fff;cursor:pointer">Отмена</button>
+                <button onclick="submitRole()" style="padding:10px 14px;border:none;border-radius:8px;background:#4f46e5;color:#fff;cursor:pointer">Сохранить</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const API = '/api/admin-roles';
+const token = localStorage.getItem('token');
+function authHeaders() { return { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }; }
+const permissionOptions=['dashboard','finance_access','analytics','reports','users','crm_edit','ban_users','bots','deposits','workers','worker_crm','sellers','seller_crm','seller-deposits','marketers','orders','complaints','support','products','banks','brute_bank','accounts','esim','cc','education','another-services','seller_moderation','automation','service-prices','pricing-config','categories','broadcasts','instructions','admin-structure','admins','admin_roles','audit'];
+let roleCache=[];
+function renderPermissionGrid(selected){
+    const selectedSet=new Set(Object.entries(selected||{}).filter(([,v])=>v).map(([k])=>k));
+    document.getElementById('permissionGrid').innerHTML=permissionOptions.map(key=>`<label style="display:flex;align-items:center;gap:8px;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px"><input type="checkbox" value="${key}" ${selectedSet.has(key)?'checked':''}> <span>${key}</span></label>`).join('');
+}
+function readPermissions(){
+    return Object.fromEntries(Array.from(document.querySelectorAll('#permissionGrid input[type="checkbox"]')).map(node=>[node.value,node.checked]));
+}
+function openCreate(){
+    document.getElementById('roleId').value='';
+    document.getElementById('roleName').value='';
+    document.getElementById('roleName').disabled=false;
+    document.getElementById('roleDisplayName').value='';
+    document.getElementById('roleModalTitle').textContent='Новая роль';
+    renderPermissionGrid({});
+    document.getElementById('roleModal').style.display='flex';
+}
+function openEdit(role){
+    document.getElementById('roleId').value=role.id;
+    document.getElementById('roleName').value=role.name;
+    document.getElementById('roleName').disabled=true;
+    document.getElementById('roleDisplayName').value=role.display_name||'';
+    document.getElementById('roleModalTitle').textContent='Редактировать роль';
+    renderPermissionGrid(role.permissions||{});
+    document.getElementById('roleModal').style.display='flex';
+}
+function openEditById(id){
+    const role=roleCache.find(item=>item.id===id);
+    if(role) openEdit(role);
+}
+function closeModal(){document.getElementById('roleModal').style.display='none'}
+
+async function loadRoles() {
+    try {
+        const r = await fetch(API, { headers: authHeaders() });
+        if (!r.ok) throw new Error(r.statusText);
+        const list = await r.json();
+        roleCache = list;
+        const el = document.getElementById('rolesTable');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty">Нет кастомных ролей. Используются встроенные: owner, admin, finance, moderator, support, viewer.</div>';
+            return;
+        }
+        el.innerHTML = '<table><thead><tr><th>ID</th><th>Название</th><th>Права</th></tr></thead><tbody>' +
+            list.map(role => `<tr>
+                <td>${role.id}</td>
+                <td>${role.display_name} <code>${role.name}</code> ${role.is_system ? '(системная)' : ''}</td>
+                <td class="perms">${Object.entries(role.permissions || {}).filter(([k,v]) => v).map(([k]) => k).join(', ') || '-'} ${role.is_system ? '' : `<div style="margin-top:8px"><button onclick='openEditById(${role.id})' style="padding:6px 10px;border:none;border-radius:6px;background:#4f46e5;color:#fff;cursor:pointer">Edit</button> <button onclick='deleteRole(${role.id})' style="padding:6px 10px;border:none;border-radius:6px;background:#ef4444;color:#fff;cursor:pointer">Delete</button></div>`}</td>
+            </tr>`).join('') + '</tbody></table>';
+    } catch (e) {
+        document.getElementById('rolesTable').innerHTML = '<div class="empty">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+async function submitRole(){
+    const id=document.getElementById('roleId').value;
+    const payload={display_name:document.getElementById('roleDisplayName').value.trim(),permissions:readPermissions()};
+    let url=API, method='POST';
+    if(!payload.display_name){alert('Display name required');return}
+    if(!id){
+        payload.name=document.getElementById('roleName').value.trim();
+        if(!payload.name){alert('Role code required');return}
+    } else {
+        url=`${API}/${id}`;
+        method='PATCH';
+    }
+    const r=await fetch(url,{method,headers:authHeaders(),body:JSON.stringify(payload)});
+    if(!r.ok){const d=await r.json().catch(()=>({}));alert(d.detail||'Save failed');return}
+    closeModal();
+    loadRoles();
+}
+
+async function deleteRole(id){
+    if(!confirm('Удалить роль?')) return;
+    const r=await fetch(`${API}/${id}`,{method:'DELETE',headers:authHeaders()});
+    if(!r.ok){const d=await r.json().catch(()=>({}));alert(d.detail||'Delete failed');return}
+    loadRoles();
+}
+
+loadRoles();
+</script>
+{% endblock %}

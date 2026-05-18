@@ -1,0 +1,291 @@
+# Metabase Dashboard: Moderation Queue
+# Dashboard ID: 010
+# Description: Очередь модерации товаров селлеров
+
+dashboard:
+  name: "🔍 Moderation Queue"
+  description: "Все товары ожидающие модерации - приоритетная очередь для админов"
+  position: 10
+
+  parameters:
+    - name: "Category Filter"
+      type: "string"
+      required: false
+      values: ["banks", "cc", "enroll", "logs", "nfc", "otp", "selfreg_cc", "check", "document", "fullz"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last7days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "📊 Total Pending"
+      type: "number"
+      position: { row: 1, col: 1, size: 2 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_banks WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_cc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_enroll_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_logs_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_nfc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_otp_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_selfreg_cc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_check_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_document_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_fullz_items WHERE moderation_status = 'pending')
+        as total_pending
+
+    - name: "🏦 Banks"
+      type: "number"
+      position: { row: 1, col: 3, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_banks
+        FROM seller_banks
+        WHERE moderation_status = 'pending'
+
+    - name: "💳 CC"
+      type: "number"
+      position: { row: 1, col: 4, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_cc
+        FROM seller_cc_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📄 Documents"
+      type: "number"
+      position: { row: 1, col: 5, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_docs
+        FROM seller_document_items
+        WHERE moderation_status = 'pending'
+
+    - name: "🎫 Enroll"
+      type: "number"
+      position: { row: 1, col: 6, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_enroll
+        FROM seller_enroll_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📝 Logs"
+      type: "number"
+      position: { row: 1, col: 7, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_logs
+        FROM seller_logs_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📱 NFC"
+      type: "number"
+      position: { row: 1, col: 8, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_nfc
+        FROM seller_nfc_items
+        WHERE moderation_status = 'pending'
+
+    - name: "🔐 OTP"
+      type: "number"
+      position: { row: 1, col: 9, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_otp
+        FROM seller_otp_items
+        WHERE moderation_status = 'pending'
+
+    - name: "💳 Selfreg CC"
+      type: "number"
+      position: { row: 1, col: 10, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_selfreg
+        FROM seller_selfreg_cc_items
+        WHERE moderation_status = 'pending'
+
+    - name: "✅ Checks"
+      type: "number"
+      position: { row: 1, col: 11, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_checks
+        FROM seller_check_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📦 Fullz"
+      type: "number"
+      position: { row: 1, col: 12, size: 1 }
+      query: |
+        SELECT COUNT(*) as pending_fullz
+        FROM seller_fullz_items
+        WHERE moderation_status = 'pending'
+
+    # ========== PENDING TABLES ==========
+    - name: "🏦 Pending Banks"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          bank_name,
+          type as bank_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_banks
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "💳 Pending CC Items"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          category_code,
+          card_name,
+          bin,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_cc_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "📄 Pending Documents"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          country,
+          type as document_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_document_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "🎫 Pending Enroll"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          category_id,
+          price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_enroll_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "📝 Pending Logs"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          shop_name,
+          price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_logs_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "📱 Pending NFC"
+      type: "table"
+      position: { row: 7, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          nfc_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_nfc_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "🔐 Pending OTP"
+      type: "table"
+      position: { row: 8, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          service_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_otp_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "💳 Pending Selfreg CC"
+      type: "table"
+      position: { row: 9, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          category_id,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_selfreg_cc_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "✅ Pending Checks"
+      type: "table"
+      position: { row: 10, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          check_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_check_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50
+
+    - name: "📦 Pending Fullz"
+      type: "table"
+      position: { row: 11, col: 1, size: 12 }
+      query: |
+        SELECT 
+          id,
+          seller_id,
+          fullz_type,
+          seller_price,
+          stock_quantity,
+          created_at,
+          'Approve/Reject' as action
+        FROM seller_fullz_items
+        WHERE moderation_status = 'pending'
+        ORDER BY created_at DESC
+        LIMIT 50

@@ -1,0 +1,311 @@
+# Metabase Dashboard: Web Admin Main (как основная админка)
+# Dashboard ID: 015
+# Description: Основная админка Web Panel - дублирует и усиливает функционал веб-админки
+
+dashboard:
+  name: "🎛️ Web Admin Main (Основная Админка)"
+  description: "Главная панель администратора Web Panel - все метрики платформы в реальном времени"
+  position: 15
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "today"
+      description: "Период для статистики"
+    - name: "Category Filter"
+      type: "string"
+      required: false
+      description: "Фильтр по категории заказов"
+
+  # ========== ROW 1: KEY STATS (как в web_panel/api/dashboard.py) ==========
+  cards:
+    - name: "👥 Total Users"
+      type: "number"
+      position: { row: 1, col: 1, size: 2 }
+      query: |
+        SELECT COUNT(*) as total_users
+        FROM users
+      visualization:
+        type: "scalar"
+        show-trend: true
+        trend-field: "previous_period"
+
+    - name: "🆕 New Users"
+      type: "number"
+      position: { row: 1, col: 3, size: 2 }
+      query: |
+        SELECT COUNT(*) as new_users
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "📦 Total Orders"
+      type: "number"
+      position: { row: 1, col: 5, size: 2 }
+      query: |
+        SELECT COUNT(*) as total_orders
+        FROM orders
+
+    - name: "⏳ Pending Orders"
+      type: "number"
+      position: { row: 1, col: 7, size: 2 }
+      query: |
+        SELECT COUNT(*) as pending_orders
+        FROM orders
+        WHERE status = 'pending'
+
+    - name: "⚙️ Processing Orders"
+      type: "number"
+      position: { row: 1, col: 9, size: 2 }
+      query: |
+        SELECT COUNT(*) as processing_orders
+        FROM orders
+        WHERE status = 'processing'
+
+    - name: "✅ Completed Orders"
+      type: "number"
+      position: { row: 1, col: 11, size: 2 }
+      query: |
+        SELECT COUNT(*) as completed_orders
+        FROM orders
+        WHERE status = 'completed'
+
+    # ========== ROW 2: FINANCES ==========
+    - name: "💰 Total Revenue"
+      type: "number"
+      position: { row: 2, col: 1, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(price), 0) as total_revenue
+        FROM orders
+        WHERE status = 'completed'
+
+    - name: "💵 Revenue (Period)"
+      type: "number"
+      position: { row: 2, col: 4, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(price), 0) as period_revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND completed_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "🛍️ Product Revenue"
+      type: "number"
+      position: { row: 2, col: 7, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(p.price), 0) as product_revenue
+        FROM product_purchases pp
+        JOIN products p ON pp.product_id = p.id
+
+    - name: "💳 User Balances Total"
+      type: "number"
+      position: { row: 2, col: 10, size: 3 }
+      query: |
+        SELECT COALESCE(SUM(balance), 0) as total_user_balances
+        FROM users
+        WHERE balance > 0
+
+    # ========== ROW 3: MODERATION (как в web_panel) ==========
+    - name: "🔍 Pending Moderation (Total)"
+      type: "number"
+      position: { row: 3, col: 1, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_banks WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_cc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_enroll_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_logs_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_nfc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_otp_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_selfreg_cc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_check_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_document_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_fullz_items WHERE moderation_status = 'pending')
+        as total_pending_moderation
+
+    - name: "🏦 Banks Pending"
+      type: "number"
+      position: { row: 3, col: 4, size: 2 }
+      query: |
+        SELECT COUNT(*) as pending_banks
+        FROM seller_banks
+        WHERE moderation_status = 'pending'
+
+    - name: "💳 CC Pending"
+      type: "number"
+      position: { row: 3, col: 6, size: 2 }
+      query: |
+        SELECT COUNT(*) as pending_cc
+        FROM seller_cc_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📄 Documents Pending"
+      type: "number"
+      position: { row: 3, col: 8, size: 2 }
+      query: |
+        SELECT COUNT(*) as pending_docs
+        FROM seller_document_items
+        WHERE moderation_status = 'pending'
+
+    - name: "📦 Other Pending"
+      type: "number"
+      position: { row: 3, col: 10, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_enroll_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_logs_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_nfc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_otp_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_selfreg_cc_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_check_items WHERE moderation_status = 'pending') +
+          (SELECT COUNT(*) FROM seller_fullz_items WHERE moderation_status = 'pending')
+        as other_pending
+
+    # ========== ROW 4: SUPPORT & DISPUTES ==========
+    - name: "🎧 Open Tickets"
+      type: "number"
+      position: { row: 4, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as open_tickets
+        FROM support_tickets
+        WHERE status IN ('open', 'in_progress')
+
+    - name: "⚖️ Open Disputes"
+      type: "number"
+      position: { row: 4, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as open_disputes
+        FROM seller_order_disputes
+        WHERE status IN ('open', 'in_moderation')
+
+    - name: "⏳ Avg Response Time"
+      type: "number"
+      position: { row: 4, col: 7, size: 3 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_minutes
+        FROM support_tickets
+        WHERE first_response_at IS NOT NULL
+          AND created_at >= NOW() - INTERVAL '7 days'
+
+    - name: "🔴 Critical Tickets"
+      type: "number"
+      position: { row: 4, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as critical_tickets
+        FROM support_tickets
+        WHERE priority = 'CRITICAL'
+          AND status NOT IN ('solved', 'closed')
+
+    # ========== ROW 5: WITHDRAWALS ==========
+    - name: "💸 Pending Withdrawals (All)"
+      type: "number"
+      position: { row: 5, col: 1, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM worker_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM marketer_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM bot_owner_withdrawals WHERE status = 'pending')
+        as total_pending_withdrawals
+
+    - name: "💰 Withdrawal Amount Pending"
+      type: "number"
+      position: { row: 5, col: 4, size: 3 }
+      query: |
+        SELECT 
+          COALESCE(
+            (SELECT SUM(amount) FROM seller_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM worker_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM marketer_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM bot_owner_withdrawals WHERE status = 'pending'),
+            0
+          ) as total_pending_amount
+
+    - name: "🏪 Seller Withdrawals Pending"
+      type: "number"
+      position: { row: 5, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as seller_pending
+        FROM seller_withdrawals
+        WHERE status = 'pending'
+
+    - name: "👷 Worker Withdrawals Pending"
+      type: "number"
+      position: { row: 5, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as worker_pending
+        FROM worker_withdrawals
+        WHERE status = 'pending'
+
+    # ========== ROW 6: BOTS & WORKERS ==========
+    - name: "🤖 Active Bots"
+      type: "number"
+      position: { row: 6, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_bots
+        FROM mirror_bots
+        WHERE is_active = true
+
+    - name: "👷 Total Workers"
+      type: "number"
+      position: { row: 6, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_workers
+        FROM workers
+        WHERE is_active = true
+
+    - name: "📢 Total Marketers"
+      type: "number"
+      position: { row: 6, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_marketers
+        FROM marketers
+        WHERE is_active = true
+
+    - name: "🏪 Total Sellers"
+      type: "number"
+      position: { row: 6, col: 10, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_sellers
+        FROM sellers
+        WHERE is_active = true
+
+    # ========== ROW 7: REVENUE TREND (как в web_panel/dashboard.py) ==========
+    - name: "Revenue Trend"
+      type: "line"
+      position: { row: 7, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as orders_count,
+          SUM(price) as revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    # ========== ROW 8: ORDERS BY STATUS ==========
+    - name: "Orders by Status"
+      type: "pie"
+      position: { row: 8, col: 1, size: 4 }
+      query: |
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM orders
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "Orders by Category"
+      type: "bar"
+      position: { row: 8, col: 5, size: 8 }
+      query: |
+        SELECT 
+          category,
+          COUNT(*) as orders_count,
+          SUM(price) as revenue
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY category
+        ORDER BY revenue DESC
+        LIMIT 10

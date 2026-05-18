@@ -1,0 +1,107 @@
+# Metabase Dashboard: Platform Overview
+# Dashboard ID: 001
+# Description: Main platform metrics and KPIs
+
+dashboard:
+  name: "📊 Platform Overview"
+  description: "Main KPIs and platform health metrics"
+  position: 1
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Bot"
+      type: "string"
+      required: false
+
+  cards:
+    - name: "Total Users"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_users
+        FROM users
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+      
+      visualization:
+        type: "scalar"
+        show-trend: true
+        trend-field: "previous_period"
+
+    - name: "New Users (24h)"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as new_users
+        FROM users
+        WHERE created_at >= NOW() - INTERVAL '24 hours'
+
+    - name: "Total Orders"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT COUNT(*) as total_orders
+        FROM orders
+
+    - name: "Orders by Status"
+      type: "pie"
+      position: { row: 2, col: 1, size: 6 }
+      query: |
+        SELECT status, COUNT(*) as count
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "Revenue Trend"
+      type: "line"
+      position: { row: 2, col: 7, size: 6 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          SUM(price) as revenue
+        FROM orders
+        WHERE status = 'completed'
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Active Bots"
+      type: "number"
+      position: { row: 3, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as active_bots
+        FROM mirror_bots
+        WHERE is_active = true
+
+    - name: "Top Categories"
+      type: "bar"
+      position: { row: 3, col: 4, size: 9 }
+      query: |
+        SELECT 
+          category,
+          COUNT(*) as orders,
+          SUM(price) as revenue
+        FROM orders
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY category
+        ORDER BY revenue DESC
+        LIMIT 10
+
+    - name: "Recent Orders Table"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          o.id,
+          o.user_id,
+          o.category,
+          o.service_name,
+          o.price,
+          o.status,
+          o.created_at
+        FROM orders o
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY o.created_at DESC
+        LIMIT 50

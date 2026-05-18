@@ -1,0 +1,703 @@
+{% extends "_base.html" %}
+{% block title %}Finance Hub{% endblock %}
+{% block header_title %}💼 Finance Hub{% endblock %}
+{% block extra_css %}
+<style>
+.fin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+.fin-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #6366f1}
+.fin-card.green{border-color:#22c55e}.fin-card.amber{border-color:#f59e0b}.fin-card.red{border-color:#ef4444}.fin-card.blue{border-color:#3b82f6}.fin-card.purple{border-color:#8b5cf6}
+.fin-card h4{font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.fin-metric{font-size:26px;font-weight:700;color:#111827}
+.fin-sub{font-size:12px;color:#9ca3af;margin-top:4px}
+.section{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.section-header h2{font-size:16px;font-weight:600;color:#111827}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.filters select,.filters input{padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;outline:none}
+.filters select:focus,.filters input:focus{border-color:#6366f1}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#f9fafb}
+th{padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;font-weight:600;border-bottom:2px solid #e5e7eb}
+td{padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#374151}
+tr:hover td{background:#f9fafb}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;font-size:11px;font-weight:600}
+.badge-completed{background:#dcfce7;color:#166534}.badge-pending{background:#fef9c3;color:#854d0e}.badge-on_hold{background:#fef3c7;color:#92400e}.badge-failed{background:#fee2e2;color:#991b1b}.badge-refunded{background:#e0e7ff;color:#3730a3}
+.badge-topup{background:#dbeafe;color:#1e40af}.badge-purchase{background:#d1fae5;color:#065f46}.badge-payout{background:#f3e8ff;color:#6b21a8}.badge-escrow{background:#ffe4e6;color:#9f1239}.badge-refund{background:#e0f2fe;color:#075985}.badge-commission{background:#fef9c3;color:#854d0e}.badge-projection_bootstrap{background:#f1f5f9;color:#64748b}
+.pager{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px}
+.pager button{padding:5px 12px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;cursor:pointer;font-size:13px}
+.pager button:disabled{opacity:.4;cursor:default}
+.pager button:hover:not(:disabled){background:#f9fafb}
+.tab-row{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#6b7280}
+.tab-btn.active{background:#6366f1;color:#fff;border-color:#6366f1}
+.withdrawals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.w-card{background:#f9fafb;border-radius:8px;padding:14px;border:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.w-card .w-info{font-size:13px;color:#374151}
+.w-card .w-amount{font-size:18px;font-weight:700;color:#111827}
+.w-card .w-actions{display:flex;gap:6px}
+.plbox{padding:14px 18px;border-radius:8px;font-size:13px;line-height:1.8}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- KPI metrics -->
+<div class="fin-grid" id="kpiGrid">
+  <div class="fin-card green"><h4>Total GMV</h4><div class="fin-metric" id="kpiGmv">…</div><div class="fin-sub">All completed transactions</div></div>
+  <div class="fin-card blue"><h4>Today Volume</h4><div class="fin-metric" id="kpiToday">…</div><div class="fin-sub" id="kpiTodayCount">…</div></div>
+  <div class="fin-card amber"><h4>On Hold (Escrow)</h4><div class="fin-metric" id="kpiHold">…</div><div class="fin-sub" id="kpiHoldCount">…</div></div>
+  <div class="fin-card red"><h4>Pending Withdrawals</h4><div class="fin-metric" id="kpiWithdraw">…</div><div class="fin-sub">Seller payouts queued</div></div>
+  <div class="fin-card purple"><h4>Active Workers</h4><div class="fin-metric" id="kpiWorkers">…</div><div class="fin-sub" id="kpiWorkersOrders">…</div></div>
+  <div class="fin-card"><h4>Total Txns</h4><div class="fin-metric" id="kpiTotal">…</div><div class="fin-sub" id="kpiPeriod">Last 30 days: …</div></div>
+</div>
+
+<!-- P&L Summary -->
+<div class="section">
+  <div class="section-header">
+    <h2>📊 P&amp;L Summary</h2>
+    <select id="plPeriod" onchange="loadPL()" style="padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+    </select>
+  </div>
+  <div class="plbox" id="plContent" style="background:#f9fafb;border-radius:8px">Loading…</div>
+</div>
+
+<!-- Tab navigation -->
+<div class="tab-row">
+  <button class="tab-btn active" onclick="switchTab('txns',this)">📋 Transaction Ledger</button>
+  <button class="tab-btn" onclick="switchTab('withdrawals',this)">💸 Pending Withdrawals</button>
+  <button class="tab-btn" onclick="switchTab('reconcile',this)">🔍 Reconciliation</button>
+  <button class="tab-btn" onclick="switchTab('seller-wd',this)">🏪 Seller Withdrawals</button>
+  <button class="tab-btn" onclick="switchTab('worker-wd',this)">👷 Worker Withdrawals</button>
+  <button class="tab-btn" onclick="switchTab('bot-owner-wd',this)">🤖 Bot Owner Withdrawals</button>
+</div>
+
+<!-- Transaction Ledger tab -->
+<div id="tab-txns" style="display:block">
+  <div class="section">
+    <div class="section-header">
+      <h2>📋 Transaction Ledger</h2>
+      <div class="filters">
+        <select id="txnType" onchange="loadTxns()">
+          <option value="">All types</option>
+          <option value="topup">topup</option>
+          <option value="purchase">purchase</option>
+          <option value="refund">refund</option>
+          <option value="payout">payout</option>
+          <option value="escrow_hold">escrow_hold</option>
+          <option value="escrow_release">escrow_release</option>
+          <option value="commission">commission</option>
+          <option value="projection_bootstrap">projection_bootstrap</option>
+        </select>
+        <select id="txnStatus" onchange="loadTxns()">
+          <option value="">All statuses</option>
+          <option value="completed">completed</option>
+          <option value="pending">pending</option>
+          <option value="on_hold">on_hold</option>
+          <option value="failed">failed</option>
+          <option value="refunded">refunded</option>
+        </select>
+        <select id="txnAccount" onchange="loadTxns()">
+          <option value="">All accounts</option>
+          <option value="user">user</option>
+          <option value="seller">seller</option>
+          <option value="worker">worker</option>
+          <option value="marketer">marketer</option>
+          <option value="owner">owner</option>
+        </select>
+        <input id="txnSearch" placeholder="Search description / key…" oninput="debounceLoad()" style="width:220px">
+        <button class="admin-btn admin-btn-outline" onclick="exportTxnsCsv()" style="font-size:12px">⬇ CSV</button>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th>ID</th><th>Date</th><th>Type</th><th>Status</th><th>Account</th><th>Amount</th><th>User / Actor</th><th>Description</th>
+      </tr></thead>
+      <tbody id="txnBody"><tr><td colspan="8" style="text-align:center;padding:20px;color:#9ca3af">Loading…</td></tr></tbody>
+    </table>
+    <div class="pager">
+      <button id="txnPrev" onclick="txnPage--; loadTxns()">◀ Prev</button>
+      <span id="txnPageInfo">Page 1</span>
+      <button id="txnNext" onclick="txnPage++; loadTxns()">Next ▶</button>
+      <span id="txnTotal" style="color:#9ca3af;margin-left:8px"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Pending Withdrawals tab -->
+<div id="tab-withdrawals" style="display:none">
+  <div class="section">
+    <div class="section-header">
+      <h2>💸 Pending Seller Withdrawals</h2>
+      <button class="admin-btn" onclick="loadWithdrawals()">🔄 Refresh</button>
+    </div>
+    <div class="withdrawals-grid" id="withdrawalsGrid"><div style="color:#9ca3af">Loading…</div></div>
+  </div>
+</div>
+
+<!-- Reconciliation tab -->
+<div id="tab-reconcile" style="display:none">
+  <div class="section">
+    <div class="section-header">
+      <h2>🔍 Reconciliation & Projections</h2>
+      <button class="btn btn-secondary" onclick="loadProjection()">🔄 Refresh</button>
+    </div>
+    <div id="projectionContent"><div class="empty">Загрузка...</div></div>
+  </div>
+</div>
+
+<!-- Seller Withdrawals tab -->
+<div id="tab-seller-wd" style="display:none">
+  <div class="section">
+    <div class="section-header">
+      <h2>🏪 Seller Withdrawals</h2>
+      <div class="filters">
+        <select id="sellerWdStatusFilter" onchange="loadSellerWd()">
+          <option value="">All</option>
+          <option value="pending" selected>Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+        <input type="number" id="bulkThreshold" placeholder="Bulk threshold ($)" style="width:150px;padding:6px 10px;border:1px solid #e5e7eb;border-radius:6px" value="50">
+        <button class="btn btn-primary" onclick="bulkApproveSmallWithdrawals()" style="background:#10b981">✓ Bulk Approve Small</button>
+        <button class="btn btn-secondary" onclick="loadSellerWd()">🔄</button>
+      </div>
+    </div>
+    <div id="sellerWdContent"><div class="empty">Загрузка...</div></div>
+  </div>
+</div>
+
+<!-- Worker Withdrawals tab -->
+<div id="tab-worker-wd" style="display:none">
+  <div class="section">
+    <div class="section-header">
+      <h2>👷 Worker Withdrawals</h2>
+      <button class="btn btn-secondary" onclick="loadWorkerWd()">🔄</button>
+    </div>
+    <div id="workerWdContent"><div class="empty">Загрузка...</div></div>
+  </div>
+</div>
+
+<!-- Bot Owner Withdrawals tab -->
+<div id="tab-bot-owner-wd" style="display:none">
+  <div class="section">
+    <div class="section-header">
+      <h2>🤖 Bot Owner Withdrawals</h2>
+      <button class="btn btn-secondary" onclick="loadBotOwnerWd()">🔄</button>
+    </div>
+    <div id="botOwnerWdList" style="margin-top:20px">Loading...</div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const PAGE_SIZE = 50;
+let txnPage = 0;
+let _txnDebounce = null;
+
+function switchTab(name, btn) {
+  ['txns','withdrawals','reconcile','seller-wd','worker-wd','bot-owner-wd'].forEach(t => {
+    const tab = document.getElementById('tab-'+t);
+    if (tab) tab.style.display = (t === name) ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (name === 'withdrawals') loadWithdrawals();
+  if (name === 'reconcile') loadProjection();
+  if (name === 'txns') loadTxns();
+  if (name === 'seller-wd') loadSellerWd();
+  if (name === 'worker-wd') loadWorkerWd();
+  if (name === 'bot-owner-wd') loadBotOwnerWd();
+}
+
+function debounceLoad() {
+  clearTimeout(_txnDebounce);
+  _txnDebounce = setTimeout(() => { txnPage = 0; loadTxns(); }, 400);
+}
+
+function typeBadge(t) {
+  return `<span class="badge badge-${t||'other'}">${t||'—'}</span>`;
+}
+function statusBadge(s) {
+  return `<span class="badge badge-${s||'other'}">${s||'—'}</span>`;
+}
+function fmt$(v) { return v == null ? '—' : '$'+Number(v).toFixed(2); }
+function fmtDate(d) { if(!d) return '—'; const dt=new Date(d); return dt.toLocaleDateString()+' '+dt.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}); }
+
+async function loadKPIs() {
+  try {
+    const [statsRes, wRes, boRes] = await Promise.all([
+      authFetch('/api/deposits/stats?period_days=30'),
+      authFetch('/api/seller-crm/withdrawals?status=pending'),
+      authFetch('/api/bot-owners/withdrawals?status=pending'),
+    ]);
+    if (statsRes && statsRes.ok) {
+      const d = await statsRes.json();
+      document.getElementById('kpiGmv').textContent = fmt$(d.completed_total_amount);
+      document.getElementById('kpiToday').textContent = fmt$(d.today_total);
+      document.getElementById('kpiTodayCount').textContent = d.today_count+' transactions today';
+      document.getElementById('kpiHold').textContent = d.on_hold_count+' txns';
+      document.getElementById('kpiHoldCount').textContent = d.pending_count+' pending';
+      document.getElementById('kpiWorkers').textContent = d.active_workers;
+      document.getElementById('kpiWorkersOrders').textContent = d.worker_orders_completed+' completed orders';
+      document.getElementById('kpiTotal').textContent = d.total_transactions;
+      document.getElementById('kpiPeriod').textContent = 'Last 30 days: '+d.period_count+' ('+fmt$(d.period_total)+')';
+    }
+    if (wRes && wRes.ok) {
+      const wd = await wRes.json();
+      const pending = (wd.withdrawals||[]).filter(w => w.status === 'pending');
+      const total = pending.reduce((s,w) => s+Number(w.amount||0), 0);
+      document.getElementById('kpiWithdraw').textContent = fmt$(total);
+    }
+    if (boRes && boRes.ok) {
+      const bo = await boRes.json();
+      const pendingBo = (bo.withdrawals||[]).filter(w => w.status === 'pending');
+      // Could add a KPI display for bot owner withdrawals if needed
+    }
+  } catch(e) {}
+}
+
+async function loadPL() {
+  const days = document.getElementById('plPeriod').value;
+  const el = document.getElementById('plContent');
+  el.textContent = 'Loading…';
+  try {
+    const r = await authFetch(`/api/deposits/stats?period_days=${days}`);
+    if (!r || !r.ok) { el.textContent = 'Error loading P&L'; return; }
+    const d = await r.json();
+    const topupTotal = d.topup_total || 0;
+    const completedGmv = d.completed_total_amount || 0;
+    const onHold = d.on_hold_count || 0;
+    const failed = d.failed_count || 0;
+    el.innerHTML = `
+      <table style="width:100%;max-width:500px;font-size:13px">
+        <tr><td style="color:#6b7280;padding:4px 0">💰 Total top-ups (all time)</td><td style="font-weight:600;text-align:right">${fmt$(topupTotal)}<small style="color:#9ca3af"> (${d.topup_count} txns)</small></td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">✅ Completed GMV (all time)</td><td style="font-weight:600;text-align:right;color:#16a34a">${fmt$(completedGmv)}</td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">📅 Volume last ${days} days</td><td style="font-weight:600;text-align:right">${fmt$(d.period_total)}<small style="color:#9ca3af"> (${d.period_count} txns)</small></td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">📆 Volume today</td><td style="font-weight:600;text-align:right">${fmt$(d.today_total)}<small style="color:#9ca3af"> (${d.today_count} txns)</small></td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">🔒 On-hold escrow txns</td><td style="font-weight:600;text-align:right;color:#f59e0b">${onHold}</td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">❌ Failed transactions</td><td style="font-weight:600;text-align:right;color:#ef4444">${failed}</td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">👷 Active workers</td><td style="font-weight:600;text-align:right">${d.active_workers} / ${d.total_workers}</td></tr>
+        <tr><td style="color:#6b7280;padding:4px 0">📦 Worker orders done</td><td style="font-weight:600;text-align:right">${d.worker_orders_completed}</td></tr>
+      </table>
+    `;
+  } catch(e) { el.textContent = 'Error: '+e.message; }
+}
+
+async function loadTxns() {
+  const type = document.getElementById('txnType').value;
+  const status = document.getElementById('txnStatus').value;
+  const account = document.getElementById('txnAccount').value;
+  const search = document.getElementById('txnSearch').value.trim();
+  const offset = txnPage * PAGE_SIZE;
+
+  const params = new URLSearchParams({limit: PAGE_SIZE, offset});
+  if (type) params.set('type', type);
+  if (status) params.set('status', status);
+  if (account) params.set('account_type', account);
+  if (search) params.set('search', search);
+
+  const tbody = document.getElementById('txnBody');
+  tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#9ca3af">Loading…</td></tr>';
+
+  try {
+    const r = await authFetch('/api/deposits/?'+params);
+    if (!r || !r.ok) throw new Error('Failed to load');
+    const d = await r.json();
+    const items = d.items || [];
+    const total = d.total || 0;
+
+    document.getElementById('txnTotal').textContent = total+' total';
+    document.getElementById('txnPageInfo').textContent = 'Page '+(txnPage+1)+' of '+Math.max(1,Math.ceil(total/PAGE_SIZE));
+    document.getElementById('txnPrev').disabled = txnPage === 0;
+    document.getElementById('txnNext').disabled = (txnPage+1)*PAGE_SIZE >= total;
+
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#9ca3af">No transactions found</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map(t => `
+      <tr>
+        <td style="font-family:monospace;color:#6b7280">#${t.id}</td>
+        <td style="white-space:nowrap">${fmtDate(t.created_at)}</td>
+        <td>${typeBadge(t.type)}</td>
+        <td>${statusBadge(t.status)}</td>
+        <td style="font-size:11px;color:#6b7280">${t.account_type||'—'}<br><span style="color:#9ca3af">#${t.account_id||'?'}</span></td>
+        <td style="font-weight:600;color:${Number(t.amount||0)<0?'#ef4444':'#16a34a'}">${fmt$(t.amount)}</td>
+        <td style="font-size:12px">${t.username ? '@'+t.username : (t.user_id ? 'uid:'+t.user_id : '—')}</td>
+        <td style="font-size:12px;color:#6b7280;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(t.description||'').replace(/"/g,'&quot;')}">${t.description||'—'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#ef4444">Error: ${e.message}</td></tr>`;
+  }
+}
+
+async function exportTxnsCsv() {
+  const type = document.getElementById('txnType').value;
+  const status = document.getElementById('txnStatus').value;
+  const search = document.getElementById('txnSearch').value.trim();
+  const params = new URLSearchParams({limit:5000, offset:0});
+  if (type) params.set('type',type);
+  if (status) params.set('status',status);
+  if (search) params.set('search',search);
+  try {
+    const r = await authFetch('/api/deposits/?'+params);
+    if (!r || !r.ok) return;
+    const d = await r.json();
+    const rows = [['ID','Date','Type','Status','AccountType','AccountID','Amount','UserID','Username','Description']];
+    (d.items||[]).forEach(t => {
+      rows.push([t.id, t.created_at, t.type, t.status, t.account_type, t.account_id, t.amount, t.user_id, t.username||'', (t.description||'').replace(/,/g,' ')]);
+    });
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = 'transactions_export.csv'; a.click();
+  } catch(e) {}
+}
+
+async function loadWithdrawals() {
+  const grid = document.getElementById('withdrawalsGrid');
+  grid.innerHTML = '<div style="color:#9ca3af">Loading…</div>';
+  try {
+    const r = await authFetch('/api/seller-crm/withdrawals?status=pending');
+    if (!r || !r.ok) throw new Error('Failed');
+    const d = await r.json();
+    const list = (d.withdrawals || []).filter(w => w.status === 'pending');
+    if (!list.length) { grid.innerHTML = '<div style="color:#9ca3af;padding:20px">No pending withdrawals</div>'; return; }
+    grid.innerHTML = list.map(w => `
+      <div class="w-card">
+        <div>
+          <div class="w-info"><b>${w.seller_name||'Seller'}</b> — #${w.id}</div>
+          <div class="w-info" style="color:#9ca3af;font-size:12px">${w.requisites||'—'}</div>
+          <div class="w-amount">${fmt$(w.amount)}</div>
+        </div>
+        <div class="w-actions">
+          <button class="admin-btn" style="background:#22c55e;color:#fff;font-size:12px;padding:6px 10px" onclick="approveW(${w.id})">✓</button>
+          <button class="admin-btn" style="background:#ef4444;color:#fff;font-size:12px;padding:6px 10px" onclick="rejectW(${w.id})">✗</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) { grid.innerHTML = '<div style="color:#ef4444">Error: '+e.message+'</div>'; }
+}
+
+async function approveW(id) {
+  const r = await authFetch('/api/seller-crm/withdrawals/'+id+'/approve', {method:'POST'});
+  if (r && r.ok) { loadWithdrawals(); loadKPIs(); } else alert('Error approving withdrawal');
+}
+async function rejectW(id) {
+  const reason = prompt('Rejection reason (optional):') || '';
+  const r = await authFetch('/api/seller-crm/withdrawals/'+id+'/reject', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason})});
+  if (r && r.ok) { loadWithdrawals(); loadKPIs(); } else alert('Error rejecting withdrawal');
+}
+
+async function runReconcile() {
+  const btn = document.getElementById('reconcileBtn');
+  const el = document.getElementById('reconcileResult');
+  btn.disabled = true; btn.textContent = '⏳ Running…';
+  el.textContent = 'Running reconciliation…';
+  try {
+    const r = await authFetch('/api/deposits/reconciliation/run', {method:'POST'});
+    if (!r || !r.ok) throw new Error('Failed');
+    const d = await r.json();
+    const issues = d.issue_count || 0;
+    const color = issues > 0 ? '#ef4444' : '#16a34a';
+    el.innerHTML = `
+      <div style="font-size:15px;font-weight:600;color:${color};margin-bottom:10px">
+        ${issues > 0 ? '⚠️ '+issues+' issue(s) found' : '✅ All projections match ledger'}
+      </div>
+      <pre style="font-size:12px;color:#374151;white-space:pre-wrap;background:#fff;padding:12px;border-radius:6px;border:1px solid #e5e7eb">${JSON.stringify(d, null, 2)}</pre>
+    `;
+  } catch(e) { el.textContent = 'Error: '+e.message; }
+  btn.disabled = false; btn.textContent = '▶ Run Now';
+}
+
+async function loadProjection() {
+  const el = document.getElementById('projectionContent');
+  try {
+    const r = await authFetch('/api/deposits/projection');
+    if (!r || !r.ok) { el.textContent = 'No projection data'; return; }
+    const d = await r.json();
+    el.innerHTML = `<pre style="font-size:12px;color:#374151;white-space:pre-wrap;background:#f9fafb;padding:12px;border-radius:6px;border:1px solid #e5e7eb">${JSON.stringify(d, null, 2)}</pre>`;
+  } catch(e) { el.textContent = 'Error: '+e.message; }
+}
+
+async function loadSellerWd() {
+  const el = document.getElementById('sellerWdContent');
+  const status = document.getElementById('sellerWdStatusFilter').value;
+  el.innerHTML = '<div class="empty">Загрузка...</div>';
+  try {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    const r = await authFetch('/api/seller-crm/withdrawals?' + params.toString());
+    if (!r || !r.ok) { el.innerHTML = '<div class="empty">Error loading seller withdrawals</div>'; return; }
+    const data = await r.json();
+    const wds = data.withdrawals || [];
+    
+    // Store for bulk operations
+    window.currentSellerWithdrawals = wds;
+    
+    if (!wds.length) { el.innerHTML = '<div class="empty">No seller withdrawals found</div>'; return; }
+    
+    const rows = wds.map(w => `
+      <tr>
+        <td><strong>#${w.id}</strong></td>
+        <td>${w.seller_id}</td>
+        <td style="font-weight:600">${fmt$(w.amount)}</td>
+        <td><span class="badge badge-${w.status}">${w.status}</span></td>
+        <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${w.requisites || '—'}</td>
+        <td style="font-size:12px">${fmtDate(w.created_at)}</td>
+        <td>
+          ${w.status === 'pending' ? `
+            <button class="btn btn-approve btn-sm" onclick="approveSellerWd(${w.id})">✓ Approve</button>
+            <button class="btn btn-reject btn-sm" onclick="rejectSellerWd(${w.id})">✗ Reject</button>
+          ` : w.tx_hash ? `<code style="font-size:11px">${w.tx_hash.slice(0,12)}...</code>` : '—'}
+        </td>
+      </tr>
+    `).join('');
+    
+    el.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Seller</th><th>Amount</th><th>Status</th><th>Requisites</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  } catch(e) { el.innerHTML = '<div class="empty">Error: '+e.message+'</div>'; }
+}
+
+async function bulkApproveSmallWithdrawals() {
+  const threshold = parseFloat(document.getElementById('bulkThreshold').value);
+  if (isNaN(threshold) || threshold <= 0) {
+    alert('Please enter a valid threshold amount');
+    return;
+  }
+  
+  const pending = (window.currentSellerWithdrawals || []).filter(w => 
+    w.status === 'pending' && parseFloat(w.amount) <= threshold
+  );
+  
+  if (pending.length === 0) {
+    alert(`No pending withdrawals under $${threshold}`);
+    return;
+  }
+  
+  const totalAmount = pending.reduce((sum, w) => sum + parseFloat(w.amount), 0);
+  
+  if (!confirm(`Bulk approve ${pending.length} withdrawals?\n\nTotal: $${totalAmount.toFixed(2)}\nThreshold: ≤$${threshold}`)) {
+    return;
+  }
+  
+  const hash = prompt('✅ Bulk Approve\n\nEnter transaction hash for all:');
+  if (!hash || !hash.trim()) {
+    alert('Transaction hash is required');
+    return;
+  }
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  for (const w of pending) {
+    try {
+      const r = await authFetch('/api/seller-crm/withdrawals/'+w.id+'/approve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ tx_hash: hash.trim() })
+      });
+      if (r && r.ok) successCount++;
+      else failCount++;
+    } catch(e) {
+      failCount++;
+    }
+  }
+  
+  alert(`Complete:\n✅ Success: ${successCount}\n❌ Failed: ${failCount}`);
+  loadSellerWd();
+  loadKPIs();
+}
+
+async function loadWorkerWd() {
+  const el = document.getElementById('workerWdContent');
+  el.innerHTML = '<div class="empty">Загрузка...</div>';
+  try {
+    const r = await authFetch('/api/worker-crm/withdrawal-tasks');
+    if (!r || !r.ok) { el.innerHTML = '<div class="empty">Error loading worker withdrawals</div>'; return; }
+    const wds = await r.json();
+    if (!wds.length) { el.innerHTML = '<div class="empty">No worker withdrawals found</div>'; return; }
+    
+    const rows = wds.map(w => `
+      <tr>
+        <td><strong>#${w.id}</strong></td>
+        <td>${w.worker_id}</td>
+        <td style="font-weight:600">${fmt$(w.amount)}</td>
+        <td><span class="badge badge-${w.status}">${w.status}</span></td>
+        <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${w.requisites || '—'}</td>
+        <td style="font-size:12px">${fmtDate(w.created_at)}</td>
+        <td>
+          ${w.status === 'pending' ? `
+            <button class="btn btn-approve btn-sm" onclick="approveWorkerWd(${w.id})">✓ Approve</button>
+            <button class="btn btn-reject btn-sm" onclick="rejectWorkerWd(${w.id})">✗ Reject</button>
+          ` : '—'}
+        </td>
+      </tr>
+    `).join('');
+    
+    el.innerHTML = `
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Worker</th><th>Amount</th><th>Status</th><th>Requisites</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  } catch(e) { el.innerHTML = '<div class="empty">Error: '+e.message+'</div>'; }
+}
+
+async function approveSellerWd(id) {
+  const hash = prompt('Enter transaction hash (optional):');
+  if (hash === null) return;
+  try {
+    const r = await authFetch('/api/seller-crm/withdrawals/'+id+'/approve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tx_hash: hash || null })
+    });
+    if (!r || !r.ok) { alert('Failed to approve'); return; }
+    loadSellerWd();
+    loadKPIs();
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+async function rejectSellerWd(id) {
+  if (!confirm('Reject this withdrawal?')) return;
+  try {
+    const r = await authFetch('/api/seller-crm/withdrawals/'+id+'/reject', { method: 'POST' });
+    if (!r || !r.ok) { alert('Failed to reject'); return; }
+    loadSellerWd();
+    loadKPIs();
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+async function approveWorkerWd(id) {
+  if (!confirm('Approve this withdrawal?')) return;
+  try {
+    const r = await authFetch('/api/worker-crm/withdrawal-tasks/'+id+'/approve', { method: 'POST' });
+    if (!r || !r.ok) { alert('Failed to approve'); return; }
+    loadWorkerWd();
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+async function rejectWorkerWd(id) {
+  if (!confirm('Reject this withdrawal?')) return;
+  try {
+    const r = await authFetch('/api/worker-crm/withdrawal-tasks/'+id+'/reject', { method: 'POST' });
+    if (!r || !r.ok) { alert('Failed to reject'); return; }
+    loadWorkerWd();
+  } catch(e) { alert('Error: '+e.message); }
+}
+
+// Bot Owner Withdrawals
+async function loadBotOwnerWd() {
+  const list = document.getElementById('botOwnerWdList');
+  list.innerHTML = '<div style="color:#9ca3af;padding:20px">Loading...</div>';
+  try {
+    const r = await authFetch('/api/bot-owners/withdrawals?status=pending');
+    if (!r || !r.ok) throw new Error('Failed to load');
+    const d = await r.json();
+    const items = d.withdrawals || [];
+    if (!items.length) {
+      list.innerHTML = '<div style="color:#9ca3af;padding:20px">No pending bot owner withdrawals</div>';
+      return;
+    }
+    list.innerHTML = `<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:#f9fafb">
+        <th style="padding:10px;text-align:left">ID</th>
+        <th style="padding:10px;text-align:left">Owner ID</th>
+        <th style="padding:10px;text-align:left">Amount</th>
+        <th style="padding:10px;text-align:left">Method</th>
+        <th style="padding:10px;text-align:left">Network</th>
+        <th style="padding:10px;text-align:left">Requisites</th>
+        <th style="padding:10px;text-align:left">Date</th>
+        <th style="padding:10px;text-align:left">Actions</th>
+      </tr></thead>
+      <tbody>${items.map(w => `<tr style="border-bottom:1px solid #e5e7eb">
+        <td style="padding:10px">#${w.id}</td>
+        <td style="padding:10px"><code>${w.owner_user_id}</code></td>
+        <td style="padding:10px;font-weight:600">${fmt$(w.amount)}</td>
+        <td style="padding:10px">${w.payment_method || '—'}</td>
+        <td style="padding:10px"><small>${w.payment_network || '—'}</small></td>
+        <td style="padding:10px;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${w.requisites || '—'}</td>
+        <td style="padding:10px;font-size:12px">${fmtDate(w.created_at)}</td>
+        <td style="padding:10px">
+          <button class="btn btn-success" style="font-size:12px;padding:6px 12px;margin-right:4px" onclick="approveBotOwnerWd(${w.id})">✓ Approve</button>
+          <button class="btn btn-danger" style="font-size:12px;padding:6px 12px" onclick="rejectBotOwnerWd(${w.id})">✗ Reject</button>
+        </td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  } catch(e) {
+    list.innerHTML = '<div style="color:#ef4444;padding:20px">Error: '+e.message+'</div>';
+  }
+}
+
+async function approveBotOwnerWd(id) {
+  const hash = prompt('Enter transaction hash (required):');
+  if (!hash || !hash.trim()) {
+    alert('Transaction hash is required');
+    return;
+  }
+  try {
+    const r = await authFetch('/api/bot-owners/withdrawals/'+id+'/pay', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tx_hash: hash.trim() })
+    });
+    if (!r || !r.ok) {
+      const err = await r.json().catch(() => ({}));
+      alert('Failed to approve: ' + (err.detail || 'Unknown error'));
+      return;
+    }
+    alert('✓ Bot owner withdrawal approved');
+    loadBotOwnerWd();
+    loadKPIs();
+  } catch(e) {
+    alert('Error: '+e.message);
+  }
+}
+
+async function rejectBotOwnerWd(id) {
+  const reason = prompt('Rejection reason (optional):');
+  if (reason === null) return;
+  try {
+    const r = await authFetch('/api/bot-owners/withdrawals/'+id+'/reject', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ reason: reason.trim() || '' })
+    });
+    if (!r || !r.ok) {
+      alert('Failed to reject');
+      return;
+    }
+    alert('✓ Bot owner withdrawal rejected');
+    loadBotOwnerWd();
+    loadKPIs();
+  } catch(e) {
+    alert('Error: '+e.message);
+  }
+}
+
+// Init
+loadKPIs();
+loadPL();
+loadTxns();
+setInterval(loadKPIs, 30000);
+
+// Ensure first tab is visible on load
+document.addEventListener('DOMContentLoaded', function() {
+  const firstTab = document.getElementById('tab-txns');
+  if (firstTab) firstTab.style.display = 'block';
+});
+</script>
+{% endblock %}

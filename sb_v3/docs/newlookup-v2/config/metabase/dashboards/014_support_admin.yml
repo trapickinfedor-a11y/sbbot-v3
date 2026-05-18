@@ -1,0 +1,219 @@
+# Metabase Dashboard: Support Admin
+# Dashboard ID: 014
+# Description: Администрирование поддержки - тикеты, диспуты, ответы
+
+dashboard:
+  name: "🎧 Support Admin"
+  description: "Администрирование поддержки - тикеты, диспуты, статистика ответов"
+  position: 14
+
+  parameters:
+    - name: "Ticket ID"
+      type: "number"
+      required: false
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["all", "open", "in_progress", "waiting_user", "pending", "solved", "closed"]
+    - name: "Priority Filter"
+      type: "string"
+      required: false
+      values: ["all", "CRITICAL", "HIGH", "NORMAL", "LOW"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "🎫 Open Tickets"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as open_tickets
+        FROM support_tickets
+        WHERE status IN ('open', 'in_progress')
+
+    - name: "🔴 Critical"
+      type: "number"
+      position: { row: 1, col: 4, size: 2 }
+      query: |
+        SELECT COUNT(*) as critical_tickets
+        FROM support_tickets
+        WHERE priority = 'CRITICAL'
+          AND status NOT IN ('solved', 'closed')
+
+    - name: "🟠 High Priority"
+      type: "number"
+      position: { row: 1, col: 6, size: 2 }
+      query: |
+        SELECT COUNT(*) as high_tickets
+        FROM support_tickets
+        WHERE priority = 'HIGH'
+          AND status NOT IN ('solved', 'closed')
+
+    - name: "⏳ Avg Response Time"
+      type: "number"
+      position: { row: 1, col: 8, size: 3 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_minutes
+        FROM support_tickets
+        WHERE first_response_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "⏱️ Avg Resolution Time"
+      type: "number"
+      position: { row: 1, col: 11, size: 2 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) as avg_hours
+        FROM support_tickets
+        WHERE status IN ('solved', 'closed')
+          AND resolved_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    # ========== TICKETS TABLE ==========
+    - name: "🎫 All Tickets"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          st.id,
+          st.user_id,
+          u.username,
+          st.subject,
+          st.status,
+          st.priority,
+          st.category,
+          st.created_at,
+          st.first_response_at,
+          st.resolved_at,
+          EXTRACT(EPOCH FROM (COALESCE(st.first_response_at, NOW()) - st.created_at)) / 60 as response_minutes,
+          'View/Respond' as action
+        FROM support_tickets st
+        LEFT JOIN users u ON st.user_id = u.user_id
+        WHERE ({{ticket_id}} IS NULL OR st.id = {{ticket_id}})
+          AND (
+            {{status_filter}} = 'all' OR
+            st.status = {{status_filter}}
+          )
+          AND (
+            {{priority_filter}} = 'all' OR
+            st.priority = {{priority_filter}}
+          )
+        ORDER BY 
+          CASE st.priority
+            WHEN 'CRITICAL' THEN 1
+            WHEN 'HIGH' THEN 2
+            WHEN 'NORMAL' THEN 3
+            WHEN 'LOW' THEN 4
+          END,
+          st.created_at ASC
+        LIMIT 100
+
+    # ========== OPEN DISPUTES ==========
+    - name: "⚖️ Open Disputes"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          sod.id,
+          sod.order_id,
+          sod.buyer_id,
+          sod.seller_id,
+          buyer_u.username as buyer_username,
+          seller_u.username as seller_username,
+          sod.status,
+          sod.reason,
+          sod.description,
+          sod.opened_by,
+          sod.created_at,
+          sod.resolved_at,
+          'Review/Resolve' as action
+        FROM seller_order_disputes sod
+        LEFT JOIN users buyer_u ON sod.buyer_id = buyer_u.user_id
+        LEFT JOIN users seller_u ON sod.seller_id = seller_u.user_id
+        WHERE sod.status = 'open'
+        ORDER BY sod.created_at ASC
+        LIMIT 50
+
+    # ========== TICKETS BY STATUS ==========
+    - name: "📊 Tickets by Status"
+      type: "pie"
+      position: { row: 4, col: 1, size: 4 }
+      query: |
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM support_tickets
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "📊 Tickets by Priority"
+      type: "bar"
+      position: { row: 4, col: 5, size: 4 }
+      query: |
+        SELECT 
+          priority,
+          COUNT(*) as count,
+          AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_response_minutes
+        FROM support_tickets
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY priority
+        ORDER BY 
+          CASE priority
+            WHEN 'CRITICAL' THEN 1
+            WHEN 'HIGH' THEN 2
+            WHEN 'NORMAL' THEN 3
+            WHEN 'LOW' THEN 4
+          END
+
+    - name: "📊 Disputes by Outcome"
+      type: "pie"
+      position: { row: 4, col: 9, size: 4 }
+      query: |
+        SELECT 
+          sod.resolution_note as outcome,
+          COUNT(*) as count,
+          SUM(CASE WHEN sod.resolution_note LIKE '%buyer%' THEN 1 ELSE 0 END) as buyer_wins,
+          SUM(CASE WHEN sod.resolution_note LIKE '%seller%' THEN 1 ELSE 0 END) as seller_wins
+        FROM seller_order_disputes sod
+        WHERE sod.status IN ('resolved_buyer', 'resolved_seller', 'resolved')
+          AND sod.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY outcome
+
+    # ========== SUPPORT ACTIVITY ==========
+    - name: "📈 Support Activity (7 days)"
+      type: "line"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as new_tickets,
+          COUNT(CASE WHEN status IN ('solved', 'closed') THEN 1 END) as resolved_tickets,
+          AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_response_minutes
+        FROM support_tickets
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    # ========== SUPPORT AGENTS PERFORMANCE ==========
+    - name: "👥 Support Agents Performance"
+      type: "table"
+      position: { row: 6, col: 1, size: 12 }
+      query: |
+        SELECT 
+          a.user_id as agent_id,
+          a.username as agent_name,
+          COUNT(DISTINCT st.id) as tickets_handled,
+          COUNT(DISTINCT CASE WHEN st.status IN ('solved', 'closed') THEN st.id END) as tickets_resolved,
+          AVG(EXTRACT(EPOCH FROM (st.first_response_at - st.created_at)) / 60) as avg_response_minutes,
+          AVG(EXTRACT(EPOCH FROM (st.resolved_at - st.created_at)) / 3600) as avg_resolution_hours
+        FROM admins a
+        LEFT JOIN support_tickets st ON a.user_id = st.resolved_by
+        WHERE st.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY a.user_id, a.username
+        HAVING COUNT(DISTINCT st.id) > 0
+        ORDER BY tickets_resolved DESC
+        LIMIT 20

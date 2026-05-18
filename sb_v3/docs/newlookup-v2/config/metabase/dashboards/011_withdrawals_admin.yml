@@ -1,0 +1,215 @@
+# Metabase Dashboard: Withdrawals Admin
+# Dashboard ID: 011
+# Description: Управление выводами средств - все типы выплат
+
+dashboard:
+  name: "💸 Withdrawals Admin"
+  description: "Все заявки на вывод средств - селлеры, воркеры, маркетологи, владельцы ботов"
+  position: 11
+
+  parameters:
+    - name: "Status Filter"
+      type: "string"
+      required: false
+      values: ["pending", "processing", "completed", "rejected", "cancelled"]
+    - name: "Type Filter"
+      type: "string"
+      required: false
+      values: ["seller", "worker", "marketer", "bot_owner"]
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+
+  cards:
+    # ========== SUMMARY ==========
+    - name: "📊 Total Pending"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM worker_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM marketer_withdrawals WHERE status = 'pending') +
+          (SELECT COUNT(*) FROM bot_owner_withdrawals WHERE status = 'pending')
+        as total_pending
+
+    - name: "💰 Total Amount Pending"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT 
+          COALESCE(
+            (SELECT SUM(amount) FROM seller_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM worker_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM marketer_withdrawals WHERE status = 'pending') +
+            (SELECT SUM(amount) FROM bot_owner_withdrawals WHERE status = 'pending'),
+            0
+          ) as total_pending_amount
+
+    - name: "✅ Completed Today"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT 
+          (SELECT COUNT(*) FROM seller_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+          (SELECT COUNT(*) FROM worker_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+          (SELECT COUNT(*) FROM marketer_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+          (SELECT COUNT(*) FROM bot_owner_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE)
+        as completed_today
+
+    - name: "💵 Paid Today"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT 
+          COALESCE(
+            (SELECT SUM(amount) FROM seller_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+            (SELECT SUM(amount) FROM worker_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+            (SELECT SUM(amount) FROM marketer_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE) +
+            (SELECT SUM(amount) FROM bot_owner_withdrawals WHERE status = 'completed' AND processed_at >= CURRENT_DATE),
+            0
+          ) as paid_today
+
+    # ========== BY TYPE ==========
+    - name: "🏪 Seller Withdrawals"
+      type: "table"
+      position: { row: 2, col: 1, size: 12 }
+      query: |
+        SELECT 
+          sw.id,
+          sw.seller_id,
+          u.username as seller_username,
+          sw.amount,
+          sw.payment_method,
+          sw.payment_network,
+          sw.requisites,
+          sw.status,
+          sw.created_at,
+          sw.processed_at,
+          sw.reject_reason,
+          'Approve/Reject' as action
+        FROM seller_withdrawals sw
+        LEFT JOIN users u ON sw.seller_id = u.user_id
+        WHERE sw.status = 'pending'
+        ORDER BY sw.created_at ASC
+        LIMIT 100
+
+    - name: "👷 Worker Withdrawals"
+      type: "table"
+      position: { row: 3, col: 1, size: 12 }
+      query: |
+        SELECT 
+          ww.id,
+          ww.worker_id,
+          u.username as worker_username,
+          ww.amount,
+          ww.payment_method,
+          ww.payment_network,
+          ww.requisites,
+          ww.tx_hash,
+          ww.status,
+          ww.created_at,
+          ww.processed_at,
+          'Approve/Reject' as action
+        FROM worker_withdrawals ww
+        LEFT JOIN users u ON ww.worker_id = u.user_id
+        WHERE ww.status = 'pending'
+        ORDER BY ww.created_at ASC
+        LIMIT 100
+
+    - name: "📢 Marketer Withdrawals"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          mw.id,
+          mw.marketer_id,
+          u.username as marketer_username,
+          mw.amount,
+          mw.payment_method,
+          mw.payment_network,
+          mw.requisites,
+          mw.status,
+          mw.created_at,
+          mw.processed_at,
+          'Approve/Reject' as action
+        FROM marketer_withdrawals mw
+        LEFT JOIN users u ON mw.marketer_id = u.user_id
+        WHERE mw.status = 'pending'
+        ORDER BY mw.created_at ASC
+        LIMIT 100
+
+    - name: "🤖 Bot Owner Withdrawals"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          bow.id,
+          bow.owner_user_id,
+          u.username as owner_username,
+          bow.amount,
+          bow.payment_method,
+          bow.payment_network,
+          bow.requisites,
+          bow.tx_hash,
+          bow.status,
+          bow.created_at,
+          bow.processed_at,
+          'Approve/Reject' as action
+        FROM bot_owner_withdrawals bow
+        LEFT JOIN users u ON bow.owner_user_id = u.user_id
+        WHERE bow.status = 'pending'
+        ORDER BY bow.created_at ASC
+        LIMIT 100
+
+    # ========== STATISTICS ==========
+    - name: "Withdrawals by Status"
+      type: "pie"
+      position: { row: 6, col: 1, size: 4 }
+      query: |
+        SELECT 'seller' as type, status, COUNT(*) as count
+        FROM seller_withdrawals
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        
+        UNION ALL
+        
+        SELECT 'worker' as type, status, COUNT(*) as count
+        FROM worker_withdrawals
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        
+        UNION ALL
+        
+        SELECT 'marketer' as type, status, COUNT(*) as count
+        FROM marketer_withdrawals
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        
+        UNION ALL
+        
+        SELECT 'bot_owner' as type, status, COUNT(*) as count
+        FROM bot_owner_withdrawals
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+
+    - name: "Withdrawals Trend"
+      type: "line"
+      position: { row: 6, col: 5, size: 8 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as withdrawals_count,
+          SUM(amount) as total_amount
+        FROM (
+          SELECT created_at, amount FROM seller_withdrawals WHERE status = 'completed'
+          UNION ALL
+          SELECT created_at, amount FROM worker_withdrawals WHERE status = 'completed'
+          UNION ALL
+          SELECT created_at, amount FROM marketer_withdrawals WHERE status = 'completed'
+          UNION ALL
+          SELECT created_at, amount FROM bot_owner_withdrawals WHERE status = 'completed'
+        ) all_withdrawals
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date

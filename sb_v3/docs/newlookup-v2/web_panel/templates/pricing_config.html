@@ -1,0 +1,335 @@
+{% extends "_base.html" %}
+{% block title %}Pricing Config{% endblock %}
+{% block header_title %}⚙️ Runtime Pricing Config{% endblock %}
+{% block extra_css %}
+<style>
+.pc-wrap { display: flex; gap: 20px; flex-wrap: wrap; }
+.pc-sidebar {
+  width: 220px; flex-shrink: 0;
+  background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  padding: 16px 0; height: fit-content; position: sticky; top: 20px;
+}
+.pc-sidebar h3 { font-size: 12px; text-transform: uppercase; color: #9ca3af; padding: 6px 16px; margin: 0 0 4px; letter-spacing: .05em; }
+.pc-cat { display: flex; align-items: center; gap: 8px; padding: 9px 16px; cursor: pointer; border-left: 3px solid transparent; font-size: 14px; color: #374151; transition: all .15s; }
+.pc-cat:hover { background: #f3f4f6; }
+.pc-cat.active { background: #eef2ff; border-left-color: #4f46e5; color: #4f46e5; font-weight: 600; }
+.pc-cat .count { margin-left: auto; background: #e5e7eb; color: #6b7280; padding: 1px 6px; border-radius: 10px; font-size: 11px; }
+.pc-main { flex: 1; min-width: 0; }
+.pc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.pc-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #111827; }
+.pc-search { flex: 1; min-width: 200px; padding: 9px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; }
+.pc-search:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.btn-add { padding: 9px 18px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap; }
+.btn-add:hover { background: #4338ca; }
+.pc-card {
+  background: #fff; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  border: 1px solid #f0f0f0; margin-bottom: 12px; overflow: hidden; transition: box-shadow .15s;
+}
+.pc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+.pc-card-head {
+  display: flex; align-items: flex-start; gap: 12px; padding: 16px 20px;
+  cursor: pointer; user-select: none;
+}
+.pc-card-head .key-badge { font-family: monospace; font-size: 14px; font-weight: 700; color: #1e1b4b; background: #eef2ff; padding: 3px 10px; border-radius: 6px; }
+.pc-card-head .type-badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600; text-transform: uppercase; }
+.type-number { background: #fef3c7; color: #92400e; }
+.type-string { background: #d1fae5; color: #065f46; }
+.type-bool   { background: #dbeafe; color: #1e40af; }
+.type-json   { background: #fce7f3; color: #9d174d; }
+.pc-card-head .desc-text { font-size: 13px; color: #6b7280; flex: 1; margin-top: 2px; }
+.pc-card-head .value-preview { font-size: 13px; color: #111827; font-weight: 600; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-card-head .active-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+.active-dot.on { background: #10b981; }
+.active-dot.off { background: #d1d5db; }
+.pc-card-body { padding: 0 20px 20px; border-top: 1px solid #f3f4f6; }
+.pc-card-body.hidden { display: none; }
+.form-row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: .04em; }
+.form-group input, .form-group select, .form-group textarea {
+  padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; background: #fafafa;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #4f46e5; background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,.08); }
+.form-group textarea { min-height: 100px; font-family: monospace; resize: vertical; }
+.form-actions { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+.btn-save { padding: 9px 22px; background: #4f46e5; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-save:hover { background: #4338ca; }
+.btn-delete { padding: 9px 14px; background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.btn-delete:hover { background: #fecaca; }
+.save-msg { font-size: 13px; color: #10b981; font-weight: 600; opacity: 0; transition: opacity .3s; }
+.toggle-wrap { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.toggle-wrap label { font-size: 13px; color: #374151; }
+.toggle { position: relative; width: 38px; height: 20px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 20px; cursor: pointer; transition: .2s; }
+.slider::before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .2s; }
+.toggle input:checked + .slider { background: #4f46e5; }
+.toggle input:checked + .slider::before { transform: translateX(18px); }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 16px; padding: 28px; width: 480px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+.modal h3 { margin: 0 0 20px; font-size: 18px; font-weight: 700; }
+.modal .form-group { margin-bottom: 14px; }
+.modal .form-group input, .modal .form-group select { width: 100%; box-sizing: border-box; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.btn-cancel { padding: 9px 18px; background: #f3f4f6; color: #374151; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+.empty { padding: 48px; text-align: center; color: #9ca3af; font-size: 15px; }
+.pc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: #fff; border-radius: 10px; padding: 14px 18px; border: 1px solid #e5e7eb; }
+.stat-card .num { font-size: 24px; font-weight: 800; color: #1e1b4b; }
+.stat-card .lbl { font-size: 12px; color: #6b7280; margin-top: 2px; }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="pc-stats" id="statsRow"></div>
+
+<div class="pc-wrap">
+  <div class="pc-sidebar">
+    <h3>Categories</h3>
+    <div id="catList"></div>
+  </div>
+  <div class="pc-main">
+    <div class="pc-header">
+      <h2 id="catTitle">All Settings</h2>
+      <input type="text" class="pc-search" id="searchInput" placeholder="🔍 Search by key or description…" oninput="filterCards()">
+      <button class="btn-add" onclick="openAddModal()">+ Add Setting</button>
+    </div>
+    <div id="cardList"><div class="empty">Loading…</div></div>
+  </div>
+</div>
+
+<!-- Add / Edit Modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <h3 id="modalTitle">➕ Add New Setting</h3>
+    <div class="form-group">
+      <label>Key *</label>
+      <input type="text" id="mKey" placeholder="e.g. commission_rate">
+    </div>
+    <div class="form-group">
+      <label>Type *</label>
+      <select id="mType" onchange="updateModalValueInput()">
+        <option value="number">number</option>
+        <option value="string">string</option>
+        <option value="bool">bool</option>
+        <option value="json">json</option>
+      </select>
+    </div>
+    <div class="form-group" id="mValueWrap">
+      <label>Value *</label>
+      <input type="text" id="mValue" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input type="text" id="mDesc" placeholder="Short explanation of this setting">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="submitModal()">💾 Save</button>
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+let allRows = [];
+let activeCategory = 'all';
+let editingKey = null;
+
+/* ─── Helpers ─────────────────────────────────── */
+function esc(v){ return String(v ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function typeBadge(t){ const m={number:'type-number',string:'type-string',bool:'type-bool',json:'type-json'}; return `<span class="type-badge ${m[t]||''}">${esc(t)}</span>`; }
+function fmtValue(row){
+  if(row.value_type==='bool') return row.value ? '<span style="color:#10b981">✓ true</span>' : '<span style="color:#dc2626">✗ false</span>';
+  if(row.value_type==='json') return '<span style="color:#9d174d">{…}</span>';
+  return esc(String(row.value ?? ''));
+}
+function guessCategory(key){
+  if(/commission|fee|markup|rate|percent/.test(key)) return 'Fees & Rates';
+  if(/timer|timeout|hold|hours|minutes|days|ttl|expir/.test(key)) return 'Timers';
+  if(/worker|support/.test(key)) return 'Workers';
+  if(/seller|deposit/.test(key)) return 'Sellers';
+  if(/notify|email|tg|telegram|bot/.test(key)) return 'Notifications';
+  if(/escrow|payout|threshold|withdraw/.test(key)) return 'Payouts';
+  return 'General';
+}
+
+/* ─── Load ────────────────────────────────────── */
+async function loadConfig(){
+  const r = await authFetch('/api/pricing-config/');
+  if(!r||!r.ok){ document.getElementById('cardList').innerHTML='<div class="empty">Failed to load.</div>'; return; }
+  allRows = await r.json();
+  renderStats();
+  renderSidebar();
+  renderCards();
+}
+
+function renderStats(){
+  const total = allRows.length;
+  const active = allRows.filter(r=>r.is_active).length;
+  const types = [...new Set(allRows.map(r=>r.value_type))];
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total Settings</div></div>
+    <div class="stat-card"><div class="num">${active}</div><div class="lbl">Active</div></div>
+    <div class="stat-card"><div class="num">${total-active}</div><div class="lbl">Disabled</div></div>
+    <div class="stat-card"><div class="num">${types.length}</div><div class="lbl">Value Types</div></div>
+  `;
+}
+
+function renderSidebar(){
+  const cats = {};
+  allRows.forEach(r => { const c = guessCategory(r.key); cats[c] = (cats[c]||0)+1; });
+  const total = allRows.length;
+  let html = `<div class="pc-cat ${activeCategory==='all'?'active':''}" onclick="setCategory('all')"><span>🗂 All</span><span class="count">${total}</span></div>`;
+  Object.entries(cats).sort().forEach(([c,n])=>{
+    const icons = {'Fees & Rates':'💰','Timers':'⏱','Workers':'👷','Sellers':'🏪','Notifications':'🔔','Payouts':'💸','General':'⚙️'};
+    html += `<div class="pc-cat ${activeCategory===c?'active':''}" onclick="setCategory('${esc(c)}')">${icons[c]||'⚙️'} ${esc(c)}<span class="count">${n}</span></div>`;
+  });
+  document.getElementById('catList').innerHTML = html;
+}
+
+function setCategory(cat){
+  activeCategory = cat;
+  document.getElementById('catTitle').textContent = cat === 'all' ? 'All Settings' : cat;
+  renderSidebar();
+  renderCards();
+}
+
+function filterCards(){ renderCards(); }
+
+function renderCards(){
+  const q = (document.getElementById('searchInput').value||'').toLowerCase();
+  let rows = allRows;
+  if(activeCategory !== 'all') rows = rows.filter(r => guessCategory(r.key) === activeCategory);
+  if(q) rows = rows.filter(r => r.key.toLowerCase().includes(q) || (r.description||'').toLowerCase().includes(q));
+  if(!rows.length){ document.getElementById('cardList').innerHTML='<div class="empty">No settings match your filter.</div>'; return; }
+  document.getElementById('cardList').innerHTML = rows.map(row => `
+    <div class="pc-card" id="card-${esc(row.key)}">
+      <div class="pc-card-head" onclick="toggleCard('${esc(row.key)}')">
+        <div class="active-dot ${row.is_active?'on':'off'}" title="${row.is_active?'Active':'Disabled'}"></div>
+        <span class="key-badge">${esc(row.key)}</span>
+        ${typeBadge(row.value_type)}
+        <span class="desc-text">${esc(row.description||'')}</span>
+        <span class="value-preview">${fmtValue(row)}</span>
+      </div>
+      <div class="pc-card-body hidden" id="body-${esc(row.key)}">
+        ${buildForm(row)}
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildForm(row){
+  let valueWidget = '';
+  if(row.value_type==='bool'){
+    valueWidget = `
+      <div class="form-group" style="flex:1">
+        <label>Value</label>
+        <select id="v-${esc(row.key)}">
+          <option value="true"${row.value?'selected':''}>true</option>
+          <option value="false"${!row.value?'selected':''}>false</option>
+        </select>
+      </div>`;
+  } else if(row.value_type==='json'){
+    valueWidget = `
+      <div class="form-group" style="width:100%">
+        <label>Value (JSON)</label>
+        <textarea id="v-${esc(row.key)}">${esc(JSON.stringify(row.value??{},null,2))}</textarea>
+      </div>`;
+  } else {
+    valueWidget = `
+      <div class="form-group" style="flex:1">
+        <label>Value</label>
+        <input type="${row.value_type==='number'?'number':'text'}" id="v-${esc(row.key)}" value="${esc(String(row.value??''))}">
+      </div>`;
+  }
+  return `
+    <div class="form-row">
+      ${valueWidget}
+      <div class="form-group" style="flex:2">
+        <label>Description</label>
+        <input type="text" id="d-${esc(row.key)}" value="${esc(row.description||'')}">
+      </div>
+    </div>
+    <div class="toggle-wrap">
+      <label class="toggle"><input type="checkbox" id="a-${esc(row.key)}" ${row.is_active?'checked':''}><span class="slider"></span></label>
+      <label>Active</label>
+    </div>
+    <div class="form-actions">
+      <button class="btn-save" onclick="saveRow('${esc(row.key)}')">💾 Save</button>
+      <button class="btn-delete" onclick="deleteRow('${esc(row.key)}')">🗑 Delete</button>
+      <span class="save-msg" id="msg-${esc(row.key)}">✓ Saved!</span>
+    </div>`;
+}
+
+function toggleCard(key){
+  const body = document.getElementById('body-'+key);
+  body.classList.toggle('hidden');
+}
+
+async function saveRow(key){
+  const vEl = document.getElementById('v-'+key);
+  const dEl = document.getElementById('d-'+key);
+  const aEl = document.getElementById('a-'+key);
+  if(!vEl) return;
+  const row = allRows.find(r=>r.key===key);
+  if(!row) return;
+  let value = vEl.value;
+  if(row.value_type==='number') value = value===''?null:Number(value);
+  else if(row.value_type==='bool') value = value==='true';
+  else if(row.value_type==='json'){ try{value=JSON.parse(value);}catch(e){alert('Invalid JSON'); return;} }
+  const r = await authFetch(`/api/pricing-config/${encodeURIComponent(key)}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({value_type:row.value_type, value, description: dEl?.value||null, is_active: aEl?.checked??true})
+  });
+  if(!r||!r.ok){alert('Save failed');return;}
+  const msg = document.getElementById('msg-'+key);
+  if(msg){msg.style.opacity=1; setTimeout(()=>msg.style.opacity=0,2000);}
+  await loadConfig();
+}
+
+async function deleteRow(key){
+  if(!confirm(`Delete setting "${key}"?`)) return;
+  const r = await authFetch(`/api/pricing-config/${encodeURIComponent(key)}`,{method:'DELETE'});
+  if(!r||!r.ok){alert('Delete failed');return;}
+  await loadConfig();
+}
+
+/* ─── Add Modal ───────────────────────────────── */
+function openAddModal(){ editingKey=null; document.getElementById('modalTitle').textContent='➕ Add New Setting'; document.getElementById('mKey').value=''; document.getElementById('mType').value='number'; document.getElementById('mDesc').value=''; updateModalValueInput(); document.getElementById('addModal').classList.add('open'); }
+function closeAddModal(){ document.getElementById('addModal').classList.remove('open'); }
+function updateModalValueInput(){
+  const t = document.getElementById('mType').value;
+  const wrap = document.getElementById('mValueWrap');
+  if(t==='bool'){
+    wrap.innerHTML='<label>Value *</label><select id="mValue"><option value="true">true</option><option value="false">false</option></select>';
+  } else if(t==='json'){
+    wrap.innerHTML='<label>Value (JSON) *</label><textarea id="mValue" placeholder=\'{"key":"value"}\'></textarea>';
+  } else {
+    wrap.innerHTML=`<label>Value *</label><input type="${t==='number'?'number':'text'}" id="mValue" placeholder="${t==='number'?'0':'text value'}">`;
+  }
+}
+async function submitModal(){
+  const key=(document.getElementById('mKey').value||'').trim();
+  const type=document.getElementById('mType').value;
+  const desc=(document.getElementById('mDesc').value||'').trim();
+  let value = document.getElementById('mValue').value;
+  if(!key){alert('Key is required');return;}
+  if(type==='number') value=value===''?0:Number(value);
+  else if(type==='bool') value=value==='true';
+  else if(type==='json'){try{value=JSON.parse(value||'{}');}catch(e){alert('Invalid JSON');return;}}
+  const r = await authFetch('/api/pricing-config/', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({key,value_type:type,value,description:desc||null,is_active:true})
+  });
+  if(!r||!r.ok){const e=await r?.json();alert('Error: '+(e?.detail||'Unknown'));return;}
+  closeAddModal();
+  await loadConfig();
+}
+document.getElementById('addModal').addEventListener('click',e=>{if(e.target===document.getElementById('addModal'))closeAddModal();});
+
+loadConfig();
+</script>
+{% endblock %}

@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Education — Admin</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f0f2f8;color:#111}
+/* ── Header ── */
+.adm-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 14px rgba(0,0,0,.15)}
+.adm-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+.adm-header h1{font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px}
+.adm-header-actions{display:flex;align-items:center;gap:10px}
+.adm-btn{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;border:none;transition:.15s}
+.adm-btn-ghost{background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.adm-btn-ghost:hover{background:rgba(255,255,255,.28)}
+.adm-nav{background:rgba(0,0,0,.1);border-top:1px solid rgba(255,255,255,.12)}
+.adm-nav-inner{display:flex;max-width:1600px;margin:0 auto;overflow-x:auto}
+.adm-nav-item{display:flex;align-items:center;padding:13px 18px;color:rgba(255,255,255,.85);text-decoration:none;font-size:13px;font-weight:500;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s}
+.adm-nav-item:hover{background:rgba(255,255,255,.12)}
+.adm-nav-item.active{background:rgba(255,255,255,.22);border-bottom-color:#fff;color:#fff}
+/* ── Stats bar ── */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;padding:20px 32px;max-width:1600px;margin:0 auto}
+.stat-card{background:#fff;border-radius:12px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07);display:flex;align-items:center;gap:14px;border-left:4px solid transparent}
+.stat-card.blue{border-left-color:#667eea}
+.stat-card.green{border-left-color:#10b981}
+.stat-card.amber{border-left-color:#f59e0b}
+.stat-card.purple{border-left-color:#8b5cf6}
+.stat-card.rose{border-left-color:#f43f5e}
+.stat-icon{font-size:26px;flex-shrink:0}
+.stat-num{font-size:24px;font-weight:800;line-height:1}
+.stat-lbl{font-size:12px;color:#6b7280;margin-top:3px}
+/* ── Tabs ── */
+.tabs-bar{background:#fff;border-bottom:2px solid #e5e7eb;display:flex;max-width:1600px;margin:0 auto;padding:0 32px;overflow-x:auto}
+.tab-btn{padding:14px 22px;border:none;background:0;cursor:pointer;font-size:14px;font-weight:600;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s;display:flex;align-items:center;gap:6px}
+.tab-btn:hover{color:#667eea}
+.tab-btn.active{color:#667eea;border-bottom-color:#667eea}
+.tab-cnt{background:#667eea;color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;min-width:18px;text-align:center}
+/* ── Container ── */
+.wrap{max-width:1600px;margin:0 auto;padding:24px 32px}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+/* ── Section ── */
+.section{background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;margin-bottom:20px}
+.section-head{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid #f3f4f6}
+.section-head h2{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.section-head .acts{display:flex;gap:8px;align-items:center}
+.section-body{padding:0}
+/* ── Toolbar ── */
+.toolbar{padding:14px 24px;background:#fafbfc;border-bottom:1px solid #f0f0f0;display:flex;gap:10px;align-items:center}
+.search-box{flex:1;padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;background:#fff}
+.search-box:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12)}
+/* ── Table ── */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:#f9fafb;padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #f0f0f0;white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.drag-handle{cursor:grab;color:#d1d5db;font-size:18px;user-select:none;padding:0 6px}
+.drag-handle:hover{color:#667eea}
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-on{background:#d1fae5;color:#065f46}
+.badge-off{background:#f3f4f6;color:#9ca3af}
+.badge-type{background:#e0e7ff;color:#3730a3}
+.badge-manual{background:#fce7f3;color:#be185d}
+.badge-sub{background:#dbeafe;color:#1e40af}
+.badge-price{background:#fef3c7;color:#92400e;font-weight:700}
+/* ── Buttons ── */
+.btn{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:.15s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#667eea;color:#fff}
+.btn-primary:hover{background:#5a67d8}
+.btn-success{background:#10b981;color:#fff}
+.btn-success:hover{background:#059669}
+.btn-secondary{background:#f3f4f6;color:#374151;border:1px solid #e5e7eb}
+.btn-secondary:hover{background:#e9ebef}
+.btn-danger{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.btn-danger:hover{background:#fecaca}
+.btn-warning{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.btn-warning:hover{background:#fde68a}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:5px 8px;font-size:14px}
+/* ── Sortable dragging ── */
+.sortable-ghost{opacity:.35;background:#f0f4ff!important}
+.sortable-drag{box-shadow:0 8px 24px rgba(0,0,0,.18)!important}
+/* ── Modals ── */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;padding:20px;overflow-y:auto;align-items:flex-start;justify-content:center}
+.modal.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;width:100%;max-width:560px;margin:auto;box-shadow:0 24px 64px rgba(0,0,0,.22)}
+.modal-box.wide{max-width:720px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid #e5e7eb}
+.modal-head h3{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.modal-close:hover{background:#f3f4f6;color:#374151}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:10px}
+/* ── Form ── */
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;background:#fafafa;transition:.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#667eea;box-shadow:0 0 0 3px rgba(102,126,234,.12);background:#fff}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.check-label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#374151}
+.check-label input[type=checkbox]{width:16px;height:16px;accent-color:#667eea}
+/* ── VIP / Refs sections ── */
+.config-card{background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:28px;margin-bottom:20px}
+.config-card h2{font-size:16px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.refs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.ref-level{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:10px;padding:16px;text-align:center}
+.ref-level .lv{font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.ref-level input{width:100%;text-align:center;font-size:22px;font-weight:800;color:#4338ca;border:2px solid #c7d2fe;border-radius:8px;padding:8px;background:#fff;outline:none}
+.ref-level input:focus{border-color:#667eea}
+.ref-level .pct{font-size:11px;color:#6b7280;margin-top:6px}
+.chain-vis{background:#f9fafb;border-radius:10px;padding:16px;display:flex;align-items:center;gap:0;overflow-x:auto;margin-bottom:20px}
+.chain-node{display:flex;align-items:center;gap:0;flex-shrink:0}
+.chain-bubble{background:#667eea;color:#fff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.chain-arrow{width:40px;height:2px;background:#c7d2fe;position:relative}
+.chain-arrow::after{content:'';position:absolute;right:0;top:-4px;border:5px solid transparent;border-left-color:#c7d2fe}
+.chain-pct{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap}
+.chain-arrow-wrap{position:relative;width:60px;flex-shrink:0}
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:#111;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:9999;transform:translateY(80px);opacity:0;transition:.3s;max-width:360px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:#10b981}
+.toast.err{background:#ef4444}
+/* ── Empty state ── */
+.empty{text-align:center;padding:60px 20px;color:#9ca3af}
+.empty-icon{font-size:44px;margin-bottom:12px}
+/* ── Save order bar ── */
+.order-bar{display:none;padding:12px 24px;background:#eef2ff;border-top:1px solid #c7d2fe;align-items:center;gap:12px;justify-content:flex-end}
+.order-bar.visible{display:flex}
+/* ── Preview chip ── */
+.preview-chip{background:#667eea;color:#fff;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:500;display:inline-block;margin:4px}
+@media(max-width:768px){
+  .wrap{padding:16px}.stats-bar{padding:16px}.tabs-bar{padding:0 16px}
+  .adm-header-top{padding:12px 16px}.form-row,.form-row-3{grid-template-columns:1fr}.refs-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="adm-header">
+  <div class="adm-header-top">
+    <h1>📚 Education</h1>
+    <div class="adm-header-actions">
+      <span id="adminName" style="opacity:.8;font-size:13px"></span>
+      <a href="/dashboard" class="adm-btn adm-btn-ghost">← Dashboard</a>
+      <button class="adm-btn adm-btn-ghost" onclick="logout()">🚪 Выход</button>
+    </div>
+  </div>
+  {% include '_nav.html' %}
+</header>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat-card blue"><span class="stat-icon">🗂️</span><div><div class="stat-num" id="s-cats">—</div><div class="stat-lbl">Категории</div></div></div>
+  <div class="stat-card green"><span class="stat-icon">📅</span><div><div class="stat-num" id="s-subs">—</div><div class="stat-lbl">Подписки</div></div></div>
+  <div class="stat-card amber"><span class="stat-icon">📖</span><div><div class="stat-num" id="s-mans">—</div><div class="stat-lbl">Мануалы</div></div></div>
+  <div class="stat-card purple"><span class="stat-icon">🌟</span><div><div class="stat-num" id="s-vip">$500</div><div class="stat-lbl">VIP Watchlist</div></div></div>
+  <div class="stat-card rose"><span class="stat-icon">🤝</span><div><div class="stat-num" id="s-refs">—%</div><div class="stat-lbl">Max реферал</div></div></div>
+  <div style="display:flex;align-items:center;justify-content:flex-end">
+    <button class="btn btn-secondary" onclick="seedDemo()" title="Заполнить демо-данными если пусто">🌱 Demo seed</button>
+  </div>
+</div>
+
+<!-- Tabs -->
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="switchTab('manuals',this)">📖 Мануалы <span class="tab-cnt" id="tc-mans">0</span></button>
+  <button class="tab-btn" onclick="switchTab('subs',this)">📅 Подписки <span class="tab-cnt" id="tc-subs">0</span></button>
+  <button class="tab-btn" onclick="switchTab('cats',this)">🗂️ Категории <span class="tab-cnt" id="tc-cats">0</span></button>
+  <button class="tab-btn" onclick="switchTab('vip',this)">🌟 VIP Watchlist</button>
+  <button class="tab-btn" onclick="switchTab('refs',this)">🤝 Реферальные ставки</button>
+</div>
+
+<div class="wrap">
+
+  <!-- ══════════ TAB: MANUALS ══════════ -->
+  <div class="tab-panel active" id="tab-manuals">
+    <div class="section">
+      <div class="section-head">
+        <h2>📖 Мануалы</h2>
+        <div class="acts">
+          <button class="btn btn-secondary btn-sm" onclick="loadManuals()">🔄</button>
+          <button class="btn btn-primary btn-sm" onclick="openManualModal(null)">+ Добавить</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" id="man-search" placeholder="🔍 Поиск по названию или категории..." oninput="filterManuals()">
+        <select id="man-filter-cat" onchange="filterManuals()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff">
+          <option value="">Все категории</option>
+        </select>
+        <select id="man-filter-status" onchange="filterManuals()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff">
+          <option value="">Любой статус</option>
+          <option value="1">Доступен</option>
+          <option value="0">Скрыт</option>
+        </select>
+      </div>
+      <div id="manuals-list"></div>
+      <div class="order-bar" id="man-order-bar">
+        <span style="font-size:13px;color:#6366f1">Порядок изменён</span>
+        <button class="btn btn-primary btn-sm" onclick="saveManualOrder()">💾 Сохранить порядок</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadManuals()">✕ Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB: SUBSCRIPTIONS ══════════ -->
+  <div class="tab-panel" id="tab-subs">
+    <div class="section">
+      <div class="section-head">
+        <h2>📅 Подписки</h2>
+        <div class="acts">
+          <button class="btn btn-secondary btn-sm" onclick="loadSubs()">🔄</button>
+          <button class="btn btn-primary btn-sm" onclick="openSubModal(null)">+ Добавить</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input class="search-box" id="sub-search" placeholder="🔍 Поиск по названию или категории..." oninput="filterSubs()">
+        <select id="sub-filter-cat" onchange="filterSubs()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff">
+          <option value="">Все категории</option>
+        </select>
+        <select id="sub-filter-status" onchange="filterSubs()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff">
+          <option value="">Любой статус</option>
+          <option value="1">Активна</option>
+          <option value="0">Выкл</option>
+        </select>
+      </div>
+      <div id="subs-list"></div>
+      <div class="order-bar" id="sub-order-bar">
+        <span style="font-size:13px;color:#6366f1">Порядок изменён</span>
+        <button class="btn btn-primary btn-sm" onclick="saveSubOrder()">💾 Сохранить порядок</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadSubs()">✕ Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB: CATEGORIES ══════════ -->
+  <div class="tab-panel" id="tab-cats">
+    <div class="section">
+      <div class="section-head">
+        <h2>🗂️ Категории</h2>
+        <div class="acts">
+          <button class="btn btn-secondary btn-sm" onclick="loadCats()">🔄</button>
+          <button class="btn btn-primary btn-sm" onclick="openCatModal(null)">+ Добавить</button>
+        </div>
+      </div>
+      <div id="cats-list"></div>
+      <div class="order-bar" id="cat-order-bar">
+        <span style="font-size:13px;color:#6366f1">Порядок изменён</span>
+        <button class="btn btn-primary btn-sm" onclick="saveCatOrder()">💾 Сохранить порядок</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadCats()">✕ Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB: VIP WATCHLIST ══════════ -->
+  <div class="tab-panel" id="tab-vip">
+    <div class="config-card">
+      <h2>🌟 VIP Watchlist — настройки</h2>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px">
+        Текст и видео отображаются пользователям при нажатии кнопки <b>VIP Watchlist — $500</b> в боте.
+      </p>
+      <div class="form-group">
+        <label>Описание (Markdown, до 4000 символов)</label>
+        <textarea id="vip-desc" rows="10" style="font-family:monospace;font-size:13px;resize:vertical" placeholder="🌟 *VIP Watchlist — $500*&#10;&#10;Описание VIP сервиса..."></textarea>
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">Поддерживается Markdown: *жирный*, _курсив_, `код`</div>
+      </div>
+      <div class="form-group">
+        <label>Telegram Video file_id (опционально)</label>
+        <input id="vip-video" placeholder="BAADAgADXQAD... (оставьте пустым если видео не нужно)">
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">
+          Как получить: отправьте видео боту, скопируйте file_id из /getUpdates.
+          Если пусто — показывается только текст.
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="saveVip()">💾 Сохранить VIP настройки</button>
+        <button class="btn btn-secondary" onclick="loadVip()">🔄 Сбросить</button>
+        <span id="vip-saved" style="color:#10b981;font-size:13px;display:none">✅ Сохранено</span>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="config-card">
+      <h2>👁️ Предпросмотр в боте</h2>
+      <div style="background:#f9fafb;border-radius:10px;padding:20px;max-width:520px">
+        <div style="background:#fff;border-radius:10px;padding:16px;border:1px solid #e5e7eb;font-size:13px;line-height:1.6;white-space:pre-wrap;margin-bottom:12px" id="vip-preview-text">—</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="vip-preview-btns">
+          <div style="background:#667eea;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px">💎 Purchase VIP — $500</div>
+          <div style="background:#f3f4f6;color:#374151;padding:8px 16px;border-radius:8px;font-size:13px;border:1px solid #e5e7eb">⬅️ Назад</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ TAB: REFERRALS ══════════ -->
+  <div class="tab-panel" id="tab-refs">
+    <div class="config-card">
+      <h2>🤝 Реферальная цепочка — ставки</h2>
+      <p style="color:#6b7280;font-size:13px;margin-bottom:20px">
+        Процент от каждой покупки реферала автоматически зачисляется на баланс пригласившего.
+        4-уровневая цепочка: L1 → L2 → L3 → L4.
+      </p>
+
+      <!-- Chain visualizer -->
+      <div class="chain-vis" id="chain-vis">
+        <div class="chain-node">
+          <div class="chain-bubble" title="Вы">Вы</div>
+        </div>
+        <div class="chain-arrow-wrap">
+          <div class="chain-arrow"></div>
+          <div class="chain-pct" id="cv-l1">5%</div>
+        </div>
+        <div class="chain-node">
+          <div class="chain-bubble" style="background:#8b5cf6">L1</div>
+        </div>
+        <div class="chain-arrow-wrap">
+          <div class="chain-arrow"></div>
+          <div class="chain-pct" id="cv-l2">3%</div>
+        </div>
+        <div class="chain-node">
+          <div class="chain-bubble" style="background:#10b981">L2</div>
+        </div>
+        <div class="chain-arrow-wrap">
+          <div class="chain-arrow"></div>
+          <div class="chain-pct" id="cv-l3">2%</div>
+        </div>
+        <div class="chain-node">
+          <div class="chain-bubble" style="background:#f59e0b">L3</div>
+        </div>
+        <div class="chain-arrow-wrap">
+          <div class="chain-arrow"></div>
+          <div class="chain-pct" id="cv-l4">1%</div>
+        </div>
+        <div class="chain-node">
+          <div class="chain-bubble" style="background:#f43f5e">L4</div>
+        </div>
+      </div>
+
+      <div class="refs-grid">
+        <div class="ref-level">
+          <div class="lv">Уровень 1 (прямой)</div>
+          <input type="number" id="ref-l1" min="0" max="100" step="0.1" value="5" oninput="updateChainVis()">
+          <div class="pct">% от покупок L1</div>
+        </div>
+        <div class="ref-level">
+          <div class="lv">Уровень 2</div>
+          <input type="number" id="ref-l2" min="0" max="100" step="0.1" value="3" oninput="updateChainVis()">
+          <div class="pct">% от покупок L2</div>
+        </div>
+        <div class="ref-level">
+          <div class="lv">Уровень 3</div>
+          <input type="number" id="ref-l3" min="0" max="100" step="0.1" value="2" oninput="updateChainVis()">
+          <div class="pct">% от покупок L3</div>
+        </div>
+        <div class="ref-level">
+          <div class="lv">Уровень 4</div>
+          <input type="number" id="ref-l4" min="0" max="100" step="0.1" value="1" oninput="updateChainVis()">
+          <div class="pct">% от покупок L4</div>
+        </div>
+      </div>
+
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:20px;font-size:13px;color:#166534">
+        💡 <b>Итого:</b> максимально до <b id="refs-total">11%</b> с одной покупки реферальной цепочки.
+        Зачисляется мгновенно при каждом заказе.
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" onclick="saveRefs()">💾 Сохранить ставки</button>
+        <button class="btn btn-secondary" onclick="loadRefs()">🔄 Сбросить</button>
+        <span id="refs-saved" style="color:#10b981;font-size:13px;display:none">✅ Сохранено</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: MANUAL ════ -->
+<div class="modal" id="modalManual">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h3 id="modalManualTitle">Мануал</h3>
+      <button class="modal-close" onclick="closeModal('modalManual')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="mId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Код *</label>
+          <input id="mCode" placeholder="ssn_lookup_guide">
+        </div>
+        <div class="form-group">
+          <label>Название *</label>
+          <input id="mName" placeholder="SSN Lookup Guide">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Категория</label>
+          <select id="mCat"></select>
+        </div>
+        <div class="form-group">
+          <label>Цена ($) *</label>
+          <input type="number" id="mPrice" step="0.01" min="0" placeholder="14.99">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Тип файла</label>
+          <select id="mFileType">
+            <option value="pdf">📄 PDF</option>
+            <option value="video">🎬 Video</option>
+            <option value="zip">📦 ZIP</option>
+            <option value="doc">📝 DOC</option>
+            <option value="other">📁 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Имя файла</label>
+          <input id="mFileName" placeholder="guide.pdf">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Путь к файлу на сервере</label>
+        <input id="mFilePath" placeholder="/uploads/manuals/guide.pdf">
+        <div style="font-size:11px;color:#9ca3af;margin-top:4px">Абсолютный путь на сервере к PDF/ZIP файлу.</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Позиция (порядок)</label>
+          <input type="number" id="mPos" value="0" min="0">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end">
+          <label class="check-label"><input type="checkbox" id="mAvail" checked> Доступен пользователям</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea id="mDesc" rows="3" placeholder="Краткое описание для пользователя в боте..." style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modalManual')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveManual()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: SUBSCRIPTION ════ -->
+<div class="modal" id="modalSub">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalSubTitle">Подписка</h3>
+      <button class="modal-close" onclick="closeModal('modalSub')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Код *</label>
+          <input id="sCode" placeholder="premium_30d">
+        </div>
+        <div class="form-group">
+          <label>Название *</label>
+          <input id="sName" placeholder="Premium 30 дней">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Категория</label>
+          <select id="sCat"></select>
+        </div>
+        <div class="form-group">
+          <label>Цена ($) *</label>
+          <input type="number" id="sPrice" step="0.01" min="0" placeholder="29.99">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Срок доступа (дней) *</label>
+          <input type="number" id="sDays" min="1" placeholder="30">
+        </div>
+        <div class="form-group">
+          <label>Позиция (порядок)</label>
+          <input type="number" id="sPos" value="0" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Описание</label>
+        <textarea id="sDesc" rows="3" placeholder="Что входит в подписку..." style="resize:vertical"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="check-label"><input type="checkbox" id="sActive" checked> Активна (видна пользователям)</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modalSub')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveSub()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: CATEGORY ════ -->
+<div class="modal" id="modalCat">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="modalCatTitle">Категория</h3>
+      <button class="modal-close" onclick="closeModal('modalCat')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Код *</label>
+          <input id="cCode" placeholder="credit_basics">
+          <div style="font-size:11px;color:#9ca3af;margin-top:4px">Только латиница и подчёркивание. Изменить нельзя после создания.</div>
+        </div>
+        <div class="form-group">
+          <label>Название *</label>
+          <input id="cName" placeholder="Credit Basics">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Тип</label>
+          <select id="cType">
+            <option value="subscription">📅 Подписка</option>
+            <option value="manual">📖 Мануал</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Позиция</label>
+          <input type="number" id="cPos" value="0" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="check-label"><input type="checkbox" id="cActive" checked> Активна</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal('modalCat')">Отмена</button>
+      <button class="btn btn-primary" onclick="saveCat()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Sortable.js -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+const token = localStorage.getItem('token');
+if (!token) location.href = '/';
+
+async function api(url, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Authorization'] = 'Bearer ' + token;
+  const r = await fetch(url, opts);
+  if (r.status === 401) { localStorage.removeItem('token'); location.href = '/'; return null; }
+  return r;
+}
+async function apiJSON(url, opts = {}) {
+  if (!opts.headers) opts.headers = {};
+  opts.headers['Content-Type'] = 'application/json';
+  return api(url, opts);
+}
+
+function logout() { localStorage.removeItem('token'); location.href = '/'; }
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  const loaders = { manuals: loadManuals, subs: loadSubs, cats: loadCats, vip: loadVip, refs: loadRefs };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── Categories cache ──────────────────────────────────────────────────────
+let _cats = [];
+async function loadCategories() {
+  const r = await api('/api/education/categories');
+  if (!r) return;
+  _cats = await r.json();
+  // Update stats
+  document.getElementById('s-cats').textContent = _cats.length;
+  document.getElementById('tc-cats').textContent = _cats.length;
+  return _cats;
+}
+
+function fillCatSelect(selId, typeFilter) {
+  const sel = document.getElementById(selId);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— выберите —</option>';
+  (_cats.filter(c => !typeFilter || c.item_type === typeFilter)).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.code; o.textContent = c.name + ' (' + c.code + ')';
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+function fillFilterCatSelect(selId, typeFilter) {
+  const sel = document.getElementById(selId);
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Все категории</option>';
+  (_cats.filter(c => !typeFilter || c.item_type === typeFilter)).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.code; o.textContent = c.name;
+    sel.appendChild(o);
+  });
+  if (cur) sel.value = cur;
+}
+
+// ── Manuals ───────────────────────────────────────────────────────────────
+let _manuals = []; let _manSortable;
+
+async function loadManuals() {
+  document.getElementById('man-order-bar').classList.remove('visible');
+  const el = document.getElementById('manuals-list');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">⏳ Загрузка...</div>';
+  const r = await api('/api/education/manuals');
+  if (!r) return;
+  _manuals = await r.json();
+  document.getElementById('s-mans').textContent = _manuals.length;
+  document.getElementById('tc-mans').textContent = _manuals.filter(m => m.is_available).length;
+  fillFilterCatSelect('man-filter-cat', 'manual');
+  renderManuals(_manuals);
+}
+
+function filterManuals() {
+  const q = document.getElementById('man-search').value.toLowerCase();
+  const cat = document.getElementById('man-filter-cat').value;
+  const st = document.getElementById('man-filter-status').value;
+  const filtered = _manuals.filter(m => {
+    if (q && !m.name.toLowerCase().includes(q) && !m.category_code.includes(q)) return false;
+    if (cat && m.category_code !== cat) return false;
+    if (st === '1' && !m.is_available) return false;
+    if (st === '0' && m.is_available) return false;
+    return true;
+  });
+  renderManuals(filtered, true);
+}
+
+const FILE_TYPE_ICONS = { pdf: '📄', video: '🎬', zip: '📦', doc: '📝', other: '📁' };
+
+function renderManuals(items, noSort = false) {
+  const el = document.getElementById('manuals-list');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>Мануалов нет</div></div>';
+    return;
+  }
+  const rows = items.map(m => `
+    <tr id="man-row-${m.id}" data-id="${m.id}">
+      <td><span class="drag-handle" title="Перетащить для сортировки">⠿</span></td>
+      <td style="font-weight:600;color:#111">${escH(m.name)}</td>
+      <td><span class="badge badge-type">${escH(m.category_code)}</span></td>
+      <td><span class="badge badge-price">$${(m.price||0).toFixed(2)}</span></td>
+      <td>${FILE_TYPE_ICONS[m.file_type]||'📁'} ${m.file_type||'—'}</td>
+      <td style="color:#6b7280;font-size:13px">${m.position}</td>
+      <td>
+        <button class="btn btn-sm ${m.is_available ? 'btn-warning' : 'btn-success'}" onclick="toggleManual(${m.id},${m.is_available})">
+          ${m.is_available ? '🙈 Скрыть' : '👁️ Показать'}
+        </button>
+      </td>
+      <td>
+        <button class="btn btn-secondary btn-icon" onclick='openManualModal(${JSON.stringify(m)})' title="Редактировать">✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="deleteManual(${m.id})" title="Удалить">🗑️</button>
+      </td>
+    </tr>`).join('');
+  el.innerHTML = `<table>
+    <thead><tr><th style="width:40px"></th><th>Название</th><th>Категория</th><th>Цена</th><th>Формат</th><th>Позиция</th><th>Статус</th><th>Действия</th></tr></thead>
+    <tbody id="man-tbody">${rows}</tbody>
+  </table>`;
+
+  if (!noSort && _manSortable) _manSortable.destroy();
+  if (!noSort) {
+    _manSortable = Sortable.create(document.getElementById('man-tbody'), {
+      handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost', dragClass: 'sortable-drag',
+      onEnd: () => document.getElementById('man-order-bar').classList.add('visible')
+    });
+  }
+}
+
+async function saveManualOrder() {
+  const tbody = document.getElementById('man-tbody');
+  if (!tbody) return;
+  const rows = [...tbody.querySelectorAll('tr')];
+  const updates = rows.map((r, i) => api(`/api/education/manuals/${r.dataset.id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ position: i })
+  }));
+  await Promise.all(updates);
+  toast('Порядок мануалов сохранён');
+  loadManuals();
+}
+
+async function toggleManual(id, cur) {
+  const r = await apiJSON(`/api/education/manuals/${id}`, {
+    method: 'PUT', body: JSON.stringify({ is_available: !cur })
+  });
+  if (r && r.ok) { toast(cur ? 'Мануал скрыт' : 'Мануал доступен'); loadManuals(); }
+}
+
+async function deleteManual(id) {
+  if (!confirm('Удалить мануал?')) return;
+  const r = await api(`/api/education/manuals/${id}`, { method: 'DELETE' });
+  if (r && r.ok) { toast('Удалено', 'ok'); loadManuals(); }
+}
+
+async function openManualModal(item) {
+  await loadCategories();
+  document.getElementById('modalManualTitle').textContent = item ? 'Редактировать мануал' : 'Новый мануал';
+  document.getElementById('mId').value = item?.id || '';
+  document.getElementById('mCode').value = item?.code || '';
+  document.getElementById('mCode').disabled = !!item;
+  document.getElementById('mName').value = item?.name || '';
+  document.getElementById('mPrice').value = item?.price || '';
+  document.getElementById('mFileType').value = item?.file_type || 'pdf';
+  document.getElementById('mFileName').value = item?.file_name || '';
+  document.getElementById('mFilePath').value = item?.file_path || '';
+  document.getElementById('mPos').value = item?.position ?? _manuals.length;
+  document.getElementById('mDesc').value = item?.description || '';
+  document.getElementById('mAvail').checked = item ? item.is_available : true;
+  fillCatSelect('mCat', 'manual');
+  if (item) document.getElementById('mCat').value = item.category_code;
+  document.getElementById('modalManual').classList.add('open');
+}
+
+async function saveManual() {
+  const id = document.getElementById('mId').value;
+  const body = {
+    name: document.getElementById('mName').value.trim(),
+    category_code: document.getElementById('mCat').value,
+    price: parseFloat(document.getElementById('mPrice').value) || 0,
+    file_path: document.getElementById('mFilePath').value.trim(),
+    file_name: document.getElementById('mFileName').value.trim(),
+    file_type: document.getElementById('mFileType').value,
+    description: document.getElementById('mDesc').value.trim() || null,
+    position: parseInt(document.getElementById('mPos').value) || 0,
+    is_available: document.getElementById('mAvail').checked,
+  };
+  if (!body.name) { toast('Введите название', 'err'); return; }
+  if (!id) body.code = document.getElementById('mCode').value.trim();
+  const r = await apiJSON(id ? `/api/education/manuals/${id}` : '/api/education/manuals',
+    { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+  if (r && r.ok) { closeModal('modalManual'); toast('Сохранено ✅'); loadManuals(); }
+  else { const e = await r?.json(); toast('Ошибка: ' + (e?.detail || '?'), 'err'); }
+}
+
+// ── Subscriptions ─────────────────────────────────────────────────────────
+let _subs = []; let _subSortable;
+
+async function loadSubs() {
+  document.getElementById('sub-order-bar').classList.remove('visible');
+  const el = document.getElementById('subs-list');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">⏳ Загрузка...</div>';
+  const r = await api('/api/education/subscriptions');
+  if (!r) return;
+  _subs = await r.json();
+  document.getElementById('s-subs').textContent = _subs.length;
+  document.getElementById('tc-subs').textContent = _subs.filter(s => s.is_active).length;
+  fillFilterCatSelect('sub-filter-cat', 'subscription');
+  renderSubs(_subs);
+}
+
+function filterSubs() {
+  const q = document.getElementById('sub-search').value.toLowerCase();
+  const cat = document.getElementById('sub-filter-cat').value;
+  const st = document.getElementById('sub-filter-status').value;
+  const filtered = _subs.filter(s => {
+    if (q && !s.name.toLowerCase().includes(q) && !s.category_code.includes(q)) return false;
+    if (cat && s.category_code !== cat) return false;
+    if (st === '1' && !s.is_active) return false;
+    if (st === '0' && s.is_active) return false;
+    return true;
+  });
+  renderSubs(filtered, true);
+}
+
+function renderSubs(items, noSort = false) {
+  const el = document.getElementById('subs-list');
+  if (!items.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div>Подписок нет</div></div>';
+    return;
+  }
+  const rows = items.map(s => `
+    <tr id="sub-row-${s.id}" data-id="${s.id}">
+      <td><span class="drag-handle">⠿</span></td>
+      <td style="font-weight:600;color:#111">${escH(s.name)}</td>
+      <td><span class="badge badge-sub">${escH(s.category_code)}</span></td>
+      <td><span class="badge badge-price">$${(s.price||0).toFixed(2)}</span></td>
+      <td>⏱ <b>${s.duration_days}</b> дн.</td>
+      <td style="color:#6b7280;font-size:13px">${s.position}</td>
+      <td>
+        <button class="btn btn-sm ${s.is_active ? 'btn-warning' : 'btn-success'}" onclick="toggleSub(${s.id},${s.is_active})">
+          ${s.is_active ? '⏸ Выкл' : '▶ Вкл'}
+        </button>
+      </td>
+      <td>
+        <button class="btn btn-secondary btn-icon" onclick='openSubModal(${JSON.stringify(s)})' title="Редактировать">✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="deleteSub(${s.id})" title="Удалить">🗑️</button>
+      </td>
+    </tr>`).join('');
+  el.innerHTML = `<table>
+    <thead><tr><th style="width:40px"></th><th>Название</th><th>Категория</th><th>Цена</th><th>Срок</th><th>Позиция</th><th>Статус</th><th>Действия</th></tr></thead>
+    <tbody id="sub-tbody">${rows}</tbody>
+  </table>`;
+
+  if (!noSort && _subSortable) _subSortable.destroy();
+  if (!noSort) {
+    _subSortable = Sortable.create(document.getElementById('sub-tbody'), {
+      handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
+      onEnd: () => document.getElementById('sub-order-bar').classList.add('visible')
+    });
+  }
+}
+
+async function saveSubOrder() {
+  const rows = [...document.getElementById('sub-tbody').querySelectorAll('tr')];
+  await Promise.all(rows.map((r, i) => api(`/api/education/subscriptions/${r.dataset.id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ position: i })
+  })));
+  toast('Порядок подписок сохранён');
+  loadSubs();
+}
+
+async function toggleSub(id, cur) {
+  const r = await apiJSON(`/api/education/subscriptions/${id}`, {
+    method: 'PUT', body: JSON.stringify({ is_active: !cur })
+  });
+  if (r && r.ok) { toast(cur ? 'Подписка выключена' : 'Подписка включена'); loadSubs(); }
+}
+
+async function deleteSub(id) {
+  if (!confirm('Удалить подписку?')) return;
+  const r = await api(`/api/education/subscriptions/${id}`, { method: 'DELETE' });
+  if (r && r.ok) { toast('Удалено'); loadSubs(); }
+}
+
+async function openSubModal(item) {
+  await loadCategories();
+  document.getElementById('modalSubTitle').textContent = item ? 'Редактировать подписку' : 'Новая подписка';
+  document.getElementById('sId').value = item?.id || '';
+  document.getElementById('sCode').value = item?.code || '';
+  document.getElementById('sCode').disabled = !!item;
+  document.getElementById('sName').value = item?.name || '';
+  document.getElementById('sPrice').value = item?.price || '';
+  document.getElementById('sDays').value = item?.duration_days || 30;
+  document.getElementById('sPos').value = item?.position ?? _subs.length;
+  document.getElementById('sDesc').value = item?.description || '';
+  document.getElementById('sActive').checked = item ? item.is_active : true;
+  fillCatSelect('sCat', 'subscription');
+  if (item) document.getElementById('sCat').value = item.category_code;
+  document.getElementById('modalSub').classList.add('open');
+}
+
+async function saveSub() {
+  const id = document.getElementById('sId').value;
+  const body = {
+    name: document.getElementById('sName').value.trim(),
+    category_code: document.getElementById('sCat').value,
+    price: parseFloat(document.getElementById('sPrice').value) || 0,
+    duration_days: parseInt(document.getElementById('sDays').value) || 30,
+    description: document.getElementById('sDesc').value.trim() || null,
+    position: parseInt(document.getElementById('sPos').value) || 0,
+    is_active: document.getElementById('sActive').checked,
+  };
+  if (!body.name) { toast('Введите название', 'err'); return; }
+  if (!id) body.code = document.getElementById('sCode').value.trim();
+  const r = await apiJSON(id ? `/api/education/subscriptions/${id}` : '/api/education/subscriptions',
+    { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+  if (r && r.ok) { closeModal('modalSub'); toast('Сохранено ✅'); loadSubs(); }
+  else { const e = await r?.json(); toast('Ошибка: ' + (e?.detail || '?'), 'err'); }
+}
+
+// ── Categories ────────────────────────────────────────────────────────────
+let _catSortable;
+
+async function loadCats() {
+  document.getElementById('cat-order-bar').classList.remove('visible');
+  const el = document.getElementById('cats-list');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af">⏳ Загрузка...</div>';
+  const cats = await loadCategories();
+  renderCats(cats);
+}
+
+function renderCats(cats) {
+  const el = document.getElementById('cats-list');
+  if (!cats || !cats.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🗂️</div><div>Категорий нет</div></div>';
+    return;
+  }
+  const rows = cats.map(c => `
+    <tr id="cat-row-${c.id}" data-id="${c.id}">
+      <td><span class="drag-handle">⠿</span></td>
+      <td style="font-weight:700;color:#111">${escH(c.name)}</td>
+      <td><code style="background:#f3f4f6;padding:2px 8px;border-radius:5px;font-size:12px">${escH(c.code)}</code></td>
+      <td><span class="badge ${c.item_type==='manual' ? 'badge-manual' : 'badge-sub'}">${c.item_type === 'manual' ? '📖 мануал' : '📅 подписка'}</span></td>
+      <td style="color:#6b7280;font-size:13px">${c.position}</td>
+      <td><span class="badge ${c.is_active ? 'badge-on' : 'badge-off'}">${c.is_active ? '✅ Активна' : '⛔ Выкл'}</span></td>
+      <td>
+        <button class="btn btn-secondary btn-icon" onclick='openCatModal(${JSON.stringify(c)})'>✏️</button>
+        <button class="btn btn-danger btn-icon" onclick="deleteCat(${c.id})">🗑️</button>
+      </td>
+    </tr>`).join('');
+  el.innerHTML = `<table>
+    <thead><tr><th style="width:40px"></th><th>Название</th><th>Код</th><th>Тип</th><th>Позиция</th><th>Статус</th><th>Действия</th></tr></thead>
+    <tbody id="cat-tbody">${rows}</tbody>
+  </table>`;
+
+  if (_catSortable) _catSortable.destroy();
+  _catSortable = Sortable.create(document.getElementById('cat-tbody'), {
+    handle: '.drag-handle', animation: 150, ghostClass: 'sortable-ghost',
+    onEnd: () => document.getElementById('cat-order-bar').classList.add('visible')
+  });
+}
+
+async function saveCatOrder() {
+  const rows = [...document.getElementById('cat-tbody').querySelectorAll('tr')];
+  await Promise.all(rows.map((r, i) => api(`/api/education/categories/${r.dataset.id}`, {
+    method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ position: i })
+  })));
+  toast('Порядок категорий сохранён');
+  loadCats();
+}
+
+function openCatModal(cat) {
+  document.getElementById('modalCatTitle').textContent = cat ? 'Редактировать категорию' : 'Новая категория';
+  document.getElementById('cId').value = cat?.id || '';
+  document.getElementById('cCode').value = cat?.code || '';
+  document.getElementById('cCode').disabled = !!cat;
+  document.getElementById('cName').value = cat?.name || '';
+  document.getElementById('cType').value = cat?.item_type || 'subscription';
+  document.getElementById('cPos').value = cat?.position ?? (_cats.length);
+  document.getElementById('cActive').checked = cat ? cat.is_active : true;
+  document.getElementById('modalCat').classList.add('open');
+}
+
+async function saveCat() {
+  const id = document.getElementById('cId').value;
+  const body = {
+    name: document.getElementById('cName').value.trim(),
+    item_type: document.getElementById('cType').value,
+    position: parseInt(document.getElementById('cPos').value) || 0,
+    is_active: document.getElementById('cActive').checked,
+  };
+  if (!body.name) { toast('Введите название', 'err'); return; }
+  if (!id) body.code = document.getElementById('cCode').value.trim();
+  const r = await apiJSON(id ? `/api/education/categories/${id}` : '/api/education/categories',
+    { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+  if (r && r.ok) { closeModal('modalCat'); toast('Сохранено ✅'); loadCats(); }
+  else { const e = await r?.json(); toast('Ошибка: ' + (e?.detail || '?'), 'err'); }
+}
+
+async function deleteCat(id) {
+  if (!confirm('Удалить категорию?\nВсе привязанные подписки/мануалы потеряют категорию.')) return;
+  const r = await api(`/api/education/categories/${id}`, { method: 'DELETE' });
+  if (r && r.ok) { toast('Удалено'); loadCats(); }
+}
+
+// ── VIP Watchlist ─────────────────────────────────────────────────────────
+async function loadVip() {
+  const r = await api('/api/settings/vip-watchlist');
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('vip-desc').value = d.description || '';
+  document.getElementById('vip-video').value = d.video_file_id || '';
+  updateVipPreview();
+}
+
+function updateVipPreview() {
+  const raw = document.getElementById('vip-desc').value;
+  document.getElementById('vip-preview-text').textContent = raw || '—';
+}
+document.getElementById('vip-desc')?.addEventListener('input', updateVipPreview);
+
+async function saveVip() {
+  const body = {
+    description: document.getElementById('vip-desc').value,
+    video_file_id: document.getElementById('vip-video').value.trim() || null,
+  };
+  const r = await apiJSON('/api/settings/vip-watchlist', { method: 'PUT', body: JSON.stringify(body) });
+  if (r && r.ok) {
+    const el = document.getElementById('vip-saved');
+    el.style.display = 'inline';
+    toast('VIP настройки сохранены ✅');
+    setTimeout(() => el.style.display = 'none', 3000);
+  } else {
+    toast('Ошибка сохранения', 'err');
+  }
+}
+
+// ── Referral Rates ────────────────────────────────────────────────────────
+async function loadRefs() {
+  const r = await api('/api/settings/referral-rates');
+  if (!r) return;
+  const d = await r.json();
+  document.getElementById('ref-l1').value = d['1'] ?? 5;
+  document.getElementById('ref-l2').value = d['2'] ?? 3;
+  document.getElementById('ref-l3').value = d['3'] ?? 2;
+  document.getElementById('ref-l4').value = d['4'] ?? 1;
+  updateChainVis();
+  document.getElementById('s-refs').textContent =
+    (parseFloat(d['1']||0) + parseFloat(d['2']||0) + parseFloat(d['3']||0) + parseFloat(d['4']||0)).toFixed(1) + '%';
+}
+
+function updateChainVis() {
+  const l1 = parseFloat(document.getElementById('ref-l1').value) || 0;
+  const l2 = parseFloat(document.getElementById('ref-l2').value) || 0;
+  const l3 = parseFloat(document.getElementById('ref-l3').value) || 0;
+  const l4 = parseFloat(document.getElementById('ref-l4').value) || 0;
+  document.getElementById('cv-l1').textContent = l1 + '%';
+  document.getElementById('cv-l2').textContent = l2 + '%';
+  document.getElementById('cv-l3').textContent = l3 + '%';
+  document.getElementById('cv-l4').textContent = l4 + '%';
+  const total = (l1 + l2 + l3 + l4).toFixed(1);
+  document.getElementById('refs-total').textContent = total + '%';
+  document.getElementById('s-refs').textContent = l1 + '%';
+}
+
+async function saveRefs() {
+  const body = {
+    level_1: parseFloat(document.getElementById('ref-l1').value) || 0,
+    level_2: parseFloat(document.getElementById('ref-l2').value) || 0,
+    level_3: parseFloat(document.getElementById('ref-l3').value) || 0,
+    level_4: parseFloat(document.getElementById('ref-l4').value) || 0,
+  };
+  const r = await apiJSON('/api/settings/referral-rates', { method: 'PUT', body: JSON.stringify(body) });
+  if (r && r.ok) {
+    const el = document.getElementById('refs-saved');
+    el.style.display = 'inline';
+    toast('Реферальные ставки сохранены ✅');
+    setTimeout(() => el.style.display = 'none', 3000);
+  } else {
+    toast('Ошибка сохранения', 'err');
+  }
+}
+
+// ── Demo seed ─────────────────────────────────────────────────────────────
+async function seedDemo() {
+  if (!confirm('Добавить демо-данные (только если Education пустой)?')) return;
+  const r = await apiJSON('/api/education/seed', { method: 'POST', body: '{}' });
+  if (r && r.ok) { toast('Демо-данные добавлены ✅'); loadManuals(); loadStats(); }
+  else { const e = await r?.json(); toast(e?.message || 'Уже заполнено или ошибка'); }
+}
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadStats() {
+  await loadCategories();
+  // manuals and subs loaded on demand
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+(async () => {
+  await loadStats();
+  loadManuals();
+})();
+</script>
+</body>
+</html>

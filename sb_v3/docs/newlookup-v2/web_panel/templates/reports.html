@@ -1,0 +1,185 @@
+{% extends "_base.html" %}
+{% block title %}Отчёты{% endblock %}
+{% block header_title %}📋 Отчёты{% endblock %}
+{% block subnav %}
+<div class="admin-subnav">
+    <button class="tab-btn active" onclick="showTab('revenue', this)">💰 Revenue</button>
+    <button class="tab-btn" onclick="showTab('bots', this)">🤖 По ботам</button>
+    <button class="tab-btn" onclick="showTab('users', this)">👥 По пользователям</button>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        .tab-content{display:none}
+        .tab-content.active{display:block}
+        .section{background:#fff;padding:24px;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-top:20px}
+        .section h2{font-size:18px;font-weight:600;margin-bottom:16px}
+        .controls{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+        .controls select,.controls input{padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px}
+        .btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none}
+        .btn-primary{background:#667eea;color:#fff}
+        .btn-primary:hover{background:#5a67d8}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        th{background:#f9fafb;padding:10px 12px;text-align:left;font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase}
+        td{padding:10px 12px;border-bottom:1px solid #f0f0f0}
+        tr:hover td{background:#fafbff}
+        .total-row td{font-weight:700;background:#f0f4ff}
+        @media(max-width:768px){}
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="section" style="margin-top:0">
+        <h2>📅 Диапазон дат</h2>
+        <div class="controls">
+            <input type="date" id="reportDateFrom">
+            <input type="date" id="reportDateTo">
+            <button class="btn btn-primary" onclick="applyReportDateRange()">Применить ко всем вкладкам</button>
+        </div>
+    </div>
+
+    <!-- Revenue -->
+    <div class="tab-content active" id="tab-revenue">
+        <div class="section">
+            <h2>💰 Отчёт по доходам</h2>
+            <div class="controls">
+                <select id="revPeriod">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="30" selected>30 дней</option>
+                    <option value="90">90 дней</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadRevenue()">🔍 Загрузить</button>
+            </div>
+            <div id="revenueTable"><div style="text-align:center;padding:40px;color:#888">Нажмите "Загрузить"</div></div>
+        </div>
+    </div>
+
+    <!-- Bots -->
+    <div class="tab-content" id="tab-bots">
+        <div class="section">
+            <h2>🤖 Отчёт по ботам</h2>
+            <div class="controls">
+                <select id="botPeriod">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="30" selected>30 дней</option>
+                    <option value="90">90 дней</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadBotsReport()">🔍 Загрузить</button>
+            </div>
+            <div id="botsTable"><div style="text-align:center;padding:40px;color:#888">Нажмите "Загрузить"</div></div>
+        </div>
+    </div>
+
+    <!-- Users -->
+    <div class="tab-content" id="tab-users">
+        <div class="section">
+            <h2>👥 Отчёт по пользователям</h2>
+            <div class="controls">
+                <select id="userPeriod">
+                    <option value="7">7 дней</option>
+                    <option value="14">14 дней</option>
+                    <option value="30" selected>30 дней</option>
+                    <option value="90">90 дней</option>
+                </select>
+                <button class="btn btn-primary" onclick="loadUsersReport()">🔍 Загрузить</button>
+            </div>
+            <div id="usersTable"><div style="text-align:center;padding:40px;color:#888">Нажмите "Загрузить"</div></div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+
+function buildReportQuery(periodId) {
+    const from = document.getElementById('reportDateFrom').value;
+    const to = document.getElementById('reportDateTo').value;
+    const params = new URLSearchParams();
+    if (from) params.set('start_date', from);
+    if (to) params.set('end_date', to);
+    if (!from && !to && periodId) {
+        params.set('period_days', document.getElementById(periodId).value);
+    }
+    return params.toString();
+}
+
+function setReportQuickRange(days) {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - days + 1);
+    document.getElementById('reportDateFrom').value = from.toISOString().slice(0, 10);
+    document.getElementById('reportDateTo').value = to.toISOString().slice(0, 10);
+}
+
+function applyReportDateRange() {
+    loadRevenue();
+    loadBotsReport();
+    loadUsersReport();
+}
+
+async function loadRevenue() {
+    const el = document.getElementById('revenueTable');
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/revenue?${buildReportQuery('revPeriod')}`);
+        if (!r) return;
+        const data = await r.json();
+        el.innerHTML = `<table><tbody>
+            <tr><td><strong>Период</strong></td><td>${data.period.start_date} .. ${data.period.end_date}</td></tr>
+            <tr><td><strong>Доход</strong></td><td style="font-weight:600;color:#667eea">$${(data.total_revenue||0).toFixed(2)}</td></tr>
+            <tr><td><strong>Заказов</strong></td><td>${data.total_orders||0}</td></tr>
+            <tr><td><strong>Средний чек</strong></td><td>$${(data.avg_order_value||0).toFixed(2)}</td></tr>
+        </tbody></table>`;
+    } catch (e) { el.innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadBotsReport() {
+    const el = document.getElementById('botsTable');
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/bots?${buildReportQuery('botPeriod')}`);
+        if (!r) return;
+        const data = await r.json();
+        const items = data.bots || [];
+        if (!items.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Нет данных</div>'; return; }
+        const rows = items.map(i =>
+            `<tr><td>${i.name || '—'}</td>
+             <td style="text-align:center">${i.is_active ? 'Да' : 'Нет'}</td>
+             <td style="text-align:center">${i.orders_count || 0}</td>
+             <td style="text-align:right;font-weight:600;color:#059669">$${(i.revenue||0).toFixed(2)}</td></tr>`
+        ).join('');
+        el.innerHTML = `<div style="margin-bottom:12px;color:#6b7280">${data.period.start_date} .. ${data.period.end_date}</div>
+            <table><thead><tr><th>Бот</th><th style="text-align:center">Активен</th>
+            <th style="text-align:center">Заказов</th><th style="text-align:right">Revenue</th></tr></thead><tbody>${rows}</tbody></table>`;
+    } catch (e) { el.innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`; }
+}
+
+async function loadUsersReport() {
+    const el = document.getElementById('usersTable');
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#888">Загрузка...</div>';
+    try {
+        const r = await authFetch(`/api/reports/users?${buildReportQuery('userPeriod')}`);
+        if (!r) return;
+        const data = await r.json();
+        el.innerHTML = `<table><tbody>
+            <tr><td><strong>Период</strong></td><td>${data.period.start_date} .. ${data.period.end_date}</td></tr>
+            <tr><td><strong>Новых пользователей</strong></td><td>${data.new_users||0}</td></tr>
+            <tr><td><strong>Баланс новых пользователей</strong></td><td>$${(data.new_users_balance||0).toFixed(2)}</td></tr>
+            <tr><td><strong>Всего пользователей</strong></td><td>${data.total_users||0}</td></tr>
+        </tbody></table>`;
+    } catch (e) { el.innerHTML = `<div style="color:red;padding:20px">Ошибка: ${e.message}</div>`; }
+}
+
+// Auto-load first tab
+setReportQuickRange(30);
+loadRevenue();
+</script>
+{% endblock %}

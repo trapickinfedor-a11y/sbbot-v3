@@ -1,0 +1,889 @@
+{
+  "file_count": 52,
+  "unique_reason_count": 25,
+  "reasons": [
+    {
+      "reason": "Income or credit history insufficient for loan",
+      "count": 38
+    },
+    {
+      "reason": "Requested amount unsupported by income",
+      "count": 34
+    },
+    {
+      "reason": "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+      "count": 28
+    },
+    {
+      "reason": "Too many accounts with balances",
+      "count": 26
+    },
+    {
+      "reason": "RiskView Consumer Inquiry",
+      "count": 23
+    },
+    {
+      "reason": "Proportion of loan balances to loan amounts is too high",
+      "count": 16
+    },
+    {
+      "reason": "Serious delinquency",
+      "count": 14
+    },
+    {
+      "reason": "Too few accounts currently paid as agreed",
+      "count": 12
+    },
+    {
+      "reason": "High debt in relation to income",
+      "count": 9
+    },
+    {
+      "reason": "Serious delinquency, and public record or collection filed",
+      "count": 9
+    },
+    {
+      "reason": "Lack of recent installment loan information",
+      "count": 9
+    },
+    {
+      "reason": "Number of accounts with delinquency",
+      "count": 7
+    },
+    {
+      "reason": "Insufficient credit history",
+      "count": 6
+    },
+    {
+      "reason": "Lack of recent revolving account information",
+      "count": 6
+    },
+    {
+      "reason": "Time since delinquency is too recent or unknown",
+      "count": 5
+    },
+    {
+      "reason": "Lack of recent bank/national revolving information",
+      "count": 5
+    },
+    {
+      "reason": "No recent bank/national revolving balances",
+      "count": 2
+    },
+    {
+      "reason": "Insufficient length of credit history",
+      "count": 2
+    },
+    {
+      "reason": "Too many inquiries last 12 months",
+      "count": 2
+    },
+    {
+      "reason": "Insufficient number of open accounts",
+      "count": 1
+    },
+    {
+      "reason": "High number of recent inquiries",
+      "count": 1
+    },
+    {
+      "reason": "No recent revolving balances",
+      "count": 1
+    },
+    {
+      "reason": "Too many consumer finance company accounts",
+      "count": 1
+    },
+    {
+      "reason": "Insufficient number of accounts",
+      "count": 1
+    },
+    {
+      "reason": "Unable to find credit profile at TransUnion",
+      "count": 1
+    }
+  ],
+  "scores": [
+    {
+      "score": 393,
+      "count": 1
+    },
+    {
+      "score": 452,
+      "count": 1
+    },
+    {
+      "score": 459,
+      "count": 1
+    },
+    {
+      "score": 490,
+      "count": 2
+    },
+    {
+      "score": 503,
+      "count": 1
+    },
+    {
+      "score": 572,
+      "count": 1
+    },
+    {
+      "score": 585,
+      "count": 1
+    },
+    {
+      "score": 617,
+      "count": 1
+    },
+    {
+      "score": 643,
+      "count": 1
+    },
+    {
+      "score": 646,
+      "count": 1
+    },
+    {
+      "score": 648,
+      "count": 1
+    },
+    {
+      "score": 651,
+      "count": 3
+    },
+    {
+      "score": 652,
+      "count": 1
+    },
+    {
+      "score": 658,
+      "count": 1
+    },
+    {
+      "score": 671,
+      "count": 1
+    },
+    {
+      "score": 718,
+      "count": 2
+    },
+    {
+      "score": 720,
+      "count": 1
+    },
+    {
+      "score": 721,
+      "count": 1
+    },
+    {
+      "score": 727,
+      "count": 1
+    },
+    {
+      "score": 736,
+      "count": 1
+    },
+    {
+      "score": 744,
+      "count": 1
+    },
+    {
+      "score": 746,
+      "count": 1
+    },
+    {
+      "score": 747,
+      "count": 1
+    },
+    {
+      "score": 752,
+      "count": 1
+    },
+    {
+      "score": 753,
+      "count": 1
+    },
+    {
+      "score": 761,
+      "count": 1
+    },
+    {
+      "score": 762,
+      "count": 1
+    },
+    {
+      "score": 766,
+      "count": 2
+    },
+    {
+      "score": 768,
+      "count": 1
+    },
+    {
+      "score": 785,
+      "count": 2
+    },
+    {
+      "score": 790,
+      "count": 1
+    },
+    {
+      "score": 793,
+      "count": 1
+    },
+    {
+      "score": 795,
+      "count": 1
+    },
+    {
+      "score": 796,
+      "count": 1
+    },
+    {
+      "score": 806,
+      "count": 1
+    },
+    {
+      "score": 819,
+      "count": 1
+    },
+    {
+      "score": 823,
+      "count": 2
+    },
+    {
+      "score": 849,
+      "count": 1
+    },
+    {
+      "score": 850,
+      "count": 1
+    }
+  ],
+  "records": [
+    {
+      "file": "Adverse Action Notice - 2026-03-09T123754.604.txt",
+      "score": 768,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "Number of accounts with delinquency",
+        "High debt in relation to income",
+        "Time since delinquency is too recent or unknown",
+        "No recent bank/national revolving balances"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T123956.968.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T124251.033.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T124424.069.txt",
+      "score": 490,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Number of accounts with delinquency",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Time since delinquency is too recent or unknown"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T124459.893.txt",
+      "score": 490,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Number of accounts with delinquency",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Time since delinquency is too recent or unknown"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T132921.284.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-09T133141.531.txt",
+      "score": 744,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances"
+      ],
+      "reason_count": 3
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T090549.124.txt",
+      "score": 651,
+      "reasons": [
+        "Insufficient length of credit history",
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T091248.400.txt",
+      "score": 806,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "Lack of recent installment loan information"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T111050.807.txt",
+      "score": 850,
+      "reasons": [
+        "Income or credit history insufficient for loan"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T111525.391.txt",
+      "score": 796,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Lack of recent installment loan information",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T115258.563.txt",
+      "score": 459,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Number of accounts with delinquency",
+        "Serious delinquency",
+        "Time since delinquency is too recent or unknown"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T115553.711.txt",
+      "score": 736,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "Lack of recent revolving account information",
+        "Lack of recent bank/national revolving information"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T115718.170.txt",
+      "score": 646,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "Lack of recent installment loan information",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Insufficient number of open accounts"
+      ],
+      "reason_count": 8
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T120234.009.txt",
+      "score": 761,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "No recent bank/national revolving balances",
+        "High number of recent inquiries"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T120648.157.txt",
+      "score": 785,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Lack of recent installment loan information"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T120908.431.txt",
+      "score": 718,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "Lack of recent installment loan information",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T164516.342.txt",
+      "score": 785,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Lack of recent installment loan information"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T165638.751.txt",
+      "score": 718,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "Number of accounts with delinquency",
+        "High debt in relation to income"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T165800.942.txt",
+      "score": 727,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "Number of accounts with delinquency",
+        "High debt in relation to income"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T170028.715.txt",
+      "score": 823,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T170406.597.txt",
+      "score": 766,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "High debt in relation to income"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T170658.951.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T171121.532.txt",
+      "score": 720,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of loan balances to loan amounts is too high",
+        "Lack of recent revolving account information",
+        "Lack of recent bank/national revolving information",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T171343.529.txt",
+      "score": 658,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "High debt in relation to income",
+        "Serious delinquency"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T171542.444.txt",
+      "score": 651,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Serious delinquency",
+        "No recent revolving balances",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T171707.740.txt",
+      "score": 849,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "RiskView Consumer Inquiry"
+      ],
+      "reason_count": 3
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T172335.580.txt",
+      "score": 819,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "High debt in relation to income",
+        "Too many inquiries last 12 months"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T172648.731.txt",
+      "score": 643,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "High debt in relation to income",
+        "Serious delinquency"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T173147.928.txt",
+      "score": 721,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "RiskView Consumer Inquiry",
+        "Number of accounts with delinquency",
+        "Lack of recent revolving account information",
+        "Lack of recent bank/national revolving information"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T173500.489.txt",
+      "score": 572,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T173941.631.txt",
+      "score": 823,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Lack of recent installment loan information",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T174908.676.txt",
+      "score": 766,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Lack of recent revolving account information",
+        "Too many consumer finance company accounts"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T175347.034.txt",
+      "score": 393,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T175622.770.txt",
+      "score": 671,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "Serious delinquency, and public record or collection filed"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T181846.449.txt",
+      "score": 503,
+      "reasons": [
+        "Too many accounts with balances",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T182157.914.txt",
+      "score": 752,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T182412.173.txt",
+      "score": 746,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "Lack of recent revolving account information",
+        "Lack of recent bank/national revolving information"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T182702.802.txt",
+      "score": 652,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "High debt in relation to income"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T182923.077.txt",
+      "score": 648,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Lack of recent installment loan information",
+        "Serious delinquency",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T183058.491.txt",
+      "score": 793,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "RiskView Consumer Inquiry",
+        "Lack of recent installment loan information",
+        "Insufficient number of accounts",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T183915.316.txt",
+      "score": 617,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency"
+      ],
+      "reason_count": 8
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T184151.490.txt",
+      "score": 651,
+      "reasons": [
+        "Insufficient length of credit history",
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 7
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T191239.467.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T193945.091.txt",
+      "score": 452,
+      "reasons": [
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Serious delinquency",
+        "Time since delinquency is too recent or unknown",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 4
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T200002.866.txt",
+      "score": 795,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Too many accounts with balances",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 3
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T200201.858.txt",
+      "score": 753,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 5
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T201525.221.txt",
+      "score": 762,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T211433.438.txt",
+      "score": 790,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "Too many accounts with balances",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-10T212448.315.txt",
+      "score": 747,
+      "reasons": [
+        "Income or credit history insufficient for loan",
+        "Requested amount unsupported by income",
+        "Proportion of balances to credit limits on bank/national revolving or other revolving accounts is too high",
+        "RiskView Consumer Inquiry",
+        "Proportion of loan balances to loan amounts is too high",
+        "High debt in relation to income"
+      ],
+      "reason_count": 6
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-11T144405.354.txt",
+      "score": null,
+      "reasons": [
+        "Insufficient credit history"
+      ],
+      "reason_count": 1
+    },
+    {
+      "file": "Adverse Action Notice - 2026-03-11T144821.698.txt",
+      "score": 585,
+      "reasons": [
+        "Serious delinquency, and public record or collection filed",
+        "Serious delinquency",
+        "Lack of recent revolving account information",
+        "Lack of recent bank/national revolving information",
+        "Too many inquiries last 12 months",
+        "Unable to find credit profile at TransUnion",
+        "Too few accounts currently paid as agreed"
+      ],
+      "reason_count": 7
+    }
+  ]
+}

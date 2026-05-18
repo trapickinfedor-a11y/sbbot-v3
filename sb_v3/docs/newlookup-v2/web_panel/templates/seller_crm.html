@@ -1,0 +1,295 @@
+{% extends "_base.html" %}
+{% block title %}Seller CRM{% endblock %}
+{% block header_title %}📋 Seller CRM <a href="/sellers" style="margin-left:16px;font-size:14px;opacity:0.8;text-decoration:none;color:#fff">← К списку селлеров</a>{% endblock %}
+{% block extra_css %}
+<style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        .kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;min-height:400px}
+        .kanban-col{background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);display:flex;flex-direction:column;min-height:300px}
+        .kanban-col-header{padding:14px 16px;font-weight:600;font-size:14px;border-bottom:2px solid #e5e7eb;border-radius:12px 12px 0 0}
+        .kanban-col.new .kanban-col-header{background:#e0e7ff;color:#4338ca}
+        .kanban-col.awaiting .kanban-col-header{background:#fef3c7;color:#b45309}
+        .kanban-col.in_progress .kanban-col-header{background:#dbeafe;color:#1d4ed8}
+        .kanban-col.completed .kanban-col-header{background:#d1fae5;color:#047857}
+        .kanban-col-body{flex:1;padding:12px;overflow-y:auto}
+        .kanban-col-body.drag-over{background:#f0f9ff}
+        .card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-bottom:10px;cursor:grab;transition:all .2s}
+        .card:hover{border-color:#667eea;box-shadow:0 2px 6px rgba(102,126,234,.15)}
+        .card:active{cursor:grabbing}
+        .card.dragging{opacity:.5}
+        .card-type{font-size:10px;color:#6b7280;margin-bottom:4px}
+        .card-title{font-weight:600;font-size:13px;color:#111;margin-bottom:4px}
+        .card-meta{font-size:11px;color:#6b7280}
+        .card-price{font-weight:600;color:#047857;margin-top:6px}
+        .empty-col{color:#9ca3af;font-size:13px;text-align:center;padding:20px}
+        .refresh-btn{margin-bottom:12px}
+    </style>
+{% endblock %}
+{% block content %}
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="admin-btn refresh-btn" style="background:#667eea;color:#fff" onclick="loadKanban()">🔄 Обновить</button>
+        <button class="admin-btn" id="nocodbSyncBtn" style="background:#10b981;color:#fff" onclick="nocodbSync()" title="Синхронизировать заказы в NocoDB">📤 NocoDB Sync</button>
+        <span id="nocodbStatus" style="font-size:12px;color:#6b7280;align-self:center"></span>
+    </div>
+    <div class="section" style="margin-bottom:20px;background:#fff;padding:24px;border-radius:12px">
+        <h2 style="font-size:16px;margin-bottom:12px">💸 Заявки на вывод средств</h2>
+        <div id="withdrawalsList"><div class="empty-col">Загрузка...</div></div>
+    </div>
+    <div class="section" style="margin-bottom:20px;background:#fff;padding:24px;border-radius:12px">
+        <h2 style="font-size:16px;margin-bottom:12px">⚠️ Споры</h2>
+        <div id="disputesList"><div class="empty-col">Загрузка...</div></div>
+    </div>
+    <div class="kanban" id="kanban">
+        <div class="kanban-col new" data-col="new">
+            <div class="kanban-col-header">🆕 Новые</div>
+            <div class="kanban-col-body" data-status="pending_admin"></div>
+        </div>
+        <div class="kanban-col awaiting" data-col="awaiting">
+            <div class="kanban-col-header">⏳ Ожидают подтверждения</div>
+            <div class="kanban-col-body" data-status="approved"></div>
+        </div>
+        <div class="kanban-col in_progress" data-col="in_progress">
+            <div class="kanban-col-header">🔵 В работе</div>
+            <div class="kanban-col-body" data-status="in_progress"></div>
+        </div>
+        <div class="kanban-col completed" data-col="completed">
+            <div class="kanban-col-header">✅ Завершены</div>
+            <div class="kanban-col-body" data-status="completed"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+const API = '/api/seller-crm';
+let sellerCrmCanModerate = false;
+let sellerCrmCanFinance = false;
+
+const STATUS_TO_COL = { pending_admin: 'new', approved: 'awaiting', in_progress: 'in_progress', completed: 'completed' };
+const COL_TO_STATUS = { new: 'pending_admin', awaiting: 'approved', in_progress: 'in_progress', completed: 'completed' };
+
+function renderCard(order) {
+    const typeLabel = order.order_type === 'bank' ? '🏦 Bank' : '💳 CC';
+    return `<div class="card" draggable="${sellerCrmCanModerate ? 'true' : 'false'}" data-id="${order.id}" data-type="${order.order_type}">
+        <div class="card-type">${typeLabel} #${order.id}</div>
+        <div class="card-title">${order.item_name}</div>
+        <div class="card-meta">Seller: ${order.seller_name} | ${order.buyer_label || "Buyer"}</div>
+        <div class="card-price">$${order.price_for_buyer.toFixed(2)}</div>
+    </div>`;
+}
+
+async function loadKanban() {
+    try {
+        const r = await authFetch(API + '/orders');
+        if (!r || !r.ok) throw new Error(r ? r.statusText : 'Network error');
+        const data = await r.json();
+        const cols = document.querySelectorAll('.kanban-col-body');
+        ['new','awaiting','in_progress','completed'].forEach((colKey, i) => {
+            const orders = data.columns[colKey] || [];
+            cols[i].innerHTML = orders.length ? orders.map(o => renderCard(o)).join('') : '<div class="empty-col">Нет заказов</div>';
+            cols[i].dataset.col = colKey;
+        });
+        initDragDrop();
+    } catch (e) {
+        alert('Ошибка загрузки: ' + e.message);
+    }
+}
+
+function initDragDrop() {
+    if (!sellerCrmCanModerate) return;
+    const cards = document.querySelectorAll('.card[draggable]');
+    cards.forEach(card => {
+        card.ondragstart = (e) => {
+            e.dataTransfer.setData('orderId', card.dataset.id);
+            e.dataTransfer.setData('orderType', card.dataset.type);
+            card.classList.add('dragging');
+        };
+        card.ondragend = () => card.classList.remove('dragging');
+    });
+    const colBodies = document.querySelectorAll('.kanban-col-body');
+    colBodies.forEach(col => {
+        col.ondragover = (e) => { e.preventDefault(); col.classList.add('drag-over'); };
+        col.ondragleave = () => col.classList.remove('drag-over');
+        col.ondrop = async (e) => {
+            e.preventDefault();
+            col.classList.remove('drag-over');
+            const orderId = e.dataTransfer.getData('orderId');
+            const orderType = e.dataTransfer.getData('orderType');
+            const colKey = col.closest('.kanban-col').dataset.col;
+            const newStatus = COL_TO_STATUS[colKey];
+            if (!orderId || !newStatus) return;
+            try {
+                const r = await authFetch(`${API}/orders/${orderType}/${orderId}`, {
+                    method: 'PATCH',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus, order_type: orderType })
+                });
+                if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+                loadKanban();
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        };
+    });
+}
+
+async function loadWithdrawals() {
+    try {
+        const r = await authFetch(API + '/withdrawals?status=pending');
+        if (!r || !r.ok) throw new Error(r ? r.statusText : 'Network error');
+        const data = await r.json();
+        const list = data.withdrawals || [];
+        const el = document.getElementById('withdrawalsList');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty-col">Нет заявок на вывод</div>';
+            return;
+        }
+        el.innerHTML = list.map(w => `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee">
+                <span>#${w.id} ${w.seller_name} — $${w.amount.toFixed(2)}</span>
+                ${w.requisites ? `<small style="color:#666">${w.requisites.substring(0,40)}...</small>` : ''}
+                ${sellerCrmCanFinance ? `<button class="admin-btn" style="background:#22c55e;color:#fff;padding:6px 12px;font-size:12px" onclick="approveWithdrawal(${w.id})">✓ Одобрить</button>
+                <button class="admin-btn" style="background:#ef4444;color:#fff;padding:6px 12px;font-size:12px" onclick="rejectWithdrawal(${w.id})">✗ Отклонить</button>` : ''}
+            </div>
+        `).join('');
+    } catch (e) {
+        document.getElementById('withdrawalsList').innerHTML = '<div class="empty-col">Ошибка: ' + e.message + '</div>';
+    }
+}
+async function approveWithdrawal(id) {
+    try {
+        const r = await authFetch(API + '/withdrawals/' + id + '/approve', { method: 'POST' });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadWithdrawals();
+    } catch (e) { alert(e.message); }
+}
+async function rejectWithdrawal(id) {
+    const reason = prompt('Причина отклонения (опционально):') || '';
+    try {
+        const r = await authFetch(API + '/withdrawals/' + id + '/reject', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ reason: reason })
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadWithdrawals();
+    } catch (e) { alert(e.message); }
+}
+async function nocodbSync() {
+    const btn = document.getElementById('nocodbSyncBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Синхронизация...';
+    try {
+        const r = await authFetch(API + '/nocodb/sync', { method: 'POST' });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || r.statusText);
+        alert(data.message || 'Синхронизация завершена');
+        loadKanban();
+    } catch (e) {
+        alert('Ошибка: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '📤 NocoDB Sync';
+    }
+}
+async function loadNocoDBStatus() {
+    try {
+        const r = await authFetch(API + '/nocodb/status');
+        if (!r.ok) return;
+        const data = await r.json();
+        const el = document.getElementById('nocodbStatus');
+        if (data.configured) {
+            el.textContent = 'NocoDB: настроен';
+            document.getElementById('nocodbSyncBtn').style.display = '';
+        } else {
+            el.textContent = 'NocoDB: не настроен (NOCODB_* в .env)';
+            document.getElementById('nocodbSyncBtn').style.display = 'none';
+        }
+    } catch (_) {}
+}
+async function loadDisputes() {
+    try {
+        const r = await authFetch(API + '/disputes?status=open');
+        if (!r || !r.ok) throw new Error(r ? r.statusText : 'Network error');
+        const data = await r.json();
+        const list = data.disputes || [];
+        const el = document.getElementById('disputesList');
+        if (!list.length) {
+            el.innerHTML = '<div class="empty-col">Нет открытых споров</div>';
+            return;
+        }
+        el.innerHTML = list.map(d => `
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #eee;flex-wrap:wrap">
+                <span><b>#${d.id}</b> Order #${d.order_id} / ${d.seller_name} / ${d.bank_name}</span>
+                <small style="color:#666">${d.reason}${d.description ? ' - ' + d.description.substring(0,80) : ''}</small>
+                <small style="color:#666">Appeal: ${d.appeal_status || 'none'} | Assigned: ${d.assigned_admin_id || 'n/a'}</small>
+                <small style="color:#666">Buyer evidence: ${d.buyer_evidence ? JSON.stringify(d.buyer_evidence).substring(0,120) : 'none'}</small>
+                <small style="color:#666">Seller evidence: ${d.seller_evidence ? JSON.stringify(d.seller_evidence).substring(0,120) : 'none'}</small>
+                ${sellerCrmCanModerate ? `<button class="admin-btn" style="background:#22c55e;color:#fff;padding:6px 12px;font-size:12px" onclick="resolveDispute(${d.id}, 'resolved_seller')">✓ Seller wins</button>
+                <button class="admin-btn" style="background:#ef4444;color:#fff;padding:6px 12px;font-size:12px" onclick="resolveDispute(${d.id}, 'resolved_buyer')">↩ Refund buyer</button>
+                <button class="admin-btn" style="background:#f59e0b;color:#fff;padding:6px 12px;font-size:12px" onclick="requestAppeal(${d.id})">Appeal</button>
+                <button class="admin-btn" style="background:#0891b2;color:#fff;padding:6px 12px;font-size:12px" onclick="reviewAppeal(${d.id}, 'approved')">Approve appeal</button>
+                <button class="admin-btn" style="background:#b45309;color:#fff;padding:6px 12px;font-size:12px" onclick="reviewAppeal(${d.id}, 'rejected')">Reject appeal</button>
+                <button class="admin-btn" style="background:#6b7280;color:#fff;padding:6px 12px;font-size:12px" onclick="resolveDispute(${d.id}, 'cancelled')">⊘ Cancel</button>` : ''}
+            </div>
+        `).join('');
+    } catch (e) {
+        document.getElementById('disputesList').innerHTML = '<div class="empty-col">Ошибка: ' + e.message + '</div>';
+    }
+}
+async function resolveDispute(id, outcome) {
+    const resolution_note = prompt('Комментарий / note (опционально):') || '';
+    try {
+        const r = await authFetch(API + '/disputes/' + id + '/resolve', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ outcome, resolution_note }),
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadDisputes();
+        loadKanban();
+    } catch (e) { alert(e.message); }
+}
+async function requestAppeal(id) {
+    const reason = prompt('Appeal reason');
+    if (!reason) return;
+    try {
+        const r = await authFetch(API + '/disputes/' + id + '/appeal', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ reason }),
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadDisputes();
+    } catch (e) { alert(e.message); }
+}
+async function reviewAppeal(id, status) {
+    const note = prompt(`Appeal ${status} note (optional)`) || '';
+    try {
+        const r = await authFetch(API + '/disputes/' + id + '/appeal/review', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ status, note }),
+        });
+        if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+        loadDisputes();
+    } catch (e) { alert(e.message); }
+}
+function initCrmCapabilities(ctx) {
+    const caps = (ctx && ctx.capabilities) || {};
+    sellerCrmCanModerate = !!caps.seller_moderation;
+    sellerCrmCanFinance = !!caps.finance;
+    document.getElementById('nocodbSyncBtn').style.display = sellerCrmCanFinance ? '' : 'none';
+}
+
+if (window.ADMIN_CONTEXT) {
+    initCrmCapabilities(window.ADMIN_CONTEXT);
+} else {
+    document.addEventListener('admin-context-ready', (e) => initCrmCapabilities(e.detail));
+}
+loadWithdrawals();
+loadDisputes();
+loadKanban();
+loadNocoDBStatus();
+</script>
+{% endblock %}

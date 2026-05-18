@@ -1,0 +1,274 @@
+/* ═══════════════════════════════════════════════════════
+   Seller Hub Mini App v2 — Obsidian Glass Design System
+   Design: Glassmorphism + Material You Dark
+   ═══════════════════════════════════════════════════════ */
+
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ── Obsidian Glass Dark Theme ── */
+:root {
+  --radius: 0.875rem;
+
+  /* Core palette */
+  --background:         oklch(0.09 0.012 260);
+  --foreground:         oklch(0.94 0.008 260);
+  --card:               oklch(0.13 0.014 260);
+  --card-foreground:    oklch(0.94 0.008 260);
+  --popover:            oklch(0.13 0.014 260);
+  --popover-foreground: oklch(0.94 0.008 260);
+
+  /* Primary: Electric Blue */
+  --primary:            oklch(0.62 0.22 258);
+  --primary-foreground: oklch(0.98 0 0);
+
+  /* Secondary */
+  --secondary:          oklch(0.17 0.014 260);
+  --secondary-foreground: oklch(0.82 0.01 260);
+
+  /* Muted */
+  --muted:              oklch(0.16 0.012 260);
+  --muted-foreground:   oklch(0.55 0.015 260);
+
+  /* Accent: Cyan-Teal */
+  --accent:             oklch(0.70 0.18 196);
+  --accent-foreground:  oklch(0.09 0.012 260);
+
+  /* Destructive: Rose */
+  --destructive:        oklch(0.65 0.22 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Borders & inputs */
+  --border:             oklch(1 0 0 / 0.08);
+  --input:              oklch(1 0 0 / 0.10);
+  --ring:               oklch(0.62 0.22 258 / 0.5);
+
+  /* Charts */
+  --chart-1:            oklch(0.62 0.22 258);
+  --chart-2:            oklch(0.70 0.18 196);
+  --chart-3:            oklch(0.75 0.18 145);
+  --chart-4:            oklch(0.80 0.18 60);
+  --chart-5:            oklch(0.65 0.22 25);
+
+  /* Sidebar */
+  --sidebar:            oklch(0.11 0.013 260);
+  --sidebar-foreground: oklch(0.94 0.008 260);
+  --sidebar-primary:    oklch(0.62 0.22 258);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent:     oklch(0.16 0.012 260);
+  --sidebar-accent-foreground: oklch(0.94 0.008 260);
+  --sidebar-border:     oklch(1 0 0 / 0.07);
+  --sidebar-ring:       oklch(0.62 0.22 258 / 0.5);
+
+  /* Custom semantic tokens */
+  --success:            oklch(0.72 0.18 145);
+  --success-muted:      oklch(0.72 0.18 145 / 0.15);
+  --warning:            oklch(0.80 0.18 60);
+  --warning-muted:      oklch(0.80 0.18 60 / 0.15);
+  --info:               oklch(0.70 0.18 196);
+  --info-muted:         oklch(0.70 0.18 196 / 0.15);
+
+  /* Glass effect */
+  --glass-bg:           oklch(1 0 0 / 0.04);
+  --glass-border:       oklch(1 0 0 / 0.08);
+  --glass-blur:         20px;
+
+  /* Layout */
+  --header-h:           56px;
+  --nav-h:              64px;
+  --safe-bottom:        env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Base Reset ── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+
+  /* Tabular numbers for financial data */
+  .tabular { font-variant-numeric: tabular-nums; font-family: "DM Mono", monospace; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 0.15); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.25); }
+}
+
+/* ── Components ── */
+@layer components {
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  /* Glass card */
+  .glass-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border-radius: var(--radius);
+  }
+
+  /* Status colors */
+  .status-approved    { color: var(--success); }
+  .status-completed   { color: var(--success); }
+  .status-in_progress { color: var(--info); }
+  .status-pending     { color: var(--warning); }
+  .status-disputed    { color: var(--destructive); }
+  .status-rejected    { color: var(--destructive); }
+  .status-cancelled   { color: var(--muted-foreground); }
+
+  /* Gradient avatar */
+  .gradient-avatar {
+    background: linear-gradient(135deg, oklch(0.62 0.22 258), oklch(0.70 0.18 196));
+  }
+
+  /* Glow effects */
+  .glow-blue  { box-shadow: 0 0 12px oklch(0.62 0.22 258 / 0.4); }
+  .glow-cyan  { box-shadow: 0 0 12px oklch(0.70 0.18 196 / 0.4); }
+  .glow-green { box-shadow: 0 0 12px oklch(0.72 0.18 145 / 0.4); }
+
+  /* App layout */
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .app-header {
+    height: var(--header-h);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    background: oklch(0.09 0.012 260 / 0.95);
+    border-bottom: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 20;
+    position: relative;
+  }
+
+  .app-main {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .tab-pane {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+
+  .bottom-nav {
+    height: calc(var(--nav-h) + var(--safe-bottom));
+    flex-shrink: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    background: oklch(0.09 0.012 260 / 0.97);
+    border-top: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 0 4px;
+    padding-bottom: var(--safe-bottom);
+  }
+
+  .bottom-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Section padding */
+  .section-pad { padding: 16px; }
+  .section-gap { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+}

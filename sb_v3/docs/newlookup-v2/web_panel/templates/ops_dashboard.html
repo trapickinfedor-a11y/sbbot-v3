@@ -1,0 +1,146 @@
+{% extends "_base.html" %}
+{% block title %}Ops Dashboard{% endblock %}
+{% block header_title %}🚨 Ops Dashboard{% endblock %}
+{% block extra_css %}
+<style>
+.alert-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px}
+.alert-card{background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,.08);border-left:4px solid #6366f1;transition:transform .15s}
+.alert-card:hover{transform:translateY(-2px)}
+.alert-card.critical{border-color:#ef4444;background:#fef2f2}
+.alert-card.warning{border-color:#f59e0b;background:#fffbeb}
+.alert-card.ok{border-color:#22c55e;background:#f0fdf4}
+.alert-card h4{font-size:13px;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:600}
+.alert-metric{font-size:28px;font-weight:700;color:#111827;margin-bottom:4px}
+.alert-sub{font-size:12px;color:#9ca3af}
+.section{background:#fff;border-radius:12px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:20px}
+.section h2{font-size:18px;font-weight:600;margin-bottom:16px;color:#111827}
+.queue-item{padding:12px 16px;border-radius:8px;background:#f9fafb;border:1px solid #e5e7eb;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.queue-item.critical{background:#fef2f2;border-color:#fecaca}
+.queue-item.warning{background:#fffbeb;border-color:#fde68a}
+.queue-label{font-size:14px;font-weight:500;color:#374151}
+.queue-count{font-size:20px;font-weight:700;color:#111827}
+.empty{text-align:center;padding:40px;color:#9ca3af}
+.refresh-btn{padding:8px 16px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.refresh-btn:hover{background:#4f46e5}
+</style>
+{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <h1 style="font-size:24px;font-weight:700;color:#111827">Operational Dashboard</h1>
+    <button class="refresh-btn" onclick="loadAll()">🔄 Обновить</button>
+</div>
+
+<div class="alert-grid" id="alertsGrid">
+    <div class="alert-card"><h4>Статус системы</h4><div class="alert-metric" id="systemStatus">…</div><div class="alert-sub">Проверка...</div></div>
+    <div class="alert-card"><h4>Критичные алерты</h4><div class="alert-metric" id="criticalAlerts">…</div><div class="alert-sub">Требуют внимания</div></div>
+    <div class="alert-card"><h4>Открытые споры</h4><div class="alert-metric" id="openDisputes">…</div><div class="alert-sub">Активные диспуты</div></div>
+    <div class="alert-card"><h4>Зависшие заказы</h4><div class="alert-metric" id="stuckOrders">…</div><div class="alert-sub">&gt;24h без движения</div></div>
+</div>
+
+<div class="section">
+    <h2>📋 Очереди требующие внимания</h2>
+    <div id="queuesContent"><div class="empty">Загрузка...</div></div>
+</div>
+
+<div class="section">
+    <h2>🚨 Активные алерты</h2>
+    <div id="alertsContent"><div class="empty">Загрузка...</div></div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+function fmt$(v) { return v == null ? '—' : '$' + Number(v).toFixed(2); }
+
+async function loadQueues() {
+    const el = document.getElementById('queuesContent');
+    try {
+        const r = await authFetch('/api/ops/queues');
+        if (!r || !r.ok) throw new Error('Failed to load');
+        const data = await r.json();
+        const queues = data.queues || [];
+        
+        if (!queues.length) {
+            el.innerHTML = '<div class="empty">✅ Все очереди в норме</div>';
+            return;
+        }
+        
+        el.innerHTML = queues.map(q => {
+            const severity = q.count > q.threshold * 2 ? 'critical' : q.count > q.threshold ? 'warning' : '';
+            return `<div class="queue-item ${severity}">
+                <div>
+                    <div class="queue-label">${q.name}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:2px">${q.description || ''}</div>
+                </div>
+                <div class="queue-count">${q.count}</div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        el.innerHTML = `<div class="empty" style="color:#ef4444">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadAlerts() {
+    const el = document.getElementById('alertsContent');
+    try {
+        const r = await authFetch('/api/alerts/status');
+        if (!r || !r.ok) throw new Error('Failed to load');
+        const data = await r.json();
+        const alerts = data.alerts || [];
+        
+        if (!alerts.length) {
+            el.innerHTML = '<div class="empty">✅ Нет активных алертов</div>';
+            document.getElementById('systemStatus').textContent = '✅ OK';
+            document.getElementById('criticalAlerts').textContent = '0';
+            return;
+        }
+        
+        const critical = alerts.filter(a => a.severity === 'critical').length;
+        document.getElementById('criticalAlerts').textContent = critical;
+        document.getElementById('systemStatus').textContent = critical > 0 ? '⚠️ Issues' : '✅ OK';
+        
+        el.innerHTML = alerts.map(a => {
+            const color = a.severity === 'critical' ? '#ef4444' : a.severity === 'warning' ? '#f59e0b' : '#6b7280';
+            return `<div style="padding:12px;border-left:4px solid ${color};background:#f9fafb;border-radius:6px;margin-bottom:10px">
+                <div style="font-weight:600;font-size:14px;color:#111827">${a.title || 'Alert'}</div>
+                <div style="font-size:13px;color:#6b7280;margin-top:4px">${a.message || ''}</div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:6px">${new Date(a.created_at).toLocaleString('ru-RU')}</div>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        el.innerHTML = `<div class="empty" style="color:#ef4444">Ошибка: ${e.message}</div>`;
+    }
+}
+
+async function loadMetrics() {
+    try {
+        const [disputesR, ordersR] = await Promise.all([
+            authFetch('/api/disputes?status=open'),
+            authFetch('/api/orders?status=processing&stuck=true')
+        ]);
+        
+        if (disputesR && disputesR.ok) {
+            const d = await disputesR.json();
+            document.getElementById('openDisputes').textContent = (d.disputes || d.items || []).length;
+        }
+        
+        if (ordersR && ordersR.ok) {
+            const o = await ordersR.json();
+            document.getElementById('stuckOrders').textContent = (o.orders || o.items || []).length;
+        }
+    } catch(e) {
+        console.error('Metrics error:', e);
+    }
+}
+
+async function loadAll() {
+    loadQueues();
+    loadAlerts();
+    loadMetrics();
+}
+
+loadAll();
+setInterval(loadAll, 60000); // Refresh every minute
+</script>
+{% endblock %}

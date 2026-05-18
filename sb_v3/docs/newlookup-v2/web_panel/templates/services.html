@@ -1,0 +1,764 @@
+{# LEGACY: Not in main routes. Consider removing or integrating. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Services Management - NewLookup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+        }
+        
+        .nav {
+            display: flex;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            gap: 30px;
+            padding: 0 20px;
+        }
+        
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .nav-group-title {
+            font-size: 12px;
+            color: #999;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+            padding: 15px 0;
+            border-right: 1px solid #eee;
+            padding-right: 15px;
+        }
+        
+        .nav-btn {
+            padding: 15px 25px;
+            border: none;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            background: #f9fafb;
+            color: #667eea;
+        }
+        
+        .nav-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .filter-group label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .filter-group select,
+        .filter-group input {
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+        
+        table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #e3fcef; color: #006644; }
+        .badge-warning { background: #fff4e6; color: #b95000; }
+        .badge-danger { background: #ffe6e6; color: #d32f2f; }
+        .badge-info { background: #e6f4ff; color: #0050b3; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 16px;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .service-description {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .service-template {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: monospace;
+            font-size: 12px;
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛒 Services Management - NewLookup</h1>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="/dashboard" class="btn btn-secondary">← Back to Dashboard</a>
+            <span id="adminName">Admin</span>
+            <button onclick="logout()" style="padding: 8px 16px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                🚪 Logout
+            </button>
+        </div>
+    </div>
+    
+    <div class="nav">
+        <!-- Обзор -->
+        <div class="nav-group">
+            <span class="nav-group-title">Обзор</span>
+            <a href="/dashboard" class="nav-btn">📊 Dashboard</a>
+        </div>
+        
+        <!-- Управление -->
+        <div class="nav-group">
+            <span class="nav-group-title">Управление</span>
+            <a href="/users" class="nav-btn">👥 Пользователи</a>
+            <a href="/bots" class="nav-btn">🤖 Боты</a>
+            <a href="/workers" class="nav-btn">👷 Воркеры</a>
+            <a href="/complaints" class="nav-btn">⚠️ Жалобы</a>
+        </div>
+        
+        <!-- Контент
+        <div class="nav-group">
+            <span class="nav-group-title">Контент</span>
+            <a href="/categories" class="nav-btn">📂 Categories</a>
+            <a href="/services" class="nav-btn active">🛒 Services</a>
+            <a href="/products" class="nav-btn">📦 Products</a>
+        </div> -->
+        
+        <!-- Тикеты -->
+        <div class="nav-group">
+            <span class="nav-group-title">Тикеты</span>
+            <a href="/support" class="nav-btn">📞 Support</a>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>🛒 Services Management</h2>
+                <button class="btn btn-primary" onclick="showAddServiceModal()">➕ Add Service</button>
+            </div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Category</label>
+                    <select id="categoryFilter" onchange="loadServices()">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="statusFilter" onchange="loadServices()">
+                        <option value="">All</option>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" id="searchFilter" placeholder="Search services..." onkeyup="loadServices()">
+                </div>
+            </div>
+            
+            <table id="servicesTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Code</th>
+                        <th>Category</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Processing Time</th>
+                        <th>Template</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="10" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- ADD/EDIT SERVICE MODAL -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="serviceModalTitle">➕ Add Service</h2>
+                <button class="close-btn" onclick="closeModal('serviceModal')">&times;</button>
+            </div>
+            <form id="serviceForm" onsubmit="submitService(event)">
+                <input type="hidden" id="service_id" value="">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Code *</label>
+                        <input type="text" id="service_code" required placeholder="e.g., LOOKUP_SSN">
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="service_category_id" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="service_name" required placeholder="Service name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Description *</label>
+                    <textarea id="service_description" required rows="3" placeholder="Service description"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Price *</label>
+                        <input type="number" id="service_price" required step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Processing Time *</label>
+                        <input type="text" id="service_processing_time" required placeholder="e.g., 4-10 minutes">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Input Template</label>
+                    <textarea id="service_input_template" rows="4" placeholder="Template for user input (optional)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Output Format</label>
+                    <input type="text" id="service_output_format" placeholder="e.g., SSN DOB, ZIP OR TXT">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Order</label>
+                        <input type="number" id="service_order" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Old Price (for discounts)</label>
+                        <input type="number" id="service_old_price" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">Settings</h4>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_validation_required">
+                        <label for="service_validation_required">Validation Required</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_auto_delivery">
+                        <label for="service_auto_delivery">Auto Delivery</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_is_active" checked>
+                        <label for="service_is_active">Active</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_is_featured">
+                        <label for="service_is_featured">Featured</label>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin-bottom: 10px;">Required Fields</h4>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_require_dob">
+                        <label for="service_require_dob">Require Date of Birth</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_require_ssn">
+                        <label for="service_require_ssn">Require SSN</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_require_address">
+                        <label for="service_require_address">Require Address</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_require_phone">
+                        <label for="service_require_phone">Require Phone</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="service_require_name">
+                        <label for="service_require_name">Require Name</label>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Service</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('serviceModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // ========== АВТОРИЗАЦИЯ ==========
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+        
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return null;
+            }
+            
+            return response;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+        
+        // ========== ЗАГРУЗКА ДАННЫХ ==========
+        
+        async function loadCategories() {
+            try {
+                const response = await authFetch('/api/menu-categories');
+                if (!response) return;
+                const categories = await response.json();
+                
+                // Заполняем фильтр
+                const categoryFilter = document.getElementById('categoryFilter');
+                categoryFilter.innerHTML = '<option value="">All Categories</option>';
+                categories.forEach(cat => {
+                    categoryFilter.innerHTML += `<option value="${cat.id}">${cat.display_name}</option>`;
+                });
+                
+                // Заполняем селект в модальном окне
+                const categorySelect = document.getElementById('service_category_id');
+                categorySelect.innerHTML = '<option value="">Select Category</option>';
+                categories.forEach(cat => {
+                    categorySelect.innerHTML += `<option value="${cat.id}">${cat.display_name}</option>`;
+                });
+                
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+        
+        async function loadServices() {
+            try {
+                const categoryFilter = document.getElementById('categoryFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const searchFilter = document.getElementById('searchFilter').value;
+                
+                let url = '/api/services?';
+                if (categoryFilter) url += `category_id=${categoryFilter}&`;
+                if (statusFilter) url += `active_only=${statusFilter}&`;
+                if (searchFilter) url += `search=${encodeURIComponent(searchFilter)}&`;
+                
+                const response = await authFetch(url);
+                if (!response) return;
+                const services = await response.json();
+                
+                const tbody = document.querySelector('#servicesTable tbody');
+                tbody.innerHTML = services.map(s => `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td><code>${s.code}</code></td>
+                        <td>${s.category_name || 'N/A'}</td>
+                        <td><strong>${s.name}</strong></td>
+                        <td><div class="service-description" title="${s.description}">${s.description}</div></td>
+                        <td><strong>$${s.price}</strong>${s.old_price ? `<br><small style="text-decoration: line-through;">$${s.old_price}</small>` : ''}</td>
+                        <td>${s.processing_time}</td>
+                        <td>${s.input_template ? `<div class="service-template" title="${s.input_template}">${s.input_template}</div>` : 'N/A'}</td>
+                        <td><span class="badge ${s.is_active ? 'badge-success' : 'badge-danger'}">${s.is_active ? 'Active' : 'Inactive'}</span></td>
+                        <td>
+                            <button class="btn btn-secondary" onclick="editService(${s.id})" style="margin-right: 5px;">Edit</button>
+                            <button class="btn ${s.is_active ? 'btn-danger' : 'btn-success'}" onclick="toggleService(${s.id})">${s.is_active ? 'Disable' : 'Enable'}</button>
+                        </td>
+                    </tr>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+        
+        // ========== МОДАЛЬНЫЕ ОКНА ==========
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            if (modalId === 'serviceModal') {
+                document.getElementById('serviceForm').reset();
+                document.getElementById('service_id').value = '';
+                document.getElementById('serviceModalTitle').textContent = '➕ Add Service';
+            }
+        }
+        
+        async function showAddServiceModal() {
+            await loadCategories();
+            document.getElementById('serviceModalTitle').textContent = '➕ Add Service';
+            document.getElementById('service_id').value = '';
+            document.getElementById('serviceForm').reset();
+            document.getElementById('service_is_active').checked = true;
+            openModal('serviceModal');
+        }
+        
+        async function editService(id) {
+            try {
+                const response = await authFetch(`/api/services/${id}`);
+                if (!response) return;
+                const service = await response.json();
+                
+                await loadCategories();
+                
+                // Заполняем форму
+                document.getElementById('service_id').value = service.id;
+                document.getElementById('service_code').value = service.code;
+                document.getElementById('service_category_id').value = service.category_id;
+                document.getElementById('service_name').value = service.name;
+                document.getElementById('service_description').value = service.description;
+                document.getElementById('service_price').value = service.price;
+                document.getElementById('service_processing_time').value = service.processing_time;
+                document.getElementById('service_input_template').value = service.input_template || '';
+                document.getElementById('service_output_format').value = service.output_format || '';
+                document.getElementById('service_order').value = service.order;
+                document.getElementById('service_old_price').value = service.old_price || '';
+                
+                // Чекбоксы
+                document.getElementById('service_validation_required').checked = service.validation_required;
+                document.getElementById('service_auto_delivery').checked = service.auto_delivery;
+                document.getElementById('service_is_active').checked = service.is_active;
+                document.getElementById('service_is_featured').checked = service.is_featured;
+                document.getElementById('service_require_dob').checked = service.require_dob;
+                document.getElementById('service_require_ssn').checked = service.require_ssn;
+                document.getElementById('service_require_address').checked = service.require_address;
+                document.getElementById('service_require_phone').checked = service.require_phone;
+                document.getElementById('service_require_name').checked = service.require_name;
+                
+                document.getElementById('serviceModalTitle').textContent = '✏️ Edit Service';
+                openModal('serviceModal');
+                
+            } catch (error) {
+                console.error('Error loading service:', error);
+                alert('Error loading service: ' + error.message);
+            }
+        }
+        
+        async function submitService(event) {
+            event.preventDefault();
+            
+            const serviceId = document.getElementById('service_id').value;
+            const isEdit = !!serviceId;
+            
+            const data = {
+                code: document.getElementById('service_code').value,
+                category_id: parseInt(document.getElementById('service_category_id').value),
+                name: document.getElementById('service_name').value,
+                description: document.getElementById('service_description').value,
+                price: parseFloat(document.getElementById('service_price').value),
+                processing_time: document.getElementById('service_processing_time').value,
+                input_template: document.getElementById('service_input_template').value || null,
+                output_format: document.getElementById('service_output_format').value || null,
+                order: parseInt(document.getElementById('service_order').value),
+                old_price: document.getElementById('service_old_price').value ? parseFloat(document.getElementById('service_old_price').value) : null,
+                validation_required: document.getElementById('service_validation_required').checked,
+                auto_delivery: document.getElementById('service_auto_delivery').checked,
+                is_active: document.getElementById('service_is_active').checked,
+                is_featured: document.getElementById('service_is_featured').checked,
+                require_dob: document.getElementById('service_require_dob').checked,
+                require_ssn: document.getElementById('service_require_ssn').checked,
+                require_address: document.getElementById('service_require_address').checked,
+                require_phone: document.getElementById('service_require_phone').checked,
+                require_name: document.getElementById('service_require_name').checked
+            };
+            
+            try {
+                const url = isEdit ? `/api/services/${serviceId}` : '/api/services';
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                const response = await authFetch(url, {
+                    method: method,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response) return;
+                
+                if (response.ok) {
+                    alert(`✅ Service ${isEdit ? 'updated' : 'created'} successfully!`);
+                    closeModal('serviceModal');
+                    loadServices();
+                } else {
+                    const error = await response.json();
+                    alert('❌ Error: ' + (error.detail || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Error saving service:', error);
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        async function toggleService(id) {
+            try {
+                const response = await authFetch(`/api/services/${id}/toggle`, {
+                    method: 'POST'
+                });
+                
+                if (!response) return;
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ Service ${result.is_active ? 'enabled' : 'disabled'}!`);
+                    loadServices();
+                } else {
+                    alert('❌ Error toggling service');
+                }
+                
+            } catch (error) {
+                console.error('Error toggling service:', error);
+                alert('❌ Error: ' + error.message);
+            }
+        }
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        loadCategories();
+        loadServices();
+    </script>
+</body>
+</html>

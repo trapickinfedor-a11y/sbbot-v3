@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bots Management - NewLookup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .nav {
+            display: flex;
+            gap: 30px;
+            padding: 15px 40px 20px 40px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .nav-group-title {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-right: 10px;
+            padding: 15px 0;
+            border-right: 1px solid rgba(255,255,255,0.2);
+            padding-right: 15px;
+        }
+        
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+            font-size: 14px;
+            white-space: nowrap;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-1px);
+        }
+        
+        .nav-btn.active {
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .section h2 {
+            color: #333;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: middle;
+        }
+        
+        table tr:hover {
+            background: #f9fafb;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .badge-success { background: #e3fcef; color: #006644; }
+        .badge-danger { background: #ffe6e6; color: #d32f2f; }
+        .badge-info { background: #e3f2fd; color: #1976d2; }
+        .badge-warning { background: #fff3e0; color: #f57c00; }
+        .badge-admin { background: #ede7f6; color: #6a1b9a; }
+        .badge-user { background: #e3f2fd; color: #1565c0; }
+        .badge-marketer { background: #fff8e1; color: #f57f17; }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        /* Модальные окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .users-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 10px;
+        }
+        
+        .user-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #667eea;
+        }
+        
+        .file-preview {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        .admin-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+        .admin-header-top{display:flex;justify-content:space-between;align-items:center;padding:16px 32px;max-width:1600px;margin:0 auto}
+        .admin-header-actions{display:flex;align-items:center;gap:12px}
+        .admin-btn{padding:8px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;border:none}
+        .admin-btn-outline{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.35)}
+        .admin-btn-outline:hover{background:rgba(255,255,255,.3)}
+        .admin-nav{background:rgba(0,0,0,.08);border-top:1px solid rgba(255,255,255,.15)}
+        .admin-nav-inner{display:grid;grid-template-columns:repeat(10,1fr);gap:0;max-width:1600px;margin:0 auto;padding:0}
+        .admin-nav-item{display:flex;align-items:center;justify-content:center;padding:14px 12px;color:rgba(255,255,255,.9);text-decoration:none;font-size:13px;font-weight:500;border-bottom:3px solid transparent}
+        .admin-nav-item:hover{background:rgba(255,255,255,.15)}
+        .admin-nav-item.active{background:rgba(255,255,255,.25);border-bottom-color:#fff}
+        @media(max-width:1200px){.admin-nav-inner{grid-template-columns:repeat(5,1fr)}}
+        @media(max-width:768px){.admin-nav-inner{grid-template-columns:repeat(2,1fr)}}
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <div class="admin-header-top">
+            <h1>🤖 Боты</h1>
+            <div class="admin-header-actions">
+                <span id="adminName">Admin</span>
+                <a href="/dashboard" class="admin-btn admin-btn-outline">← Dashboard</a>
+                <button class="admin-btn admin-btn-outline" onclick="logout()">🚪 Выход</button>
+            </div>
+        </div>
+        {% include '_nav.html' %}
+    </header>
+    
+    <div class="container">
+        <div class="section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>🤖 Управление ботами</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-primary" onclick="loadBots()">🔄 Обновить</button>
+                    <button class="btn btn-success" onclick="showBroadcastModal()">📢 Рассылка всем</button>
+                    <button class="btn btn-warning" onclick="updateBotUsernames()">🏷️ Обновить Username</button>
+                </div>
+            </div>
+
+            <div class="controls" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                <select id="botsTypeFilter" onchange="changeBotsTypeFilter()" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #ddd; font-size: 14px;">
+                    <option value="">Все типы</option>
+                    <option value="admin">Мои</option>
+                    <option value="user">Пользовательские</option>
+                    <option value="marketer">Маркетологов</option>
+                </select>
+                <select id="botsPerPage" onchange="changeBotsLimit()">
+                    <option value="10">10 на странице</option>
+                    <option value="25">25 на странице</option>
+                    <option value="50" selected>50 на странице</option>
+                    <option value="100">100 на странице</option>
+                    <option value="200">200 на странице</option>
+                </select>
+            </div>
+
+            <div id="botsTable">
+                <div class="loading">Загрузка ботов...</div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div id="botsPagination" style="display: none; margin-top: 20px; padding: 15px; background: #f9fafb; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                    <div style="color: #666; font-size: 14px;">
+                        Показано <strong id="botsShowingFrom">0</strong>-<strong id="botsShowingTo">0</strong> из <strong id="botsTotalCount">0</strong> записей
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn btn-secondary" id="botsFirstPage" onclick="goToBotsPage('first')" disabled>
+                            ⏮ Первая
+                        </button>
+                        <button class="btn btn-secondary" id="botsPrevPage" onclick="goToBotsPage('prev')" disabled>
+                            ← Назад
+                        </button>
+                        <span style="padding: 8px 16px; background: white; border-radius: 6px; font-weight: 600;">
+                            Страница <span id="botsCurrentPage">1</span> из <span id="botsTotalPages">1</span>
+                        </span>
+                        <button class="btn btn-secondary" id="botsNextPage" onclick="goToBotsPage('next')">
+                            Вперед →
+                        </button>
+                        <button class="btn btn-secondary" id="botsLastPage" onclick="goToBotsPage('last')">
+                            Последняя ⏭
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальные окна -->
+    
+    <!-- Модальное окно просмотра пользователей бота -->
+    <div id="botUsersModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">👥 Пользователи бота</h3>
+                <button class="close-btn" onclick="closeModal('botUsersModal')">&times;</button>
+            </div>
+            <div id="botUsersContent">
+                <div class="loading">Загрузка пользователей...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Модальное окно рассылки для бота -->
+    <div id="botBroadcastModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📢 Рассылка для бота</h3>
+                <button class="close-btn" onclick="closeModal('botBroadcastModal')">&times;</button>
+            </div>
+            <form id="botBroadcastForm">
+                <div class="form-group">
+                    <label>Бот</label>
+                    <input type="text" id="broadcastBotInfo" readonly style="background: #f5f5f5;">
+                </div>
+                <div class="form-group">
+                    <label>Сообщение *</label>
+                    <textarea id="broadcastMessage" placeholder="Введите текст сообщения для рассылки" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Медиа файл (необязательно)</label>
+                    <div class="file-upload-area" onclick="document.getElementById('broadcastFile').click()">
+                        <p>📎 Нажмите или перетащите файл сюда</p>
+                        <small>Поддерживаются: изображения, видео</small>
+                    </div>
+                    <input type="file" id="broadcastFile" style="display: none;" accept="image/*,video/*">
+                    <div class="file-preview" id="broadcastFilePreview" style="display: none;"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('botBroadcastModal')">Отмена</button>
+                    <button type="submit" class="btn btn-success">📤 Отправить рассылку</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно массовой рассылки -->
+    <div id="globalBroadcastModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📢 Массовая рассылка всем ботам</h3>
+                <button class="close-btn" onclick="closeModal('globalBroadcastModal')">&times;</button>
+            </div>
+            <form id="globalBroadcastForm">
+                <div class="form-group">
+                    <label>Сообщение *</label>
+                    <textarea id="globalBroadcastMessage" placeholder="Введите текст сообщения для массовой рассылки всем пользователям всех ботов" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Медиа файл (необязательно)</label>
+                    <div class="file-upload-area" onclick="document.getElementById('globalBroadcastFile').click()">
+                        <p>📎 Нажмите или перетащите файл сюда</p>
+                        <small>Поддерживаются: изображения, видео</small>
+                    </div>
+                    <input type="file" id="globalBroadcastFile" style="display: none;" accept="image/*,video/*">
+                    <div class="file-preview" id="globalBroadcastFilePreview" style="display: none;"></div>
+                </div>
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                    <strong>⚠️ Внимание:</strong> Сообщение будет отправлено ВСЕМ пользователям ВСЕХ активных ботов!
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('globalBroadcastModal')">Отмена</button>
+                    <button type="submit" class="btn btn-danger">📤 Отправить всем</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteBotModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🗑️ Удаление бота</h3>
+                <button class="close-btn" onclick="closeModal('deleteBotModal')">&times;</button>
+            </div>
+            <div style="background: #ffebee; border: 1px solid #f44336; padding: 15px; border-radius: 6px; margin: 15px 0;">
+                <strong>⚠️ Внимание!</strong> Это действие необратимо!
+            </div>
+            <p>Вы действительно хотите удалить бота <strong id="deleteBotInfo"></strong>?</p>
+            <p>Все данные пользователей и заказы этого бота будут потеряны!</p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('deleteBotModal')">Отмена</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteBot()">🗑️ Удалить бота</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ========== АВТОРИЗАЦИЯ ==========
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+        
+        async function authFetch(url, options = {}) {
+            const token = localStorage.getItem('token');
+            
+            if (!options.headers) {
+                options.headers = {};
+            }
+            
+            options.headers['Authorization'] = `Bearer ${token}`;
+            
+            const response = await fetch(url, options);
+            
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                window.location.href = '/';
+                return null;
+            }
+            
+            return response;
+        }
+        
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+        
+        // ========== ЗАГРУЗКА ДАННЫХ ==========
+
+        let botsCurrentOffset = 0;
+        let botsCurrentLimit = 50;
+        let botsTotalRecords = 0;
+        let botsCurrentTypeFilter = '';
+
+        function getBotTypeBadge(botType, label) {
+            const cls = {admin: 'badge-admin', user: 'badge-user', marketer: 'badge-marketer'}[botType] || 'badge-info';
+            return `<span class="badge ${cls}">${label || botType}</span>`;
+        }
+
+        async function loadBots() {
+            try {
+                botsCurrentLimit = parseInt(document.getElementById('botsPerPage')?.value || '50');
+                let url = `/api/bots/?limit=${botsCurrentLimit}&offset=${botsCurrentOffset}`;
+                if (botsCurrentTypeFilter) {
+                    url += `&bot_type=${botsCurrentTypeFilter}`;
+                }
+
+                const response = await authFetch(url);
+                if (!response) return;
+                const data = await response.json();
+
+                const bots = data.items || data;
+                botsTotalRecords = data.total || bots.length;
+
+                const tableHtml = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Тип</th>
+                                <th>Владелец</th>
+                                <th>Username</th>
+                                <th>Пользователи</th>
+                                <th>Статус</th>
+                                <th>Создан</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${bots.map(bot => `
+                                <tr>
+                                    <td><strong>${bot.id}</strong></td>
+                                    <td>${getBotTypeBadge(bot.bot_type, bot.bot_type_label)}</td>
+                                    <td>${bot.owner_user_id || bot.owner_telegram_id}</td>
+                                    <td><strong>@${bot.bot_username || 'Unknown'}</strong></td>
+                                    <td><span class="badge badge-info">${bot.users_count || 0}</span></td>
+                                    <td>
+                                        <span class="badge ${bot.is_active ? 'badge-success' : 'badge-danger'}">
+                                            ${bot.is_active ? 'Активен' : 'Неактивен'}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(bot.created_at).toLocaleDateString('ru-RU')}</td>
+                                    <td>
+                                        <select class="btn" style="padding:4px 8px;font-size:12px;border-radius:4px;border:1px solid #ddd;margin-right:4px;" onchange="changeBotType(${bot.id}, this.value)" title="Изменить тип">
+                                            <option value="admin" ${bot.bot_type === 'admin' ? 'selected' : ''}>Мой</option>
+                                            <option value="user" ${bot.bot_type === 'user' ? 'selected' : ''}>Пользователь</option>
+                                            <option value="marketer" ${bot.bot_type === 'marketer' ? 'selected' : ''}>Маркетолог</option>
+                                        </select>
+                                        <button class="btn btn-primary" onclick="viewBotUsers(${bot.id})">
+                                            👥 Пользователи
+                                        </button>
+                                        <button class="btn btn-success" onclick="showBotBroadcast(${bot.id})">
+                                            📢 Рассылка
+                                        </button>
+                                        <button class="btn ${bot.is_active ? 'btn-warning' : 'btn-success'}" onclick="toggleBot(${bot.id}, ${bot.is_active})">
+                                            ${bot.is_active ? '🚫 Деактивировать' : '✅ Активировать'}
+                                        </button>
+                                        <button class="btn btn-danger" onclick="deleteBot(${bot.id})">
+                                            🗑️ Удалить
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+
+                document.getElementById('botsTable').innerHTML = tableHtml;
+
+                // Обновляем пагинацию
+                updateBotsPagination();
+
+            } catch (error) {
+                document.getElementById('botsTable').innerHTML = `
+                    <div class="section">
+                        <p>Ошибка загрузки ботов: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Обновление пагинации
+        function updateBotsPagination() {
+            const paginationDiv = document.getElementById('botsPagination');
+            const totalPages = Math.ceil(botsTotalRecords / botsCurrentLimit);
+            const currentPage = Math.floor(botsCurrentOffset / botsCurrentLimit) + 1;
+            const showingFrom = botsCurrentOffset + 1;
+            const showingTo = Math.min(botsCurrentOffset + botsCurrentLimit, botsTotalRecords);
+
+            // Показываем пагинацию только если есть записи
+            if (botsTotalRecords > 0) {
+                paginationDiv.style.display = 'block';
+
+                document.getElementById('botsShowingFrom').textContent = showingFrom;
+                document.getElementById('botsShowingTo').textContent = showingTo;
+                document.getElementById('botsTotalCount').textContent = botsTotalRecords;
+                document.getElementById('botsCurrentPage').textContent = currentPage;
+                document.getElementById('botsTotalPages').textContent = totalPages;
+
+                // Управление кнопками навигации
+                document.getElementById('botsFirstPage').disabled = currentPage === 1;
+                document.getElementById('botsPrevPage').disabled = currentPage === 1;
+                document.getElementById('botsNextPage').disabled = currentPage >= totalPages;
+                document.getElementById('botsLastPage').disabled = currentPage >= totalPages;
+            } else {
+                paginationDiv.style.display = 'none';
+            }
+        }
+
+        // Навигация по страницам
+        function goToBotsPage(action) {
+            const totalPages = Math.ceil(botsTotalRecords / botsCurrentLimit);
+            const currentPage = Math.floor(botsCurrentOffset / botsCurrentLimit) + 1;
+
+            switch(action) {
+                case 'first':
+                    botsCurrentOffset = 0;
+                    break;
+                case 'prev':
+                    if (currentPage > 1) {
+                        botsCurrentOffset -= botsCurrentLimit;
+                    }
+                    break;
+                case 'next':
+                    if (currentPage < totalPages) {
+                        botsCurrentOffset += botsCurrentLimit;
+                    }
+                    break;
+                case 'last':
+                    botsCurrentOffset = (totalPages - 1) * botsCurrentLimit;
+                    break;
+            }
+
+            loadBots();
+        }
+
+        function changeBotsLimit() {
+            botsCurrentOffset = 0;
+            loadBots();
+        }
+
+        function changeBotsTypeFilter() {
+            botsCurrentTypeFilter = document.getElementById('botsTypeFilter')?.value || '';
+            botsCurrentOffset = 0;
+            loadBots();
+        }
+        
+        async function changeBotType(botId, newType) {
+            try {
+                const response = await authFetch(`/api/bots/${botId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({bot_type: newType})
+                });
+                if (response.ok) {
+                    loadBots();
+                } else {
+                    alert('Ошибка при смене типа бота');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Ошибка: ' + error.message);
+            }
+        }
+
+        async function toggleBot(botId, isActive) {
+            try {
+                const newStatus = !isActive;
+                const response = await authFetch(`/api/bots/${botId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({is_active: newStatus})
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Бот ${newStatus ? 'активирован' : 'деактивирован'}!`);
+                    loadBots();
+                } else {
+                    alert('❌ Ошибка изменения статуса бота');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        }
+        
+        // Просмотр пользователей бота
+        async function viewBotUsers(botId) {
+            showModal('botUsersModal');
+            document.getElementById('botUsersContent').innerHTML = '<div class="loading">Загрузка пользователей...</div>';
+            
+            try {
+                const response = await authFetch(`/api/bots/${botId}/users`);
+                if (!response) return;
+                const users = await response.json();
+                
+                if (users.length === 0) {
+                    document.getElementById('botUsersContent').innerHTML = '<p>У этого бота пока нет пользователей.</p>';
+                    return;
+                }
+                
+                let usersHtml = `
+                    <div class="users-list">
+                        ${users.map(user => `
+                            <div class="user-item">
+                                <div>
+                                    <strong>ID:</strong> ${user.user_id}<br>
+                                    <strong>Username:</strong> @${user.username || 'N/A'}<br>
+                                    <strong>Баланс:</strong> $${user.balance.toFixed(2)}<br>
+                                    <strong>Регистрация:</strong> ${new Date(user.created_at).toLocaleDateString('ru-RU')}
+                                </div>
+                                <div>
+                                    <span class="badge ${user.is_banned ? 'badge-danger' : 'badge-success'}">
+                                        ${user.is_banned ? '🚫 Заблокирован' : '✅ Активен'}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                document.getElementById('botUsersContent').innerHTML = usersHtml;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('botUsersContent').innerHTML = '<p style="color: red;">Ошибка загрузки пользователей</p>';
+            }
+        }
+        
+        // Рассылка для конкретного бота
+        let currentBroadcastBotId = null;
+        
+        async function showBotBroadcast(botId) {
+            currentBroadcastBotId = botId;
+            
+            // Получаем информацию о боте
+            try {
+                const response = await authFetch(`/api/bots/${botId}`);
+                const bot = await response.json();
+                document.getElementById('broadcastBotInfo').value = `${bot.bot_username || 'N/A'} (ID: ${botId})`;
+            } catch (error) {
+                document.getElementById('broadcastBotInfo').value = `Bot ID: ${botId}`;
+            }
+            
+            // Очищаем форму
+            document.getElementById('broadcastMessage').value = '';
+            document.getElementById('broadcastFile').value = '';
+            document.getElementById('broadcastFilePreview').style.display = 'none';
+            
+            showModal('botBroadcastModal');
+        }
+        
+        // Массовая рассылка всем ботам
+        async function showBroadcastModal() {
+            // Очищаем форму
+            document.getElementById('globalBroadcastMessage').value = '';
+            document.getElementById('globalBroadcastFile').value = '';
+            document.getElementById('globalBroadcastFilePreview').style.display = 'none';
+            
+            showModal('globalBroadcastModal');
+        }
+        
+        // Удаление бота
+        let currentDeleteBotId = null;
+        
+        async function deleteBot(botId) {
+            currentDeleteBotId = botId;
+            
+            // Получаем информацию о боте
+            try {
+                const response = await authFetch(`/api/bots/${botId}`);
+                const bot = await response.json();
+                document.getElementById('deleteBotInfo').textContent = `${bot.bot_username || 'N/A'} (ID: ${botId})`;
+            } catch (error) {
+                document.getElementById('deleteBotInfo').textContent = `Bot ID: ${botId}`;
+            }
+            
+            showModal('deleteBotModal');
+        }
+        
+        async function confirmDeleteBot() {
+            if (!currentDeleteBotId) return;
+            
+            try {
+                const response = await authFetch(`/api/bots/${currentDeleteBotId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    closeModal('deleteBotModal');
+                    alert('✅ Бот успешно удален!');
+                    loadBots();
+                } else {
+                    alert('❌ Ошибка удаления бота');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        }
+        
+        async function updateBotUsernames() {
+            try {
+                const response = await authFetch('/api/bots/update-usernames', {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ Username обновлены! Обновлено: ${result.updated}, Ошибок: ${result.failed}`);
+                    loadBots();
+                } else {
+                    alert('❌ Ошибка обновления username');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        }
+        
+        // ========== МОДАЛЬНЫЕ ОКНА ==========
+        
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+        
+        // Закрытие модальных окон при клике вне их
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+            }
+        });
+        
+        // ========== ОБРАБОТЧИКИ ФОРМ ==========
+        
+        // Обработчик формы рассылки для бота
+        document.getElementById('botBroadcastForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = document.getElementById('broadcastMessage').value;
+            const file = document.getElementById('broadcastFile').files[0];
+            
+            if (!message.trim()) {
+                alert('Введите сообщение');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+                if (file) {
+                    formData.append('file', file);
+                }
+                
+                const response = await authFetch(`/api/bots/${currentBroadcastBotId}/broadcast`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    closeModal('botBroadcastModal');
+                    alert(`✅ Рассылка отправлена! Успешно: ${result.sent}, Ошибок: ${result.failed}`);
+                } else {
+                    alert('❌ Ошибка отправки рассылки');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        });
+        
+        // Обработчик формы массовой рассылки
+        document.getElementById('globalBroadcastForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const message = document.getElementById('globalBroadcastMessage').value;
+            const file = document.getElementById('globalBroadcastFile').files[0];
+            
+            if (!message.trim()) {
+                alert('Введите сообщение');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('message', message);
+                if (file) {
+                    formData.append('file', file);
+                }
+                
+                const response = await authFetch('/api/bots/broadcast-all', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    closeModal('globalBroadcastModal');
+                    alert(`✅ Массовая рассылка завершена! Всего отправлено: ${result.sent}, Ошибок: ${result.failed}`);
+                } else {
+                    alert('❌ Ошибка массовой рассылки');
+                }
+            } catch (error) {
+                alert('❌ Ошибка: ' + error.message);
+            }
+        });
+        
+        // Предпросмотр файлов
+        document.getElementById('broadcastFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('broadcastFilePreview');
+            
+            if (file) {
+                preview.style.display = 'block';
+                if (file.type.startsWith('image/')) {
+                    preview.innerHTML = `<img src="${URL.createObjectURL(file)}" style="max-width: 200px; max-height: 200px; border-radius: 6px;">`;
+                } else {
+                    preview.innerHTML = `<p>📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>`;
+                }
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('globalBroadcastFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('globalBroadcastFilePreview');
+            
+            if (file) {
+                preview.style.display = 'block';
+                if (file.type.startsWith('image/')) {
+                    preview.innerHTML = `<img src="${URL.createObjectURL(file)}" style="max-width: 200px; max-height: 200px; border-radius: 6px;">`;
+                } else {
+                    preview.innerHTML = `<p>📎 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</p>`;
+                }
+            } else {
+                preview.style.display = 'none';
+            }
+        });
+        
+        // ========== ИНИЦИАЛИЗАЦИЯ ==========
+        loadBots();
+    </script>
+</body>
+</html>

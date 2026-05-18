@@ -1,0 +1,62 @@
+=== GREP FILES ===
+/opt/credit_score_bot/.env:24:CAPTCHA_API_KEY=
+/opt/credit_score_bot/.env:25:CAPTCHA_SERVICE=2captcha
+/opt/credit_score_bot/bot.py:110:            captcha_key = getattr(settings, "CAPTCHA_API_KEY", "")
+/opt/credit_score_bot/bot.py:111:            captcha_service = getattr(settings, "CAPTCHA_SERVICE", "2captcha")
+/opt/credit_score_bot/bot.py:116:                logger.info("Captcha solver not configured (CAPTCHA_API_KEY not set in .env)")
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak_modal:5:  1. Captcha solving via 2captcha/anticaptcha (auto-detect reCAPTCHA v2/v3, hCaptcha)
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak_modal:395:            logger.warning(f"[Worker {self.worker_id}] No captcha solver configured (set CAPTCHA_API_KEY in .env)")
+/opt/credit_score_bot/cs_module/workers/cs_worker.py:5:  1. Captcha solving via 2captcha/anticaptcha (auto-detect reCAPTCHA v2/v3, hCaptcha)
+/opt/credit_score_bot/cs_module/workers/cs_worker.py:439:            logger.warning(f"[Worker {self.worker_id}] No captcha solver configured (set CAPTCHA_API_KEY in .env)")
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak2:5:  1. Captcha solving via 2captcha/anticaptcha (auto-detect reCAPTCHA v2/v3, hCaptcha)
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak2:404:            logger.warning(f"[Worker {self.worker_id}] No captcha solver configured (set CAPTCHA_API_KEY in .env)")
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak3:5:  1. Captcha solving via 2captcha/anticaptcha (auto-detect reCAPTCHA v2/v3, hCaptcha)
+/opt/credit_score_bot/cs_module/workers/cs_worker.py.bak3:404:            logger.warning(f"[Worker {self.worker_id}] No captcha solver configured (set CAPTCHA_API_KEY in .env)")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:2:antidetect/captcha_solver.py — Captcha solving via 2captcha / Anti-Captcha API.
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:11:  solver = CaptchaSolver(api_key="YOUR_2CAPTCHA_KEY", service="2captcha")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:23:    "2captcha": {
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:24:        "in":  "https://2captcha.com/in.php",
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:25:        "res": "https://2captcha.com/res.php",
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:40:    Universal captcha solver supporting 2captcha, Anti-Captcha, CapMonster.
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:46:        service: Literal["2captcha", "anticaptcha", "capmonster"] = "2captcha",
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:70:        if self.service == "2captcha":
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:71:            return await self._2captcha_recaptcha_v2(site_key, page_url, invisible)
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:75:    async def _2captcha_recaptcha_v2(self, site_key: str, page_url: str, invisible: bool) -> Optional[str]:
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:76:        """Submit reCAPTCHA v2 to 2captcha and poll for result."""
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:88:            r = await self._client.post(SERVICE_URLS["2captcha"]["in"], data=params)
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:91:                logger.error(f"[CaptchaSolver] 2captcha submit error: {data}")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:94:            logger.info(f"[CaptchaSolver] 2captcha task ID: {task_id}")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:95:            return await self._2captcha_poll(task_id)
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:97:            logger.error(f"[CaptchaSolver] 2captcha v2 error: {e}")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:100:    async def _2captcha_poll(self, task_id: str) -> Optional[str]:
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:101:        """Poll 2captcha for result."""
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:107:                    SERVICE_URLS["2captcha"]["res"],
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:113:                    logger.info(f"[CaptchaSolver] 2captcha solved: {token[:30]}...")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:116:                    logger.error("[CaptchaSolver] 2captcha: unsolvable")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:122:        logger.error(f"[CaptchaSolver] 2captcha timeout after {self.timeout}s")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:186:        if self.service == "2captcha":
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:198:                r = await self._client.post(SERVICE_URLS["2captcha"]["in"], data=params)
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:201:                    logger.error(f"[CaptchaSolver] 2captcha v3 submit error: {data}")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:203:                return await self._2captcha_poll(data["request"])
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:205:                logger.error(f"[CaptchaSolver] 2captcha v3 error: {e}")
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:233:        if self.service == "2captcha":
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:242:                r = await self._client.post(SERVICE_URLS["2captcha"]["in"], data=params)
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:246:                return await self._2captcha_poll(data["request"])
+/opt/credit_score_bot/cs_module/antidetect/captcha_solver.py:366:def init_solver(api_key: str, service: str = "2captcha") -> CaptchaSolver:
+/opt/credit_score_bot/app/config.py:3:Version 4: Added ADMIN_PASSWORD, CAPTCHA_API_KEY, CAPTCHA_SERVICE.
+/opt/credit_score_bot/app/config.py:48:    CAPTCHA_API_KEY: str = ""          # 2captcha / anticaptcha / capmonster key
+/opt/credit_score_bot/app/config.py:49:    CAPTCHA_SERVICE: str = "2captcha"  # 2captcha | anticaptcha | capmonster
+
+=== PROCESS ENV (csbot) ===
+
+=== ROOT SHELL HISTORY ===
+
+=== SYSTEMD SHOW ENV ===
+Environment=PATH=/opt/credit_score_bot/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+SetLoginEnvironment=no
+
+=== PY CONFIG VALUES ===
+3:Version 4: Added ADMIN_PASSWORD, CAPTCHA_API_KEY, CAPTCHA_SERVICE.
+47:    # --- Captcha Solving ---
+48:    CAPTCHA_API_KEY: str = ""          # 2captcha / anticaptcha / capmonster key
+49:    CAPTCHA_SERVICE: str = "2captcha"  # 2captcha | anticaptcha | capmonster

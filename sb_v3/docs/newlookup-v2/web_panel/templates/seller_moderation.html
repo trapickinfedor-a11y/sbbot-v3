@@ -1,0 +1,808 @@
+{% extends "_base.html" %}
+{% block title %}Модерация селлеров{% endblock %}
+{% block header_title %}✅ Модерация товаров селлеров{% endblock %}
+{% block container_modifier %} admin-container--w1200{% endblock %}
+{% block extra_css %}
+<style>
+    /* Tabs */
+    .tabs-container { margin-bottom: 20px; }
+    .tabs-header { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; padding: 12px; background: #f3f4f6; border-radius: 12px; }
+    .tab-btn { padding: 10px 16px; border: none; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #6b7280; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { background: #e5e7eb; }
+    .tab-btn.active { background: #667eea; color: #fff; }
+    .tab-badge { background: #ef4444; color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 11px; font-weight: 700; }
+    .tab-btn.active .tab-badge { background: #fff; color: #667eea; }
+    
+    /* Tab content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    
+    /* Sticky bulk actions */
+    .bulk-actions-bar { position: sticky; top: 0; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; z-index: 100; }
+    .bulk-actions-bar h2 { margin: 0 0 12px 0; font-size: 18px; }
+    .bulk-actions-bar .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    
+    .section{background:#fff;padding:25px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:20px}
+    .section h2{color:#333;font-size:18px;margin-bottom:15px}
+    table{width:100%;border-collapse:collapse}
+    table th{background:#f9fafb;padding:12px;text-align:left;font-weight:600;color:#666;font-size:13px}
+    table td{padding:12px;border-bottom:1px solid #e0e0e0}
+    .btn{padding:6px 12px;border:none;border-radius:6px;font-weight:500;cursor:pointer;font-size:12px;margin-right:5px}
+    .btn-approve{background:#4caf50;color:#fff}
+    .btn-reject{background:#f44336;color:#fff}
+    .btn-changes{background:#f59e0b;color:#fff}
+    .btn-secondary{background:#6b7280;color:#fff}
+    .btn:hover{opacity:.9}
+    .price-stack{display:flex;flex-direction:column;gap:4px}
+    .price-muted{font-size:12px;color:#6b7280}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .actions select{min-width:180px;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;background:#fff}
+    .empty{color:#999;padding:20px;text-align:center}
+    
+    /* Enhanced preview modal */
+    .preview-modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;justify-content:center;align-items:center;backdrop-filter: blur(4px);}
+    .preview-modal.open{display:flex}
+    .preview-content{background:#fff;border-radius:16px;padding:0;max-width:700px;width:90%;max-height:85vh;overflow-y:auto;box-shadow: 0 20px 60px rgba(0,0,0,0.3);}
+    .preview-header{display:flex;justify-content:space-between;align-items:center;padding: 20px 24px;border-bottom:2px solid #e5e7eb;background: #f9fafb;}
+    .preview-header h3 { margin: 0; font-size: 18px; }
+    .preview-close{background:none;border:none;font-size:24px;cursor:pointer;color:#6b7280; padding: 4px; }
+    .preview-close:hover { background: #e5e7eb; border-radius: 4px; }
+    .preview-body{padding:24px;}
+    .preview-field{margin-bottom:16px;padding:12px;background:#f9fafb;border-radius:8px;border: 1px solid #e5e7eb;}
+    .preview-label{font-weight:700;color:#374151;font-size:11px;text-transform:uppercase;margin-bottom:6px;letter-spacing: 0.5px;}
+    .preview-value{color:#111827;font-size:14px;line-height: 1.5;}
+    .preview-actions { padding: 16px 24px; border-top: 2px solid #e5e7eb; background: #f9fafb; display: flex; gap: 8px; justify-content: flex-end; }
+    
+    /* Keyboard shortcuts hint */
+    .keyboard-hint { font-size: 11px; color: #9ca3af; margin-top: 8px; }
+    .keyboard-hint kbd { background: #f3f4f6; padding: 2px 6px; border-radius: 4px; border: 1px solid #e5e7eb; font-family: monospace; font-size: 10px; }
+</style>
+{% endblock %}
+{% block content %}
+<!-- Tabs Header -->
+<div class="tabs-container">
+    <div class="tabs-header" id="moderationTabs">
+        <button class="tab-btn active" onclick="switchTab('banks')">🏦 Banks <span class="tab-badge" id="banksBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('cc')">💳 CC <span class="tab-badge" id="ccBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('enroll')">📋 Enrollment <span class="tab-badge" id="enrollBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('brute')">🔓 Brute <span class="tab-badge" id="bruteBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('logs')">📄 Logs <span class="tab-badge" id="logsBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('sellerbank')">🏦 Selfreg BA <span class="tab-badge" id="sellerbankBadge">0</span></button>
+        <button class="tab-btn" onclick="switchTab('nfc')">📱 NFC</button>
+        <button class="tab-btn" onclick="switchTab('otp')">📲 OTP</button>
+        <button class="tab-btn" onclick="switchTab('selfregcc')">💳 Selfreg CC</button>
+        <button class="tab-btn" onclick="switchTab('check')">🖊 Checks</button>
+    </div>
+</div>
+
+<!-- Tab Contents -->
+<div id="banksTab" class="tab-content active">
+    <div class="bulk-actions-bar">
+        <h2>🏦 Banks Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('banks')" id="bulkApproveBtn" disabled>✓ Bulk Approve (<span id="selectedCountBanks">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('banks')" id="bulkRejectBtn" disabled>✗ Bulk Reject (<span id="selectedCountBanksReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="banksTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="ccTab" class="tab-content">
+    <div class="bulk-actions-bar">
+        <h2>💳 CC Items Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('cc')" id="bulkApproveCcBtn" disabled>✓ Bulk Approve (<span id="selectedCountCc">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('cc')" id="bulkRejectCcBtn" disabled>✗ Bulk Reject (<span id="selectedCountCcReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="ccTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="enrollTab" class="tab-content">
+    <div class="bulk-actions-bar">
+        <h2>📋 Enrollment Items Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('enroll')" id="bulkApproveEnrollBtn" disabled>✓ Bulk Approve (<span id="selectedCountEnroll">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('enroll')" id="bulkRejectEnrollBtn" disabled>✗ Bulk Reject (<span id="selectedCountEnrollReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="enrollTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="bruteTab" class="tab-content">
+    <div class="bulk-actions-bar">
+        <h2>🔓 Brute Items Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('brute')" id="bulkApproveBruteBtn" disabled>✓ Bulk Approve (<span id="selectedCountBrute">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('brute')" id="bulkRejectBruteBtn" disabled>✗ Bulk Reject (<span id="selectedCountBruteReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="bruteTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="logsTab" class="tab-content">
+    <div class="bulk-actions-bar">
+        <h2>📄 Logs Items Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('logs')" id="bulkApproveLogsBtn" disabled>✓ Bulk Approve (<span id="selectedCountLogs">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('logs')" id="bulkRejectLogsBtn" disabled>✗ Bulk Reject (<span id="selectedCountLogsReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="logsTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="sellerbankTab" class="tab-content">
+    <div class="bulk-actions-bar">
+        <h2>🏦 Selfreg BA Items Pending Moderation</h2>
+        <div class="actions">
+            <button class="btn btn-approve" onclick="bulkApprove('sellerbank')" id="bulkApproveSellerbankBtn" disabled>✓ Bulk Approve (<span id="selectedCountSellerbank">0</span>)</button>
+            <button class="btn btn-reject" onclick="bulkReject('sellerbank')" id="bulkRejectSellerbankBtn" disabled>✗ Bulk Reject (<span id="selectedCountSellerbankReject">0</span>)</button>
+        </div>
+        <div class="keyboard-hint">Keyboard: <kbd>A</kbd> Approve <kbd>R</kbd> Reject <kbd>Space</kbd> Toggle Select</div>
+    </div>
+    <div class="section">
+        <div id="sellerbankTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="nfcTab" class="tab-content">
+    <div class="section">
+        <h2>📱 NFC Items Pending Moderation</h2>
+        <div id="nfcTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="otpTab" class="tab-content">
+    <div class="section">
+        <h2>📲 OTP Items Pending Moderation</h2>
+        <div id="otpTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="selfregccTab" class="tab-content">
+    <div class="section">
+        <h2>💳 Selfreg CC Items Pending Moderation</h2>
+        <div id="selfregCcTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<div id="checkTab" class="tab-content">
+    <div class="section">
+        <h2>🖊 Check Items Pending Moderation</h2>
+        <div id="checkTable"><div class="empty">Loading...</div></div>
+    </div>
+</div>
+
+<!-- Enhanced Preview Modal -->
+<div class="preview-modal" id="previewModal">
+    <div class="preview-content">
+        <div class="preview-header">
+            <h3 id="previewTitle">Item Preview</h3>
+            <button class="preview-close" onclick="closePreview()">×</button>
+        </div>
+        <div class="preview-body" id="previewBody"></div>
+        <div class="preview-actions" id="previewActions"></div>
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script>
+    const API = '/api';
+    let markupRules = [];
+
+    async function fetchWithAuth(url, options) {
+        const r = await authFetch(url, options);
+        if (!r) throw new Error('Unauthorized');
+        if (!r.ok) throw new Error(r.statusText);
+        return r.json();
+    }
+
+    async function loadMarkupRules() {
+        markupRules = await fetchWithAuth(`${API}/seller-moderation/markup-rules`);
+    }
+
+    function ruleOptionsHtml(selectedCode = '') {
+        return `<option value="">Base price only</option>${
+            markupRules.map(rule => `<option value="${rule.code}" ${rule.code === selectedCode ? 'selected' : ''}>${rule.label}</option>`).join('')
+        }`;
+    }
+
+    function selectedRuleCode(selectId) {
+        const select = document.getElementById(selectId);
+        return select ? (select.value || null) : null;
+    }
+
+    function priceCell(row) {
+        const finalValue = row.final_price ?? row.buyer_price;
+        const markupInfo = row.markup_code ? `Rule: ${row.markup_code}` : 'Base price only';
+        return `<div class="price-stack">
+            <span>$${row.seller_price}</span>
+            <span class="price-muted">Final: $${finalValue}</span>
+            <span class="price-muted">${markupInfo}</span>
+        </div>`;
+    }
+
+    async function approveBank(id) {
+        await fetchWithAuth(`${API}/seller-moderation/banks/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rule_code: selectedRuleCode(`bank-rule-${id}`) })
+        });
+        await loadBanks();
+    }
+    async function rejectBank(id) {
+        const reason = prompt('❌ Reject Reason:\n\nПочему товар отклонен? Продавец увидит это сообщение.');
+        if (!reason || !reason.trim()) {
+            alert('Reject reason is required');
+            return;
+        }
+        await fetchWithAuth(`${API}/seller-moderation/banks/${id}/reject`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason.trim() })
+        });
+        await loadBanks();
+    }
+    async function requestBankChanges(id) {
+        const comment = prompt('Что нужно исправить?');
+        if (!comment || !comment.trim()) return;
+        await fetchWithAuth(`${API}/seller-moderation/banks/${id}/request-changes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comment: comment.trim() })
+        });
+        await loadBanks();
+    }
+    async function approveCC(id) {
+        await fetchWithAuth(`${API}/seller-moderation/cc-items/${id}/approve`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rule_code: selectedRuleCode(`cc-rule-${id}`) })
+        });
+        await loadCC();
+    }
+    async function rejectCC(id) {
+        const reason = prompt('❌ Reject Reason:\n\nПочему товар отклонен? Продавец увидит это сообщение.');
+        if (!reason || !reason.trim()) {
+            alert('Reject reason is required');
+            return;
+        }
+        await fetchWithAuth(`${API}/seller-moderation/cc-items/${id}/reject`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason: reason.trim() })
+        });
+        await loadCC();
+    }
+    async function requestCCChanges(id) {
+        const comment = prompt('Что нужно исправить?');
+        if (!comment || !comment.trim()) return;
+        await fetchWithAuth(`${API}/seller-moderation/cc-items/${id}/request-changes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ comment: comment.trim() })
+        });
+        await loadCC();
+    }
+    async function moderateSpecial(kind, id, action) {
+        if (action === 'request-changes') {
+            const comment = prompt('Что нужно исправить?');
+            if (!comment || !comment.trim()) return;
+            await fetchWithAuth(`${API}/seller-moderation/${kind}/${id}/request-changes`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ comment: comment.trim() })
+            });
+        } else if (action === 'approve') {
+            await fetchWithAuth(`${API}/seller-moderation/${kind}/${id}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rule_code: selectedRuleCode(`${kind}-rule-${id}`) })
+            });
+        } else if (action === 'reject') {
+            const reason = prompt('❌ Reject Reason:\n\nПочему товар отклонен? Продавец увидит это сообщение.');
+            if (!reason || !reason.trim()) {
+                alert('Reject reason is required');
+                return;
+            }
+            await fetchWithAuth(`${API}/seller-moderation/${kind}/${id}/reject`, { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: reason.trim() })
+            });
+        } else {
+            await fetchWithAuth(`${API}/seller-moderation/${kind}/${id}/${action}`, { method: 'POST' });
+        }
+    }
+    function renderGenericTable(targetId, data, emptyText) {
+        const el = document.getElementById(targetId);
+        const kind = targetIdToKind(targetId);
+        if (!data.length) {
+            el.innerHTML = `<div class="empty">${emptyText}</div>`;
+            return;
+        }
+        el.innerHTML = `<table><thead><tr><th>ID</th><th>Batch</th><th>Name</th><th>Summary</th><th>Base</th><th>Final</th><th>Seller</th><th>Actions</th></tr></thead><tbody>${
+            data.map(row => `<tr>
+                <td>${row.id}</td>
+                <td>${row.upload_batch_id ? '#' + row.upload_batch_id : '—'}</td>
+                <td>${row.item_name}</td>
+                <td>${row.summary || '—'}</td>
+                <td>$${row.seller_price}</td>
+                <td>${priceCell(row)}</td>
+                <td>${row.seller_name}</td>
+                <td class="actions">
+                    <select id="${kind}-rule-${row.id}">${ruleOptionsHtml(row.markup_code || '')}</select>
+                    <button class="btn btn-approve" onclick="moderateSpecial('${kind}', ${row.id}, 'approve').then(loadAllSpecial)">Approve</button>
+                    <button class="btn btn-reject" onclick="moderateSpecial('${kind}', ${row.id}, 'reject').then(loadAllSpecial)">Reject</button>
+                    <button class="btn btn-changes" onclick="moderateSpecial('${kind}', ${row.id}, 'request-changes').then(loadAllSpecial)">Request Info</button>
+                </td>
+            </tr>`).join('')
+        }</tbody></table>`;
+    }
+    function targetIdToKind(targetId) {
+        return {
+            nfcTable: 'nfc-items',
+            otpTable: 'otp-items',
+            selfregCcTable: 'selfreg-cc-items',
+            checkTable: 'check-items',
+        }[targetId];
+    }
+    async function loadBanks() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/banks`);
+            const el = document.getElementById('banksTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No banks pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllBanks" onchange="toggleSelectAll('banks')"></th><th>ID</th><th>Batch</th><th>Name</th><th>Category</th><th>Price</th><th>Seller</th><th>Actions</th></tr></thead><tbody>${
+                data.map(b => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-banks" data-id="${b.id}" onchange="updateBulkButtons('banks')"></td>
+                    <td>${b.id}</td>
+                    <td>${b.upload_batch_id ? '#' + b.upload_batch_id : '—'}</td>
+                    <td>${b.bank_name}</td>
+                    <td>${b.category}</td>
+                    <td>${priceCell(b)}</td>
+                    <td>${b.seller_name}</td>
+                    <td class="actions">
+                        <button class="btn" style="background:#6366f1;color:#fff;padding:4px 8px" onclick="previewItem('bank', ${b.id}, ${JSON.stringify(b).replace(/"/g, '&quot;')})">👁️</button>
+                        <select id="bank-rule-${b.id}">${ruleOptionsHtml(b.markup_code || '')}</select>
+                        <button class="btn btn-approve" onclick="approveBank(${b.id})">Approve</button>
+                        <button class="btn btn-reject" onclick="rejectBank(${b.id})">Reject</button>
+                        <button class="btn btn-changes" onclick="requestBankChanges(${b.id})">Request Info</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('banks');
+        } catch (e) {
+            document.getElementById('banksTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+    async function loadCC() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/cc-items`);
+            const el = document.getElementById('ccTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No CC items pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllCc" onchange="toggleSelectAll('cc')"></th><th>ID</th><th>Batch</th><th>Name</th><th>Category</th><th>Price</th><th>Seller</th><th>Actions</th></tr></thead><tbody>${
+                data.map(c => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-cc" data-id="${c.id}" onchange="updateBulkButtons('cc')"></td>
+                    <td>${c.id}</td>
+                    <td>${c.upload_batch_id ? '#' + c.upload_batch_id : '—'}</td>
+                    <td>${c.item_name}</td>
+                    <td>${c.category_code}</td>
+                    <td>${priceCell(c)}</td>
+                    <td>${c.seller_name}</td>
+                    <td class="actions">
+                        <button class="btn" style="background:#6366f1;color:#fff;padding:4px 8px" onclick="previewItem('cc', ${c.id}, ${JSON.stringify(c).replace(/"/g, '&quot;')})">👁️</button>
+                        <select id="cc-rule-${c.id}">${ruleOptionsHtml(c.markup_code || '')}</select>
+                        <button class="btn btn-approve" onclick="approveCC(${c.id})">Approve</button>
+                        <button class="btn btn-reject" onclick="rejectCC(${c.id})">Reject</button>
+                        <button class="btn btn-changes" onclick="requestCCChanges(${c.id})">Request Info</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('cc');
+        } catch (e) {
+            document.getElementById('ccTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+    async function loadAllSpecial() {
+        try {
+            const [nfc, otp, selfregCc, checks] = await Promise.all([
+                fetchWithAuth(`${API}/seller-moderation/nfc-items`),
+                fetchWithAuth(`${API}/seller-moderation/otp-items`),
+                fetchWithAuth(`${API}/seller-moderation/selfreg-cc-items`),
+                fetchWithAuth(`${API}/seller-moderation/check-items`),
+            ]);
+            renderGenericTable('nfcTable', nfc || [], 'No pending NFC items');
+            renderGenericTable('otpTable', otp || [], 'No pending OTP items');
+            renderGenericTable('selfregCcTable', selfregCc || [], 'No pending Selfreg CC items');
+            renderGenericTable('checkTable', checks || [], 'No pending Check items');
+        } catch (e) {
+            console.error('Error loading special items:', e);
+        }
+    }
+    
+    function toggleSelectAll(type) {
+        const checked = document.getElementById(`selectAll${type.charAt(0).toUpperCase() + type.slice(1)}`).checked;
+        document.querySelectorAll(`.item-checkbox-${type}`).forEach(cb => cb.checked = checked);
+        updateBulkButtons(type);
+    }
+    
+    function updateBulkButtons(type) {
+        const checkboxes = document.querySelectorAll(`.item-checkbox-${type}:checked`);
+        const count = checkboxes.length;
+        
+        const typeMap = {
+            'banks': { count: 'selectedCountBanks', countReject: 'selectedCountBanksReject', approve: 'bulkApproveBtn', reject: 'bulkRejectBtn' },
+            'cc': { count: 'selectedCountCc', countReject: 'selectedCountCcReject', approve: 'bulkApproveCcBtn', reject: 'bulkRejectCcBtn' },
+            'enroll': { count: 'selectedCountEnroll', countReject: 'selectedCountEnrollReject', approve: 'bulkApproveEnrollBtn', reject: 'bulkRejectEnrollBtn' },
+            'brute': { count: 'selectedCountBrute', countReject: 'selectedCountBruteReject', approve: 'bulkApproveBruteBtn', reject: 'bulkRejectBruteBtn' },
+            'logs': { count: 'selectedCountLogs', countReject: 'selectedCountLogsReject', approve: 'bulkApproveLogsBtn', reject: 'bulkRejectLogsBtn' },
+            'sellerbank': { count: 'selectedCountSellerbank', countReject: 'selectedCountSellerbankReject', approve: 'bulkApproveSellerbankBtn', reject: 'bulkRejectSellerbankBtn' }
+        };
+        
+        const ids = typeMap[type];
+        if (ids) {
+            const countEl = document.getElementById(ids.count);
+            const countRejectEl = document.getElementById(ids.countReject);
+            const approveBtn = document.getElementById(ids.approve);
+            const rejectBtn = document.getElementById(ids.reject);
+            
+            if (countEl) countEl.textContent = count;
+            if (countRejectEl) countRejectEl.textContent = count;
+            if (approveBtn) approveBtn.disabled = count === 0;
+            if (rejectBtn) rejectBtn.disabled = count === 0;
+        }
+    }
+    
+    async function bulkApprove(type) {
+        const checkboxes = document.querySelectorAll(`.item-checkbox-${type}:checked`);
+        const ids = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
+        
+        if (ids.length === 0) {
+            alert('No items selected');
+            return;
+        }
+        
+        if (!confirm(`Approve ${ids.length} ${type} items?`)) return;
+        
+        const endpointMap = {
+            'banks': 'banks',
+            'cc': 'cc-items',
+            'enroll': 'enroll-items',
+            'brute': 'brute-items',
+            'logs': 'logs-items',
+            'sellerbank': 'seller-bank-items'
+        };
+        
+        const endpoint = endpointMap[type];
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const id of ids) {
+            try {
+                await fetchWithAuth(`${API}/seller-moderation/${endpoint}/${id}/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rule_code: null })
+                });
+                successCount++;
+            } catch (e) {
+                failCount++;
+            }
+        }
+        
+        alert(`Bulk approve complete:\n✅ Success: ${successCount}\n❌ Failed: ${failCount}`);
+        
+        // Reload the appropriate table
+        if (type === 'banks') await loadBanks();
+        else if (type === 'cc') await loadCC();
+        else if (type === 'enroll') await loadEnroll();
+        else if (type === 'brute') await loadBrute();
+        else if (type === 'logs') await loadLogs();
+        else if (type === 'sellerbank') await loadSellerBank();
+    }
+    
+    async function bulkReject(type) {
+        const checkboxes = document.querySelectorAll(`.item-checkbox-${type}:checked`);
+        const ids = Array.from(checkboxes).map(cb => parseInt(cb.dataset.id));
+        
+        if (ids.length === 0) {
+            alert('No items selected');
+            return;
+        }
+        
+        const reason = prompt(`❌ Bulk Reject Reason:\n\nПочему ${ids.length} товаров отклонены? Продавцы увидят это сообщение.`);
+        if (!reason || !reason.trim()) {
+            alert('Reject reason is required');
+            return;
+        }
+        
+        if (!confirm(`Reject ${ids.length} ${type} items with reason: "${reason}"?`)) return;
+        
+        const endpointMap = {
+            'banks': 'banks',
+            'cc': 'cc-items',
+            'enroll': 'enroll-items',
+            'brute': 'brute-items',
+            'logs': 'logs-items',
+            'sellerbank': 'seller-bank-items'
+        };
+        
+        const endpoint = endpointMap[type];
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const id of ids) {
+            try {
+                await fetchWithAuth(`${API}/seller-moderation/${endpoint}/${id}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason: reason.trim() })
+                });
+                successCount++;
+            } catch (e) {
+                failCount++;
+            }
+        }
+        
+        alert(`Bulk reject complete:\n✅ Success: ${successCount}\n❌ Failed: ${failCount}`);
+        
+        // Reload the appropriate table
+        if (type === 'banks') await loadBanks();
+        else if (type === 'cc') await loadCC();
+        else if (type === 'enroll') await loadEnroll();
+        else if (type === 'brute') await loadBrute();
+        else if (type === 'logs') await loadLogs();
+        else if (type === 'sellerbank') await loadSellerBank();
+    }
+
+    async function loadAllSpecial() {
+        try {
+            const [nfc, otp, selfregCc, checks] = await Promise.all([
+                fetchWithAuth(`${API}/seller-moderation/nfc-items`),
+                fetchWithAuth(`${API}/seller-moderation/otp-items`),
+                fetchWithAuth(`${API}/seller-moderation/selfreg-cc-items`),
+                fetchWithAuth(`${API}/seller-moderation/check-items`)
+            ]);
+            renderGenericTable('nfcTable', nfc, 'No NFC items pending');
+            renderGenericTable('otpTable', otp, 'No OTP items pending');
+            renderGenericTable('selfregCcTable', selfregCc, 'No Selfreg CC items pending');
+            renderGenericTable('checkTable', checks, 'No Check items pending');
+        } catch (e) {
+            document.getElementById('nfcTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+            document.getElementById('otpTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+            document.getElementById('selfregCcTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+            document.getElementById('checkTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+
+    async function loadEnroll() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/enroll-items`);
+            const el = document.getElementById('enrollTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No enrollment items pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllEnroll" onchange="toggleSelectAll('enroll')"></th><th>ID</th><th>Seller</th><th>Summary</th><th>Price</th><th>Actions</th></tr></thead><tbody>${
+                data.map(item => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-enroll" data-id="${item.id}" onchange="updateBulkButtons('enroll')"></td>
+                    <td>${item.id}</td>
+                    <td>${item.seller_name}</td>
+                    <td>${item.summary || 'N/A'}</td>
+                    <td>${priceCell(item)}</td>
+                    <td class="actions">
+                        <button class="btn btn-approve" onclick="moderateSpecial('enroll', ${item.id}, 'approve')">✓</button>
+                        <button class="btn btn-reject" onclick="moderateSpecial('enroll', ${item.id}, 'reject')">✗</button>
+                        <button class="btn btn-changes" onclick="moderateSpecial('enroll', ${item.id}, 'changes')">⚠</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('enroll');
+        } catch (e) {
+            document.getElementById('enrollTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+
+    async function loadBrute() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/brute-items`);
+            const el = document.getElementById('bruteTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No brute items pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllBrute" onchange="toggleSelectAll('brute')"></th><th>ID</th><th>Seller</th><th>Summary</th><th>Price</th><th>Actions</th></tr></thead><tbody>${
+                data.map(item => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-brute" data-id="${item.id}" onchange="updateBulkButtons('brute')"></td>
+                    <td>${item.id}</td>
+                    <td>${item.seller_name}</td>
+                    <td>${item.summary || 'N/A'}</td>
+                    <td>${priceCell(item)}</td>
+                    <td class="actions">
+                        <button class="btn btn-approve" onclick="moderateSpecial('brute', ${item.id}, 'approve')">✓</button>
+                        <button class="btn btn-reject" onclick="moderateSpecial('brute', ${item.id}, 'reject')">✗</button>
+                        <button class="btn btn-changes" onclick="moderateSpecial('brute', ${item.id}, 'changes')">⚠</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('brute');
+        } catch (e) {
+            document.getElementById('bruteTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+
+    async function loadLogs() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/logs-items`);
+            const el = document.getElementById('logsTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No logs items pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllLogs" onchange="toggleSelectAll('logs')"></th><th>ID</th><th>Seller</th><th>Summary</th><th>Price</th><th>Actions</th></tr></thead><tbody>${
+                data.map(item => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-logs" data-id="${item.id}" onchange="updateBulkButtons('logs')"></td>
+                    <td>${item.id}</td>
+                    <td>${item.seller_name}</td>
+                    <td>${item.summary || 'N/A'}</td>
+                    <td>${priceCell(item)}</td>
+                    <td class="actions">
+                        <button class="btn btn-approve" onclick="moderateSpecial('logs', ${item.id}, 'approve')">✓</button>
+                        <button class="btn btn-reject" onclick="moderateSpecial('logs', ${item.id}, 'reject')">✗</button>
+                        <button class="btn btn-changes" onclick="moderateSpecial('logs', ${item.id}, 'changes')">⚠</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('logs');
+        } catch (e) {
+            document.getElementById('logsTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+
+    async function loadSellerBank() {
+        try {
+            const data = await fetchWithAuth(`${API}/seller-moderation/seller-bank-items`);
+            const el = document.getElementById('sellerbankTable');
+            if (!data || !data.length) {
+                el.innerHTML = '<div class="empty">No selfreg BA items pending</div>';
+                return;
+            }
+            el.innerHTML = `<table><thead><tr><th><input type="checkbox" id="selectAllSellerbank" onchange="toggleSelectAll('sellerbank')"></th><th>ID</th><th>Seller</th><th>Summary</th><th>Price</th><th>Actions</th></tr></thead><tbody>${
+                data.map(item => `<tr>
+                    <td><input type="checkbox" class="item-checkbox-sellerbank" data-id="${item.id}" onchange="updateBulkButtons('sellerbank')"></td>
+                    <td>${item.id}</td>
+                    <td>${item.seller_name}</td>
+                    <td>${item.summary || 'N/A'}</td>
+                    <td>${priceCell(item)}</td>
+                    <td class="actions">
+                        <button class="btn btn-approve" onclick="moderateSpecial('sellerbank', ${item.id}, 'approve')">✓</button>
+                        <button class="btn btn-reject" onclick="moderateSpecial('sellerbank', ${item.id}, 'reject')">✗</button>
+                        <button class="btn btn-changes" onclick="moderateSpecial('sellerbank', ${item.id}, 'changes')">⚠</button>
+                    </td>
+                </tr>`).join('')
+            }</tbody></table>`;
+            updateBulkButtons('sellerbank');
+        } catch (e) {
+            document.getElementById('sellerbankTable').innerHTML = '<div class="empty">Error: ' + e.message + '</div>';
+        }
+    }
+    async function initModerationPage() {
+        await loadMarkupRules();
+        await Promise.all([
+            loadBanks(), 
+            loadCC(), 
+            loadAllSpecial(),
+            loadEnroll(),
+            loadBrute(),
+            loadLogs(),
+            loadSellerBank()
+        ]);
+    }
+
+    function previewItem(type, id, item) {
+        const modal = document.getElementById('previewModal');
+        const title = document.getElementById('previewTitle');
+        const body = document.getElementById('previewBody');
+        
+        title.textContent = `👁️ Preview ${type.toUpperCase()} Item #${id}`;
+        
+        let html = '';
+        const fields = Object.entries(item).filter(([key]) => 
+            !['id', 'created_at', 'updated_at', 'moderation_status', 'moderated_at', 'moderated_by'].includes(key)
+        );
+        
+        for (const [key, value] of fields) {
+            if (value !== null && value !== undefined && value !== '') {
+                html += `<div class="preview-field">
+                    <div class="preview-label">${key.replace(/_/g, ' ')}</div>
+                    <div class="preview-value">${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>
+                </div>`;
+            }
+        }
+        
+        body.innerHTML = html || '<div style="color:#6b7280;text-align:center;padding:20px">No additional details available</div>';
+        modal.classList.add('open');
+    }
+
+    function closePreview() {
+        document.getElementById('previewModal').classList.remove('open');
+    }
+
+    // Tab switching function
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Remove active class from all tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        const selectedTab = document.getElementById(tabName + 'Tab');
+        if (selectedTab) {
+            selectedTab.classList.add('active');
+        }
+        
+        // Add active class to clicked button
+        event.target.closest('.tab-btn').classList.add('active');
+        
+        // Save to localStorage
+        localStorage.setItem('sellerModerationTab', tabName);
+    }
+    
+    // Update badge counts
+    function updateBadge(tabName, count) {
+        const badge = document.getElementById(tabName + 'Badge');
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline-block' : 'none';
+        }
+    }
+    
+    // Restore last active tab on page load
+    function restoreLastTab() {
+        const lastTab = localStorage.getItem('sellerModerationTab') || 'banks';
+        const tabBtn = document.querySelector(`.tab-btn[onclick="switchTab('${lastTab}')"]`);
+        if (tabBtn) {
+            tabBtn.click();
+        }
+    }
+
+    window.previewItem = previewItem;
+    window.closePreview = closePreview;
+    window.switchTab = switchTab;
+    window.updateBadge = updateBadge;
+
+    // Initialize and restore tab
+    initModerationPage().then(() => {
+        // Update badges after loading
+        // (Badge update logic would go here - can be added to each load function)
+        restoreLastTab();
+    });
+</script>
+{% endblock %}

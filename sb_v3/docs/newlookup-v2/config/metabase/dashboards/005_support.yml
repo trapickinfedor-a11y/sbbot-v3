@@ -1,0 +1,191 @@
+# Metabase Dashboard: Support & Disputes
+# Dashboard ID: 005
+# Description: Support tickets, disputes, and resolution metrics
+
+dashboard:
+  name: "🎧 Support & Disputes"
+  description: "Support ticket analytics and dispute resolution metrics"
+  position: 5
+
+  parameters:
+    - name: "Date Range"
+      type: "date/range"
+      default: "last30days"
+    - name: "Ticket Status"
+      type: "string"
+      required: false
+      description: "Filter support tickets by status"
+      values: ["open", "in_progress", "waiting_user", "pending", "solved", "closed"]
+    - name: "Ticket Priority"
+      type: "string"
+      required: false
+      description: "Filter support tickets by priority"
+      values: ["CRITICAL", "HIGH", "NORMAL", "LOW"]
+    - name: "Dispute Status"
+      type: "string"
+      required: false
+      description: "Filter disputes by status"
+      values: ["open", "resolved_buyer", "resolved_seller", "resolved"]
+
+  cards:
+    - name: "Open Tickets"
+      type: "number"
+      position: { row: 1, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as open_tickets
+        FROM support_tickets
+        WHERE status = 'open'
+
+    - name: "Solved Today"
+      type: "number"
+      position: { row: 1, col: 4, size: 3 }
+      query: |
+        SELECT COUNT(*) as solved_today
+        FROM support_tickets
+        WHERE status = 'solved'
+          AND resolved_at >= CURRENT_DATE
+
+    - name: "Avg Response Time"
+      type: "number"
+      position: { row: 1, col: 7, size: 3 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg_response_minutes
+        FROM support_tickets
+        WHERE first_response_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Avg Resolution Time"
+      type: "number"
+      position: { row: 1, col: 10, size: 3 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) as avg_resolution_hours
+        FROM support_tickets
+        WHERE status IN ('solved', 'closed')
+          AND resolved_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Tickets by Status"
+      type: "pie"
+      position: { row: 2, col: 1, size: 4 }
+      query: |
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM support_tickets
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "Tickets by Priority"
+      type: "bar"
+      position: { row: 2, col: 5, size: 4 }
+      query: |
+        SELECT 
+          priority,
+          COUNT(*) as count,
+          AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) as avg_hours
+        FROM support_tickets
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY priority
+        ORDER BY 
+          CASE priority
+            WHEN 'CRITICAL' THEN 1
+            WHEN 'HIGH' THEN 2
+            WHEN 'NORMAL' THEN 3
+            WHEN 'LOW' THEN 4
+          END
+
+    - name: "Tickets Trend"
+      type: "line"
+      position: { row: 2, col: 9, size: 4 }
+      query: |
+        SELECT 
+          DATE(created_at) as date,
+          COUNT(*) as new_tickets,
+          COUNT(CASE WHEN status = 'solved' THEN 1 END) as solved_tickets
+        FROM support_tickets
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY DATE(created_at)
+        ORDER BY date
+
+    - name: "Open Disputes"
+      type: "number"
+      position: { row: 3, col: 1, size: 3 }
+      query: |
+        SELECT COUNT(*) as open_disputes
+        FROM seller_order_disputes
+        WHERE status = 'open'
+
+    - name: "Disputes by Status"
+      type: "pie"
+      position: { row: 3, col: 4, size: 4 }
+      query: |
+        SELECT 
+          status,
+          COUNT(*) as count
+        FROM seller_order_disputes
+        WHERE created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        GROUP BY status
+        ORDER BY count DESC
+
+    - name: "Dispute Resolution Time"
+      type: "gauge"
+      position: { row: 3, col: 8, size: 5 }
+      query: |
+        SELECT 
+          AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 3600) as avg_hours
+        FROM seller_order_disputes
+        WHERE resolved_at IS NOT NULL
+          AND created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+
+    - name: "Support Tickets Table"
+      type: "table"
+      position: { row: 4, col: 1, size: 12 }
+      query: |
+        SELECT 
+          st.id,
+          st.user_id,
+          st.subject,
+          st.status,
+          st.priority,
+          st.category,
+          st.created_at,
+          st.first_response_at,
+          st.resolved_at,
+          EXTRACT(EPOCH FROM (COALESCE(st.first_response_at, NOW()) - st.created_at)) / 60 as response_minutes
+        FROM support_tickets st
+        WHERE st.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY 
+          CASE st.status
+            WHEN 'open' THEN 1
+            WHEN 'in_progress' THEN 2
+            WHEN 'waiting_user' THEN 3
+            WHEN 'pending' THEN 4
+            WHEN 'solved' THEN 5
+            WHEN 'closed' THEN 6
+          END,
+          st.created_at DESC
+        LIMIT 100
+
+    - name: "Disputes Table"
+      type: "table"
+      position: { row: 5, col: 1, size: 12 }
+      query: |
+        SELECT 
+          sod.id,
+          sod.order_id,
+          sod.opened_by,
+          sod.reason,
+          sod.description,
+          sod.status,
+          sod.appeal_status,
+          sod.resolution_note,
+          sod.resolved_by,
+          sod.created_at,
+          sod.resolved_at
+        FROM seller_order_disputes sod
+        WHERE sod.created_at BETWEEN {{date_range.start}} AND {{date_range.end}}
+        ORDER BY sod.created_at DESC
+        LIMIT 100
