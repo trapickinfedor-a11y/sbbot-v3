@@ -111,3 +111,23 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# Sensitive data - NEVER commit
+.secure/
+.deploy/
+sb_v3/user_attachment/extracted/
+sb_v3/user_attachment/analyze_adverse_pdfs.py
+sb_v3/scripts/collect_legacy_secrets_safe.py
+sb_v3/scripts/collect_legacy_secrets_safe.sh
+sb_v3/scripts/extract_legacy_nonproxy_secrets.py
+sb_v3/server/legacySecrets.test.ts
+sb_v3/server/browser/pdfExtractor.test.ts
+sb_v3/server/browser/pdfExtractor.ts
+sb_v3/shared/services/pdf_watermark.py
+*.pdf
+*.zip
+*.tar.gz
+*.bin
+sb_v3/docs/newlookup-v2/FULL_BASE/
+sb_v3/docs/newlookup-v2/web_panel.zip
+sb_v3/docs/newlookup-v2/docs/
