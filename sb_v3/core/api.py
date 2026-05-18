@@ -14,6 +14,26 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from typing import Optional, Dict, Any
 import database as db
 
+from celery import Celery as _Celery
+from celery.result import AsyncResult
+
+BROKER = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+_celery_app = _Celery("sbbot", broker=BROKER, backend=BROKER)
+
+_TASK_MAP = {
+    "phone":           "sbbot.search.phone",
+    "phone_identify":   "sbbot.search.phone_identify",
+    "phone_verify":    "sbbot.search.phone_verify",
+    "address":         "sbbot.search.address",
+    "address_verify":  "sbbot.search.address_verify",
+    "background":      "sbbot.search.background",
+    "email_verify":    "sbbot.search.email_verify",
+    "emailrep":        "sbbot.search.emailrep",
+    "ssn_dob":         "sbbot.search.ssn_dob",
+    "driver_license":  "sbbot.search.driver_license",
+    "credit_report":   "sbbot.search.credit_report",
+    "credit_score":    "sbbot.search.credit_score",
+}
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("sbbot.api")
 
@@ -440,6 +460,21 @@ async def tiers(x_api_key: str = Header(...)):
 
 
 # ── Search ────────────────────────────────────────────────────────────────
+@app.get("/v1/jobs/{job_id}")
+async def get_job(job_id: str, x_api_key: str = Header(...)):
+    """Poll job status. Returns result when ready."""
+    await _auth(x_api_key)
+    res = AsyncResult(job_id, app=_celery_app)
+    if res.state == "PENDING":
+        return {"status": "pending", "job_id": job_id}
+    if res.state == "FAILURE":
+        return {"status": "failure", "job_id": job_id, "error": str(res.info)}
+    if res.state == "SUCCESS":
+        return {"status": "success", "job_id": job_id, "result": res.result}
+    return {"status": res.state.lower(), "job_id": job_id}
+
+
+# ── Search ────────────────────────────────────────────────────────────────
 
 @app.post("/v1/search")
 async def search(request: Request, x_api_key: str = Header(...)):
@@ -460,8 +495,14 @@ async def search(request: Request, x_api_key: str = Header(...)):
     opts = body.get("options", {}) or {}
 
     validate_search_type(stype)
-    price = API_PRICES[stype]
+    # ── Background queue dispatch ──────────────────────────────────────
+    if os.environ.get("API_QUEUE_ENABLED") == "1":
+        task_name = _TASK_MAP.get(stype)
+        if task_name:
+            async_result = _celery_app.send_task(task_name, [k["id"], query, opts])
+            return {"job_id": async_result.id, "status": "queued"}
 
+    price = API_PRICES[stype]
     try:
         # ── Enformion: phone types ──
         if stype == "phone":

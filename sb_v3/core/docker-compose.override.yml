@@ -1,23 +1,9 @@
-# docker-compose.override.yml
-# Local overrides for development
-# Put real .env values here for docker compose
 version: "3.9"
+# Dev overrides — disable queue by default
 services:
-  bot:
-    restart: unless-stopped
+  api:
     environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./data/bot.db:/app/data/bot.db
-    ports:
-      - "3111:3111"   # web API
-      - "3112:3112"   # admin panel (if started inside container)
-    env_file:
-      - .env
-    healthcheck:
-      test: ["CMD", "python3", "-c", "import database; import asyncio; asyncio.run(database.init_db()); print('ok')"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - API_QUEUE_ENABLED=0
+  celery_worker:
+    deploy:
+      replicas: 1
